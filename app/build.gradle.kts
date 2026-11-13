@@ -12,14 +12,41 @@ android {
         applicationId = "com.logininc.ereader"
         minSdk = 24
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull()
+            ?: project.findProperty("VERSION_CODE")?.toString()?.toIntOrNull()
+            ?: 1
+        versionName = System.getenv("VERSION_NAME")
+            ?: project.findProperty("VERSION_NAME")?.toString()
+            ?: "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            val keystorePath = System.getenv("KEYSTORE_FILE") ?: project.findProperty("KEYSTORE_FILE")?.toString()
+            val envKeystore = keystorePath?.let { file(it) }
+            if (envKeystore != null && envKeystore.exists()) {
+                storeFile = envKeystore
+                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD")?.toString()
+                keyAlias = System.getenv("KEY_ALIAS") ?: project.findProperty("KEY_ALIAS")?.toString()
+                keyPassword = System.getenv("KEY_PASSWORD") ?: project.findProperty("KEY_PASSWORD")?.toString()
+            } else {
+                // Fallback to debug keystore so release builds without custom keystore produce an installable APK
+                val debugConfig = getByName("debug")
+                storeFile = debugConfig.storeFile
+                storePassword = debugConfig.storePassword
+                keyAlias = debugConfig.keyAlias
+                keyPassword = debugConfig.keyPassword
+            }
+            enableV1Signing = true
+            enableV2Signing = true
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             optimization {
                 enable = true
                 packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")

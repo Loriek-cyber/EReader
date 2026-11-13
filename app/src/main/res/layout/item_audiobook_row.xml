@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.EReader.Card"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/space_sm"
+    android:clickable="true"
+    android:focusable="true"
+    app:rippleColor="@color/glow_primary">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="@dimen/space_sm">
+
+        <FrameLayout
+            android:layout_width="56dp"
+            android:layout_height="56dp">
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/ivAudioCover"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/artwork_plum"
+                android:contentDescription="@null"
+                android:scaleType="centerCrop"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.EReader.Thumb"
+                tools:src="@drawable/cover_1984" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/scrim_card" />
+
+            <ImageView
+                android:id="@+id/ivAudioStateIcon"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_headphones"
+                app:tint="@color/text_lavender" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/space_md"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvAudioBadge"
+                    style="@style/TextAppearance.EReader.LabelBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/space_xs"
+                    android:background="@drawable/bg_badge_lavender"
+                    android:paddingHorizontal="5dp"
+                    android:paddingVertical="2dp"
+                    android:textColor="@color/text_lavender"
+                    android:textSize="9sp"
+                    tools:text="In ascolto" />
+
+                <TextView
+                    android:id="@+id/tvAudioTitle"
+                    style="@style/TextAppearance.EReader.BodyMd"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/text_primary"
+                    android:textStyle="bold"
+                    tools:text="1984" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvAudioSubtitle"
+                style="@style/TextAppearance.EReader.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="1dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                tools:text="George Orwell • Voce: Marco Baliani" />
+
+            <LinearLayout
+                android:id="@+id/layoutAudioProgress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:id="@+id/progressAudio"
+                    style="@style/Widget.EReader.ProgressBar"
+                    android:layout_width="64dp"
+                    android:layout_height="wrap_content"
+                    android:progress="34"
+                    app:indicatorColor="@color/primary"
+                    app:trackThickness="3dp" />
+
+                <TextView
+                    android:id="@+id/tvAudioRemaining"
+                    style="@style/TextAppearance.EReader.LabelMd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/space_sm"
+                    android:textSize="10sp"
+                    tools:text="34% • 3h 12m rimasti" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnAudioPlay"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@drawable/bg_circle_surface"
+            android:contentDescription="@null"
+            android:padding="8dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_play"
+            app:tint="@color/primary" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

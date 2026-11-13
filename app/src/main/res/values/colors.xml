@@ -1,10 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- Base & Canvas -->
+    <color name="canvas_base">#FF0D0D14</color>
+    <color name="surface">#FF12121E</color>
+    <color name="surface_dim">#FF12121E</color>
+    <color name="surface_nav">#FF161622</color>
+    <color name="surface_nav_translucent">#D9161622</color>
+    <color name="background">#FF12121E</color>
+
+    <!-- Tonal Surface Stack -->
+    <color name="surface_container_lowest">#FF0D0D19</color>
+    <color name="surface_container_low">#FF1A1A27</color>
+    <color name="surface_card">#FF1A1A26</color>
+    <color name="surface_container">#FF1F1E2B</color>
+    <color name="surface_elevated">#FF1E1E2E</color>
+    <color name="surface_interactive">#FF202030</color>
+    <color name="surface_chip">#FF222232</color>
+    <color name="surface_floating">#FF222234</color>
+    <color name="surface_floating_glass">#EB222234</color>
+    <color name="surface_overlay">#FF252538</color>
+    <color name="surface_container_high">#FF292936</color>
+    <color name="surface_container_highest">#FF343341</color>
+    <color name="surface_variant">#FF343341</color>
+    <color name="surface_bright">#FF383845</color>
+
+    <!-- Brand & Accents -->
+    <color name="primary">#FFC6BFFF</color>
+    <color name="on_primary">#FF2900A0</color>
+    <color name="primary_container">#FF6C5CE7</color>
+    <color name="on_primary_container">#FFFAF6FF</color>
+    <color name="primary_fixed">#FFE4DFFF</color>
+    <color name="primary_fixed_dim">#FFC6BFFF</color>
+
+    <color name="secondary">#FFA29BFE</color>
+    <color name="secondary_m3">#FFC5C0FF</color>
+    <color name="on_secondary">#FF2A1F7E</color>
+    <color name="secondary_container">#FF413996</color>
+    <color name="secondary_container_60">#99413996</color>
+    <color name="on_secondary_container">#FFB2ACFF</color>
+
+    <color name="tertiary">#FF8075FF</color>
+    <color name="tertiary_container">#FF695DE6</color>
+    <color name="on_tertiary_container">#FFFAF5FF</color>
+
+    <!-- Artwork & Atmospheric Accents -->
+    <color name="artwork_plum">#FF342852</color>
+    <color name="artwork_violet">#FF7D3C98</color>
+    <color name="glow_primary">#266C5CE7</color>
+
+    <!-- Text & Iconography -->
+    <color name="text_primary">#FFFFFFFF</color>
+    <color name="on_surface">#FFE3E0F2</color>
+    <color name="on_surface_variant">#FFC8C4D7</color>
+    <color name="text_lavender">#FFC8C0EA</color>
+    <color name="text_secondary">#FF9494A8</color>
+    <color name="text_muted">#FF8E8EA8</color>
+    <color name="text_placeholder">#FF5A5A72</color>
+
+    <!-- Outlines, Tracks & Scrims -->
+    <color name="outline">#FF928EA0</color>
+    <color name="outline_variant">#FF474554</color>
+    <color name="track_neutral">#FF2E2E44</color>
+    <color name="border_subtle">#14FFFFFF</color>
+    <color name="border_glass">#1FFFFFFF</color>
+    <color name="border_active">#666C5CE7</color>
+    <color name="scrim_dark">#B30D0D14</color>
+    <color name="scrim_card">#990D0D14</color>
+
+    <!-- Error -->
+    <color name="error">#FFFFB4AB</color>
+    <color name="on_error">#FF690005</color>
+    <color name="error_container">#FF93000A</color>
+    <color name="on_error_container">#FFFFDAD6</color>
 </resources>

@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/surface"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- Top Bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/top_bar_height"
+            android:background="@color/surface_nav_translucent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="@dimen/space_md">
+
+            <ImageButton
+                android:id="@+id/btnAudioChaptersBack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@null"
+                android:padding="9dp"
+                android:src="@drawable/ic_arrow_back"
+                app:tint="@color/on_surface" />
+
+            <TextView
+                style="@style/TextAppearance.EReader.HeadlineSm"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/space_xs"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="1984 — George Orwell" />
+        </LinearLayout>
+
+        <androidx.core.widget.NestedScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingBottom="100dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="@dimen/margin_screen"
+                android:paddingTop="@dimen/space_sm">
+
+                <!-- Filter Chips -->
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingVertical="@dimen/space_xs">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/chipAudioChapters"
+                            style="@style/Widget.EReader.Button.Primary"
+                            android:layout_width="wrap_content"
+                            android:layout_height="@dimen/chip_height"
+                            android:layout_marginEnd="@dimen/space_sm"
+                            android:paddingHorizontal="@dimen/space_base"
+                            android:text="@string/tab_chapters"
+                            android:textSize="13sp"
+                            app:cornerRadius="@dimen/radius_pill"
+                            app:icon="@drawable/ic_book_open"
+                            app:iconSize="16dp"
+                            app:iconTint="@color/on_primary_container" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/chipAudioBookmarks"
+                            style="@style/Widget.EReader.Button.Secondary"
+                            android:layout_width="wrap_content"
+                            android:layout_height="@dimen/chip_height"
+                            android:layout_marginEnd="@dimen/space_sm"
+                            android:paddingHorizontal="@dimen/space_base"
+                            android:text="@string/tab_bookmarks_audio"
+                            android:textColor="@color/text_muted"
+                            android:textSize="13sp"
+                            app:backgroundTint="@color/surface_chip"
+                            app:cornerRadius="@dimen/radius_pill"
+                            app:icon="@drawable/ic_bookmark"
+                            app:iconSize="16dp"
+                            app:iconTint="@color/text_muted" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/chipAudioNotes"
+                            style="@style/Widget.EReader.Button.Secondary"
+                            android:layout_width="wrap_content"
+                            android:layout_height="@dimen/chip_height"
+                            android:paddingHorizontal="@dimen/space_base"
+                            android:text="@string/tab_notes_audio"
+                            android:textColor="@color/text_muted"
+                            android:textSize="13sp"
+                            app:backgroundTint="@color/surface_chip"
+                            app:cornerRadius="@dimen/radius_pill"
+                            app:icon="@drawable/ic_note"
+                            app:iconSize="16dp"
+                            app:iconTint="@color/text_muted" />
+                    </LinearLayout>
+                </HorizontalScrollView>
+
+                <!-- Search Bar -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/search_bar_height"
+                    android:layout_marginTop="@dimen/space_md"
+                    android:background="@drawable/bg_search_input"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="@dimen/space_md">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_search"
+                        app:tint="@color/text_placeholder" />
+
+                    <EditText
+                        android:id="@+id/etAudioChapterSearch"
+                        style="@style/TextAppearance.EReader.BodyMd"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="@dimen/space_sm"
+                        android:layout_weight="1"
+                        android:background="@null"
+                        android:hint="@string/chapters_audio_search_hint"
+                        android:imeOptions="actionSearch"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:textColor="@color/text_primary"
+                        android:textColorHint="@color/text_placeholder" />
+                </LinearLayout>
+
+                <!-- Overall Listening Progress Card -->
+                <com.google.android.material.card.MaterialCardView
+                    style="@style/Widget.EReader.Card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_base">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="@dimen/space_md">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.BodySm"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Avanzamento ascolto"
+                                android:textColor="@color/text_muted" />
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.BodySm"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="28%"
+                                android:textColor="@color/primary"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <com.google.android.material.progressindicator.LinearProgressIndicator
+                            style="@style/Widget.EReader.ProgressBar"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_sm"
+                            android:progress="28" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Parte Prima -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_lg"
+                    android:layout_marginBottom="@dimen/space_sm"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <View
+                        android:layout_width="4dp"
+                        android:layout_height="14dp"
+                        android:background="@color/primary_container" />
+
+                    <TextView
+                        style="@style/TextAppearance.EReader.HeadlineSm"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/space_sm"
+                        android:text="@string/part_one" />
+                </LinearLayout>
+
+                <include layout="@layout/item_chapter_audio" />
+                <include layout="@layout/item_chapter_audio" />
+
+                <!-- Active Audio Chapter Card (Cap. 5) -->
+                <LinearLayout
+                    android:id="@+id/cardActiveAudioChapter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginVertical="@dimen/space_xs"
+                    android:background="@drawable/bg_card_active_chapter"
+                    android:orientation="vertical"
+                    android:padding="@dimen/space_base">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:background="@drawable/bg_circle_primary"
+                            android:contentDescription="@null"
+                            android:padding="9dp"
+                            android:src="@drawable/ic_equalizer"
+                            app:tint="@color/on_primary_container" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="@dimen/space_md"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    style="@style/TextAppearance.EReader.LabelBadge"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:background="@drawable/bg_badge_lavender"
+                                    android:paddingHorizontal="6dp"
+                                    android:paddingVertical="2dp"
+                                    android:text="IN RIPRODUZIONE"
+                                    android:textColor="@color/primary_fixed" />
+
+                                <TextView
+                                    style="@style/TextAppearance.EReader.Caption"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="6dp"
+                                    android:text="• 14:18"
+                                    android:textColor="@color/primary_fixed" />
+                            </LinearLayout>
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.HeadlineSm"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:text="Capitolo 5: Il Ministero della Verità" />
+                        </LinearLayout>
+
+                        <ImageButton
+                            android:id="@+id/btnActiveChapterPause"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:background="@drawable/bg_circle_primary"
+                            android:contentDescription="@null"
+                            android:padding="10dp"
+                            android:scaleType="centerInside"
+                            android:src="@drawable/ic_pause"
+                            app:tint="@color/on_primary_container" />
+                    </LinearLayout>
+
+                    <com.google.android.material.progressindicator.LinearProgressIndicator
+                        style="@style/Widget.EReader.ProgressBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_md"
+                        android:progress="34" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_xs"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/TextAppearance.EReader.Caption"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="34% ascoltato"
+                            android:textColor="@color/text_muted" />
+
+                        <TextView
+                            style="@style/TextAppearance.EReader.Caption"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="27 min rimanenti"
+                            android:textColor="@color/text_muted" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <include layout="@layout/item_chapter_audio" />
+
+                <!-- Parte Seconda -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_lg"
+                    android:layout_marginBottom="@dimen/space_sm"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <View
+                        android:layout_width="4dp"
+                        android:layout_height="14dp"
+                        android:background="@color/surface_variant" />
+
+                    <TextView
+                        style="@style/TextAppearance.EReader.HeadlineSm"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/space_sm"
+                        android:layout_weight="1"
+                        android:text="@string/part_two" />
+
+                    <TextView
+                        style="@style/TextAppearance.EReader.Caption"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="6 capitoli • 4h 10m"
+                        android:textColor="@color/text_muted" />
+                </LinearLayout>
+
+                <include layout="@layout/item_chapter_audio" />
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+    </LinearLayout>
+
+    <!-- Floating Bottom Mini-Player -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginHorizontal="@dimen/margin_screen"
+        android:layout_marginBottom="@dimen/space_base"
+        android:background="@drawable/bg_floating_hud"
+        android:elevation="12dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="@dimen/space_md"
+        android:paddingVertical="@dimen/space_md">
+
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_rounded_container"
+            android:contentDescription="@null"
+            android:padding="9dp"
+            android:src="@drawable/ic_equalizer"
+            app:tint="@color/secondary" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/space_md"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                style="@style/TextAppearance.EReader.LabelBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Riproduzione attiva"
+                android:textColor="@color/primary_fixed" />
+
+            <TextView
+                style="@style/TextAppearance.EReader.BodySm"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Cap. 5: Il Ministero della Verità"
+                android:textColor="@color/text_primary"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnChaptersMiniRewind"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@null"
+            android:padding="8dp"
+            android:src="@drawable/ic_replay_15"
+            app:tint="@color/text_lavender" />
+
+        <ImageButton
+            android:id="@+id/btnChaptersMiniPlay"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="@dimen/space_xs"
+            android:background="@drawable/bg_circle_primary"
+            android:contentDescription="@null"
+            android:padding="10dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_play"
+            app:tint="@color/on_primary_container" />
+    </LinearLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

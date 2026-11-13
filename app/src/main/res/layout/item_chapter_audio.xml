@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.EReader.Card"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/space_xs"
+    android:clickable="true"
+    android:focusable="true"
+    app:rippleColor="@color/glow_primary">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="@dimen/space_md">
+
+        <FrameLayout
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@drawable/bg_circle_surface">
+
+            <ImageView
+                android:id="@+id/ivAudioChapterIcon"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_check_circle"
+                app:tint="@color/primary" />
+
+            <TextView
+                android:id="@+id/tvAudioChapterNum"
+                style="@style/TextAppearance.EReader.LabelMd"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone"
+                tools:text="06" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/space_md"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvAudioChapterTitle"
+                style="@style/TextAppearance.EReader.BodyMd"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/text_primary"
+                android:textStyle="bold"
+                tools:text="Capitolo 1: Il tele-schermo" />
+
+            <TextView
+                android:id="@+id/tvAudioChapterMeta"
+                style="@style/TextAppearance.EReader.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                tools:text="24 min • Completato" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnAudioChapterAction"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@null"
+            android:padding="7dp"
+            android:src="@drawable/ic_play_circle"
+            app:tint="@color/text_muted" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

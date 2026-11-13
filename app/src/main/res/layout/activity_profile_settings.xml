@@ -1,0 +1,1095 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/surface"
+    android:fitsSystemWindows="true">
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollProfileSettings"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingBottom="96dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="@dimen/margin_screen"
+            android:paddingTop="@dimen/space_base">
+
+            <!-- 1. Profile Summary Card -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.EReader.Card.Low"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <View
+                        android:layout_width="128dp"
+                        android:layout_height="128dp"
+                        android:layout_gravity="top|end"
+                        android:layout_marginTop="-32dp"
+                        android:layout_marginEnd="-32dp"
+                        android:background="@drawable/bg_ambient_glow" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="@dimen/space_base">
+
+                        <FrameLayout
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:background="@drawable/bg_avatar_gradient">
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.HeadlineLg"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:text="MR" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/space_md"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/tvProfileName"
+                                    style="@style/TextAppearance.EReader.HeadlineLg"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="Marco Rossi" />
+
+                                <ImageButton
+                                    android:id="@+id/btnEditProfile"
+                                    android:layout_width="32dp"
+                                    android:layout_height="32dp"
+                                    android:background="@drawable/bg_rounded_container"
+                                    android:contentDescription="@null"
+                                    android:padding="7dp"
+                                    android:scaleType="centerInside"
+                                    android:src="@drawable/ic_edit"
+                                    app:tint="@color/text_muted" />
+                            </LinearLayout>
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.BodySm"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Account Locale • Memoria interna" />
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/space_sm"
+                                android:background="@drawable/bg_chip_default"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal"
+                                android:paddingHorizontal="10dp"
+                                android:paddingVertical="4dp">
+
+                                <View
+                                    android:layout_width="6dp"
+                                    android:layout_height="6dp"
+                                    android:background="@drawable/bg_dot_primary" />
+
+                                <TextView
+                                    style="@style/TextAppearance.EReader.LabelMd"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="6dp"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="Google Drive collegato • marco.rossi@gmail.com"
+                                    android:textColor="@color/text_lavender" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+                </FrameLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 2. Section: Archiviazione & Cartelle -->
+            <TextView
+                style="@style/TextAppearance.EReader.HeadlineSm"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xl"
+                android:text="@string/settings_storage_title" />
+
+            <TextView
+                style="@style/TextAppearance.EReader.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="@string/settings_storage_desc" />
+
+            <!-- Cartella eBook -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.EReader.Card.Low"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="@dimen/space_base">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:background="@drawable/bg_rounded_container"
+                            android:contentDescription="@null"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_book_open"
+                            app:tint="@color/primary" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="@dimen/space_sm"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.BodyMd"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_ebook_folder"
+                                android:textColor="@color/text_primary"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.Caption"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:ellipsize="end"
+                                android:fontFamily="monospace"
+                                android:maxLines="1"
+                                android:text="/Memoria/Documenti/eBooks/EPUB"
+                                android:textColor="@color/text_muted" />
+                        </LinearLayout>
+
+                        <ImageButton
+                            android:id="@+id/btnPickEbookFolder"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:background="@drawable/bg_rounded_container"
+                            android:contentDescription="@null"
+                            android:padding="7dp"
+                            android:scaleType="centerInside"
+                            android:src="@drawable/ic_folder"
+                            app:tint="@color/text_lavender" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_sm"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/TextAppearance.EReader.LabelMd"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_chip_default"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="3dp"
+                            android:text="42 file rilevati • 1.2 GB"
+                            android:textColor="@color/text_lavender" />
+
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
+                            android:layout_weight="1" />
+
+                        <TextView
+                            style="@style/TextAppearance.EReader.Caption"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Formati: EPUB, PDF"
+                            android:textColor="@color/text_muted" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Cartella Audiolibri -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.EReader.Card.Low"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="@dimen/space_base">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:background="@drawable/bg_rounded_container"
+                            android:contentDescription="@null"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_volume"
+                            app:tint="@color/primary" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="@dimen/space_sm"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.BodyMd"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_audiobook_folder"
+                                android:textColor="@color/text_primary"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.Caption"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:ellipsize="end"
+                                android:fontFamily="monospace"
+                                android:maxLines="1"
+                                android:text="/Memoria/Audio/Audiolibri/M4B"
+                                android:textColor="@color/text_muted" />
+                        </LinearLayout>
+
+                        <ImageButton
+                            android:id="@+id/btnPickAudioFolder"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:background="@drawable/bg_rounded_container"
+                            android:contentDescription="@null"
+                            android:padding="7dp"
+                            android:scaleType="centerInside"
+                            android:src="@drawable/ic_folder"
+                            app:tint="@color/text_lavender" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_sm"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/TextAppearance.EReader.LabelMd"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_chip_default"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="3dp"
+                            android:text="18 titoli • 14.8 GB"
+                            android:textColor="@color/text_lavender" />
+
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
+                            android:layout_weight="1" />
+
+                        <TextView
+                            style="@style/TextAppearance.EReader.Caption"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Formati: M4B, MP3"
+                            android:textColor="@color/text_muted" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnScanFolders"
+                style="@style/Widget.EReader.Button.Secondary"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/button_height_secondary"
+                android:layout_marginTop="@dimen/space_sm"
+                android:text="@string/settings_scan_now"
+                app:icon="@drawable/ic_refresh"
+                app:iconGravity="textStart"
+                app:iconSize="18dp"
+                app:iconTint="@color/primary" />
+
+            <!-- 3. Section: Cloud & Sincronizzazione -->
+            <TextView
+                style="@style/TextAppearance.EReader.HeadlineSm"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xl"
+                android:text="@string/settings_cloud_title" />
+
+            <TextView
+                style="@style/TextAppearance.EReader.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="@string/settings_cloud_desc" />
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.EReader.Card.Low"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="@dimen/space_base">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:background="@drawable/bg_rounded_container"
+                            android:contentDescription="@null"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_cloud_upload"
+                            app:tint="@color/primary" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="@dimen/space_sm"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    style="@style/TextAppearance.EReader.BodyMd"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Google Drive"
+                                    android:textColor="@color/text_primary"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    style="@style/TextAppearance.EReader.LabelMd"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="@dimen/space_sm"
+                                    android:background="@drawable/bg_chip_default"
+                                    android:paddingHorizontal="8dp"
+                                    android:paddingVertical="2dp"
+                                    android:text="Attivo"
+                                    android:textColor="@color/text_lavender" />
+                            </LinearLayout>
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.Caption"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="marco.rossi@gmail.com" />
+                        </LinearLayout>
+
+                        <ImageButton
+                            android:id="@+id/btnManageDrive"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:background="@drawable/bg_rounded_container"
+                            android:contentDescription="@null"
+                            android:padding="7dp"
+                            android:scaleType="centerInside"
+                            android:src="@drawable/ic_edit"
+                            app:tint="@color/text_lavender" />
+                    </LinearLayout>
+
+                    <!-- Last backup pill -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_base"
+                        android:background="@drawable/bg_rounded_container"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="@dimen/space_md">
+
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_check_circle"
+                            app:tint="@color/text_lavender" />
+
+                        <TextView
+                            style="@style/TextAppearance.EReader.Caption"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/space_sm"
+                            android:layout_weight="1"
+                            android:text="Ultimo backup eseguito" />
+
+                        <TextView
+                            style="@style/TextAppearance.EReader.LabelMd"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Sincronizzato 12 min fa"
+                            android:textColor="@color/text_primary"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Auto sync switch -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_base"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.BodyMd"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Sincronizzazione automatica Cloud"
+                                android:textColor="@color/text_primary"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.Caption"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Salva segnalibri e note ad ogni interruzione"
+                                android:textColor="@color/text_muted" />
+                        </LinearLayout>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchAutoCloudSync"
+                            style="@style/Widget.EReader.Switch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="@dimen/space_md"
+                        android:background="@color/border_subtle" />
+
+                    <!-- Wi-Fi only switch -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.BodySm"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Sincronizza solo sotto rete Wi-Fi"
+                                android:textColor="@color/text_primary"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.Caption"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Risparmia traffico dati cellulare"
+                                android:textColor="@color/text_muted" />
+                        </LinearLayout>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchWifiOnly"
+                            style="@style/Widget.EReader.Switch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true" />
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSyncNow"
+                        style="@style/Widget.EReader.Button.Secondary"
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/button_height_secondary"
+                        android:layout_marginTop="@dimen/space_base"
+                        android:text="@string/settings_sync_now"
+                        app:icon="@drawable/ic_refresh"
+                        app:iconGravity="textStart"
+                        app:iconSize="18dp"
+                        app:iconTint="@color/primary" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 4. Section: Protezione Notturna Anti-Sonno -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xl"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:background="@drawable/bg_rounded_container"
+                    android:contentDescription="@null"
+                    android:padding="6dp"
+                    android:src="@drawable/ic_moon"
+                    app:tint="@color/primary" />
+
+                <TextView
+                    style="@style/TextAppearance.EReader.HeadlineSm"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/space_sm"
+                    android:text="@string/settings_sleep_title" />
+            </LinearLayout>
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.EReader.Card.Low"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="@dimen/space_base">
+
+                    <!-- Explanatory Banner -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_rounded_container"
+                        android:orientation="horizontal"
+                        android:padding="@dimen/space_md">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_marginTop="2dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_info"
+                            app:tint="@color/primary" />
+
+                        <TextView
+                            style="@style/TextAppearance.EReader.Caption"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/space_sm"
+                            android:layout_weight="1"
+                            android:text="@string/settings_sleep_banner" />
+                    </LinearLayout>
+
+                    <!-- Master Switch -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_base"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.BodyMd"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_sleep_enable"
+                                android:textColor="@color/text_primary"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.Caption"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_sleep_enable_desc"
+                                android:textColor="@color/text_muted" />
+                        </LinearLayout>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchSleepTimer"
+                            style="@style/Widget.EReader.Switch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true" />
+                    </LinearLayout>
+
+                    <!-- Fascia Oraria -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_base"
+                        android:background="@drawable/bg_rounded_container"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="@dimen/space_md">
+
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_clock"
+                            app:tint="@color/text_muted" />
+
+                        <TextView
+                            style="@style/TextAppearance.EReader.BodySm"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/space_sm"
+                            android:layout_weight="1"
+                            android:text="@string/settings_sleep_window" />
+
+                        <TextView
+                            android:id="@+id/btnSleepWindow"
+                            style="@style/TextAppearance.EReader.Caption"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:drawableEnd="@drawable/ic_chevron_right"
+                            android:drawablePadding="4dp"
+                            android:drawableTint="@color/text_muted"
+                            android:gravity="center_vertical"
+                            android:text="22:30 — 07:00"
+                            android:textColor="@color/text_primary"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Intervallo di controllo -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_base"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/TextAppearance.EReader.BodySm"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/settings_sleep_interval"
+                            android:textColor="@color/text_primary"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            style="@style/TextAppearance.EReader.LabelMd"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Pausa automatica"
+                            android:textColor="@color/text_lavender" />
+                    </LinearLayout>
+
+                    <!-- 4-Segment Interval Selector -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_sm"
+                        android:background="@drawable/bg_rounded_container"
+                        android:orientation="horizontal"
+                        android:padding="@dimen/space_xs">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnInterval15"
+                            style="@style/Widget.EReader.Button.Secondary"
+                            android:layout_width="0dp"
+                            android:layout_height="34dp"
+                            android:layout_weight="1"
+                            android:padding="0dp"
+                            android:text="15 min"
+                            android:textColor="@color/text_muted"
+                            android:textSize="12sp"
+                            app:backgroundTint="@android:color/transparent"
+                            app:strokeWidth="0dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnInterval30"
+                            style="@style/Widget.EReader.Button.Primary"
+                            android:layout_width="0dp"
+                            android:layout_height="34dp"
+                            android:layout_weight="1"
+                            android:padding="0dp"
+                            android:text="30 min"
+                            android:textSize="12sp"
+                            app:cornerRadius="@dimen/radius_sm" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnInterval45"
+                            style="@style/Widget.EReader.Button.Secondary"
+                            android:layout_width="0dp"
+                            android:layout_height="34dp"
+                            android:layout_weight="1"
+                            android:padding="0dp"
+                            android:text="45 min"
+                            android:textColor="@color/text_muted"
+                            android:textSize="12sp"
+                            app:backgroundTint="@android:color/transparent"
+                            app:strokeWidth="0dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnInterval60"
+                            style="@style/Widget.EReader.Button.Secondary"
+                            android:layout_width="0dp"
+                            android:layout_height="34dp"
+                            android:layout_weight="1"
+                            android:padding="0dp"
+                            android:text="60 min"
+                            android:textColor="@color/text_muted"
+                            android:textSize="12sp"
+                            app:backgroundTint="@android:color/transparent"
+                            app:strokeWidth="0dp" />
+                    </LinearLayout>
+
+                    <!-- Wake verification -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_base"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:background="@drawable/bg_circle_surface"
+                            android:contentDescription="@null"
+                            android:padding="4dp"
+                            android:src="@drawable/ic_phone"
+                            app:tint="@color/primary" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/space_sm"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.BodySm"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_sleep_verify_title"
+                                android:textColor="@color/text_primary"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.Caption"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="@string/settings_sleep_verify_desc" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_sm"
+                        android:background="@drawable/bg_rounded_container"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="@dimen/space_sm">
+
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_clock"
+                            app:tint="@color/text_placeholder" />
+
+                        <TextView
+                            style="@style/TextAppearance.EReader.Caption"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/space_sm"
+                            android:layout_weight="1"
+                            android:text="@string/settings_sleep_timeout_note"
+                            android:textColor="@color/text_muted" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 5. Section: Preferenze Lettore & Audio -->
+            <TextView
+                style="@style/TextAppearance.EReader.HeadlineSm"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xl"
+                android:text="@string/settings_prefs_title" />
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.EReader.Card.Low"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="@dimen/space_base">
+
+                    <!-- OLED Dark Mode -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:background="@drawable/bg_rounded_container"
+                            android:contentDescription="@null"
+                            android:padding="7dp"
+                            android:src="@drawable/ic_moon"
+                            app:tint="@color/text_lavender" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="@dimen/space_sm"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.BodyMd"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_oled_title"
+                                android:textColor="@color/text_primary" />
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.Caption"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_oled_desc"
+                                android:textColor="@color/text_muted" />
+                        </LinearLayout>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchOledMode"
+                            style="@style/Widget.EReader.Switch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="@dimen/space_md"
+                        android:background="@color/border_subtle" />
+
+                    <!-- Default Speed -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:background="@drawable/bg_rounded_container"
+                            android:contentDescription="@null"
+                            android:padding="7dp"
+                            android:src="@drawable/ic_play"
+                            app:tint="@color/text_lavender" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="@dimen/space_sm"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.BodyMd"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_default_speed"
+                                android:textColor="@color/text_primary" />
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.Caption"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_default_speed_desc"
+                                android:textColor="@color/text_muted" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/btnDefaultSpeed"
+                            style="@style/TextAppearance.EReader.BodySm"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_rounded_container"
+                            android:drawableEnd="@drawable/ic_chevron_right"
+                            android:drawablePadding="4dp"
+                            android:drawableTint="@color/text_muted"
+                            android:gravity="center_vertical"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="5dp"
+                            android:text="1.0x"
+                            android:textColor="@color/text_primary" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="@dimen/space_md"
+                        android:background="@color/border_subtle" />
+
+                    <!-- Auto Bookmark -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:background="@drawable/bg_rounded_container"
+                            android:contentDescription="@null"
+                            android:padding="7dp"
+                            android:src="@drawable/ic_bookmark"
+                            app:tint="@color/text_lavender" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="@dimen/space_sm"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.BodyMd"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_auto_bookmark"
+                                android:textColor="@color/text_primary" />
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.Caption"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_auto_bookmark_desc"
+                                android:textColor="@color/text_muted" />
+                        </LinearLayout>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchAutoBookmark"
+                            style="@style/Widget.EReader.Switch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 6. System Info & Maintenance Footer -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xl"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingBottom="@dimen/space_base">
+
+                <TextView
+                    style="@style/TextAppearance.EReader.Caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/settings_footer_version" />
+
+                <com.google.android.material.progressindicator.LinearProgressIndicator
+                    style="@style/Widget.EReader.ProgressBar"
+                    android:layout_width="192dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:progress="13"
+                    app:trackThickness="@dimen/progress_track_height_sm" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnClearCache"
+                    style="@style/Widget.EReader.Button.Secondary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:layout_marginTop="@dimen/space_md"
+                    android:paddingHorizontal="@dimen/space_base"
+                    android:text="@string/settings_clear_cache"
+                    android:textColor="@color/text_muted"
+                    android:textSize="12sp"
+                    app:icon="@drawable/ic_delete"
+                    app:iconSize="15dp"
+                    app:iconTint="@color/text_muted" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- Bottom Navigation Dock -->
+    <include
+        layout="@layout/layout_bottom_nav"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom" />
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

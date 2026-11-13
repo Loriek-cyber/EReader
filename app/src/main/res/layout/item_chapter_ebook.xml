@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.EReader.Card.Low"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/space_xs"
+    android:clickable="true"
+    android:focusable="true"
+    app:rippleColor="@color/glow_primary">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="@dimen/space_sm">
+
+        <ImageView
+            android:id="@+id/ivChapterStatus"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:background="@drawable/bg_circle_surface"
+            android:contentDescription="@null"
+            android:padding="6dp"
+            android:src="@drawable/ic_check"
+            app:tint="@color/primary" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/space_md"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvChapterTitle"
+                style="@style/TextAppearance.EReader.BodyMd"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/text_primary"
+                android:textStyle="bold"
+                tools:text="Capitolo I" />
+
+            <TextView
+                android:id="@+id/tvChapterSubtitle"
+                style="@style/TextAppearance.EReader.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                tools:text="Il grande occhio del tele-schermo" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvChapterPage"
+            style="@style/TextAppearance.EReader.LabelMd"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/space_xs"
+            tools:text="Pag. 5" />
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:alpha="0.6"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_chevron_right"
+            app:tint="@color/text_muted" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

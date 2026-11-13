@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Modular 4dp/8dp Spacing Scale -->
+    <dimen name="space_xxs">2dp</dimen>
+    <dimen name="space_xs">4dp</dimen>
+    <dimen name="space_sm">8dp</dimen>
+    <dimen name="space_md">12dp</dimen>
+    <dimen name="space_base">16dp</dimen>
+    <dimen name="space_lg">20dp</dimen>
+    <dimen name="space_xl">24dp</dimen>
+    <dimen name="space_2xl">32dp</dimen>
+
+    <!-- Page Layout -->
+    <dimen name="margin_screen">20dp</dimen>
+    <dimen name="gutter_grid">12dp</dimen>
+    <dimen name="bottom_nav_height">68dp</dimen>
+    <dimen name="top_bar_height">56dp</dimen>
+
+    <!-- Corner Radii -->
+    <dimen name="radius_xs">4dp</dimen>
+    <dimen name="radius_sm">8dp</dimen>
+    <dimen name="radius_md">12dp</dimen>
+    <dimen name="radius_lg">14dp</dimen>
+    <dimen name="radius_xl">16dp</dimen>
+    <dimen name="radius_2xl">24dp</dimen>
+    <dimen name="radius_pill">999dp</dimen>
+
+    <!-- Component Dimensions -->
+    <dimen name="search_bar_height">46dp</dimen>
+    <dimen name="chip_height">36dp</dimen>
+    <dimen name="button_height_primary">48dp</dimen>
+    <dimen name="button_height_secondary">44dp</dimen>
+    <dimen name="progress_track_height">5dp</dimen>
+    <dimen name="progress_track_height_sm">4dp</dimen>
+</resources>

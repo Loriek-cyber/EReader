@@ -1,3 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">EReader</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_library">Libreria</string>
+    <string name="nav_audiobooks">Audiolibri</string>
+    <string name="nav_profile">Profilo</string>
+
+    <!-- Library Screen -->
+    <string name="library_eyebrow">Santuario Personale</string>
+    <string name="library_title">La tua Libreria</string>
+    <string name="library_search_hint">Cerca per titolo, autore o ISBN</string>
+    <string name="library_in_progress">In Corso</string>
+    <string name="library_next_section">Da Leggere &amp; Completati</string>
+    <string name="library_next_subtitle">Prossimi in lista</string>
+    <string name="library_see_all">Tutti</string>
+    <string name="action_index">Indice</string>
+    <string name="action_resume">Riprendi</string>
+    <string name="action_reread">Rileggi</string>
+    <string name="action_start_reading">Inizia Lettura</string>
+    <string name="label_progress">Avanzamento</string>
+    <string name="label_status">Stato</string>
+    <string name="status_completed">Completato</string>
+    <string name="status_to_start">Da iniziare</string>
+
+    <!-- Audiobooks Screen -->
+    <string name="audiobooks_title">I tuoi Audiolibri</string>
+    <string name="audiobooks_search_hint">Cerca audiolibro, narratore o autore…</string>
+    <string name="audiobooks_now_playing">In Riproduzione</string>
+    <string name="audiobooks_current_device">Dispositivo attuale</string>
+    <string name="audiobooks_all_title">Tutti gli audiolibri</string>
+    <string name="audiobooks_count_sample">5 titoli</string>
+    <string name="action_chapters">Capitoli</string>
+
+    <!-- Reader Screen -->
+    <string name="reader_chapter_pill">1984 • Capitolo V</string>
+    <string name="reader_chapter_label">CAPITOLO V</string>
+    <string name="reader_chapter_title">Il Volto nel Corridoio</string>
+    <string name="reader_page_counter">Pagina 142 di 208</string>
+    <string name="reader_font_aa">Aa</string>
+    <string name="reader_hud_text">Testo</string>
+    <string name="reader_hud_theme">Sfondo</string>
+    <string name="reader_hud_index">Indice</string>
+    <string name="reader_hud_save">Salva</string>
+    <string name="reader_font_size_label">Dimensione Carattere</string>
+    <string name="reader_font_serif">Serif</string>
+    <string name="reader_font_sans">Sans</string>
+    <string name="reader_theme_oled">Notturno OLED</string>
+    <string name="reader_prose_dropcap">E</string>
+    <string name="reader_prose_p1">ra una limpida e fredda giornata d’aprile, e gli orologi battevano tredici colpi. Winston Smith, con il mento affondato nel bavero per sfuggire al vento sferzante, scivolò rapido attraverso le porte a vetri degli Appartamenti Vittoria, sebbene non abbastanza in fretta da impedire che una ventata di polvere grigia entrasse con lui.</string>
+    <string name="reader_prose_p2">Nell’atrio l’odore di cavolo bollito e di vecchi tappeti si mescolava a quello della polvere. In fondo al corridoio un manifesto a colori, troppo grande per essere appeso all’interno, era stato fissato alla parete con puntine da disegno.</string>
+    <string name="reader_prose_p3">Winston si diresse verso le scale. Era inutile tentare l’ascensore. Anche nei momenti migliori funzionava di rado, e al presente l’erogazione della corrente elettrica veniva interrotta nelle ore diurne. Era parte dell’opera di economia in preparazione della Settimana dell’Odio.</string>
+    <string name="reader_prose_p4">L’appartamento era al settimo piano e Winston, che aveva trentanove anni e un’ulcera varicosa alla caviglia destra, saliva lentamente, fermandosi varie volte per riposare. A ogni pianerottolo, proprio di fronte al pozzo dell’ascensore, il cartellone con l’enorme volto scrutava dalla parete.</string>
+    <string name="reader_vignette_caption">Londra, Pista di Atterraggio Uno • Airstrip One</string>
+    <string name="reader_vignette_badge">MINITRUE</string>
+    <string name="reader_prose_p5">Era uno di quei ritratti fatti in modo tale che gli occhi vi seguono ovunque vi muoviate. IL GRANDE FRATELLO TI GUARDA, diceva la scritta sottostante.</string>
+
+    <!-- Chapter Index (eBook & Audiobook) -->
+    <string name="chapters_title">Indice Capitoli</string>
+    <string name="chapters_search_hint">Cerca capitolo, pagina o frase…</string>
+    <string name="chapters_audio_search_hint">Cerca capitolo o tema…</string>
+    <string name="tab_chapters">Capitoli (18)</string>
+    <string name="tab_bookmarks_ebook">Segnalibri (4)</string>
+    <string name="tab_notes_ebook">Note (7)</string>
+    <string name="tab_bookmarks_audio">Segnalibri (3)</string>
+    <string name="tab_notes_audio">Note (5)</string>
+    <string name="part_one">Parte Prima</string>
+    <string name="part_two">Parte Seconda</string>
+    <string name="current_chapter">Capitolo Corrente</string>
+    <string name="action_continue">Continua</string>
+    <string name="action_resume_reading">Riprendi lettura</string>
+
+    <!-- Audio Player -->
+    <string name="player_now_playing">IN RIPRODUZIONE</string>
+    <string name="player_hd_badge">MASTER AUDIO HD</string>
+    <string name="player_speed_label">Velocità</string>
+    <string name="player_timer_sample">15 min</string>
+
+    <!-- Profile & Settings -->
+    <string name="settings_storage_title">Archiviazione &amp; Cartelle</string>
+    <string name="settings_storage_desc">Configura i percorsi separati sul dispositivo per la scansione automatica dei tuoi file.</string>
+    <string name="settings_ebook_folder">Cartella eBook</string>
+    <string name="settings_audiobook_folder">Cartella Audiolibri</string>
+    <string name="settings_scan_now">Scansiona cartelle ora</string>
+    <string name="settings_cloud_title">Cloud &amp; Sincronizzazione</string>
+    <string name="settings_cloud_desc">Gestisci il backup cloud e sincronizza i tuoi progressi su più dispositivi.</string>
+    <string name="settings_sync_now">Sincronizza ora</string>
+    <string name="settings_sleep_title">Protezione Notturna Anti-Sonno</string>
+    <string name="settings_sleep_banner">Blocco anti-addormentamento: interrompe la lettura o l’audio dopo un intervallo prestabilito e richiede una conferma per verificare se sei ancora sveglio prima di continuare.</string>
+    <string name="settings_sleep_enable">Attiva Timer Sonno Notturno</string>
+    <string name="settings_sleep_enable_desc">Monitoraggio attivo nelle sessioni serali</string>
+    <string name="settings_sleep_window">Fascia oraria attiva</string>
+    <string name="settings_sleep_interval">Intervallo di controllo</string>
+    <string name="settings_sleep_verify_title">Modalità di verifica veglia</string>
+    <string name="settings_sleep_verify_desc">Scuoti il telefono leggermente o tocca lo schermo per confermare che sei ancora sveglio.</string>
+    <string name="settings_sleep_timeout_note">Se non rispondi entro 60 secondi, la posizione viene salvata e la riproduzione va in pausa.</string>
+    <string name="settings_prefs_title">Preferenze Lettore &amp; Audio</string>
+    <string name="settings_oled_title">Tema scuro profondo (OLED)</string>
+    <string name="settings_oled_desc">Nero assoluto #000000 per minor consumo</string>
+    <string name="settings_default_speed">Velocità predefinita</string>
+    <string name="settings_default_speed_desc">Ritmo di ascolto audiolibri</string>
+    <string name="settings_auto_bookmark">Salvataggio segnalibri auto</string>
+    <string name="settings_auto_bookmark_desc">Memorizza la pagina ad ogni chiusura</string>
+    <string name="settings_footer_version">Libreria v2.4.1 • Spazio utilizzato: 16.0 GB su 128 GB</string>
+    <string name="settings_clear_cache">Cancella cache temporanea (142 MB)</string>
 </resources>
