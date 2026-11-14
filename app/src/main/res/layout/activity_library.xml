@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/surface"
@@ -12,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingBottom="92dp">
+        android:paddingBottom="96dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -52,10 +51,11 @@
             <!-- Search Bar -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/search_bar_height"
+                android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_xl"
                 android:background="@drawable/bg_search_input"
                 android:gravity="center_vertical"
+                android:minHeight="@dimen/search_bar_height"
                 android:orientation="horizontal"
                 android:paddingHorizontal="@dimen/space_md">
 
@@ -70,14 +70,16 @@
                     android:id="@+id/etLibrarySearch"
                     style="@style/TextAppearance.EReader.BodySm"
                     android:layout_width="0dp"
-                    android:layout_height="match_parent"
+                    android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/space_sm"
                     android:layout_weight="1"
                     android:background="@null"
                     android:hint="@string/library_search_hint"
                     android:imeOptions="actionSearch"
+                    android:importantForAutofill="no"
                     android:inputType="text"
                     android:maxLines="1"
+                    android:minHeight="@dimen/search_bar_height"
                     android:textColor="@color/on_surface"
                     android:textColorHint="@color/text_placeholder" />
             </LinearLayout>
@@ -116,10 +118,9 @@
                         android:orientation="vertical"
                         android:padding="@dimen/space_md">
 
-                        <LinearLayout
+                        <androidx.constraintlayout.widget.ConstraintLayout
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal">
+                            android:layout_height="wrap_content">
 
                             <com.google.android.material.imageview.ShapeableImageView
                                 android:id="@+id/ivHeroCover"
@@ -129,119 +130,146 @@
                                 android:contentDescription="@null"
                                 android:scaleType="centerCrop"
                                 android:src="@drawable/cover_1984"
+                                app:layout_constraintBottom_toBottomOf="parent"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toTopOf="parent"
+                                app:layout_constraintVertical_bias="0.0"
                                 app:shapeAppearanceOverlay="@style/ShapeAppearance.EReader.Thumb" />
 
                             <LinearLayout
+                                android:id="@+id/heroBadgeRow"
                                 android:layout_width="0dp"
-                                android:layout_height="match_parent"
+                                android:layout_height="wrap_content"
                                 android:layout_marginStart="@dimen/space_md"
-                                android:layout_weight="1"
-                                android:orientation="vertical"
-                                android:paddingVertical="@dimen/space_xxs">
-
-                                <LinearLayout
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:gravity="center_vertical"
-                                    android:orientation="horizontal">
-
-                                    <TextView
-                                        android:id="@+id/tvHeroChapterBadge"
-                                        style="@style/TextAppearance.EReader.LabelBadge"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:text="Capitolo 5"
-                                        android:textColor="@color/primary" />
-
-                                    <TextView
-                                        style="@style/TextAppearance.EReader.LabelBadge"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:layout_marginHorizontal="@dimen/space_xs"
-                                        android:text="•"
-                                        android:textColor="@color/text_placeholder" />
-
-                                    <TextView
-                                        android:id="@+id/tvHeroPageCount"
-                                        style="@style/TextAppearance.EReader.LabelBadge"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:text="Pag. 184 / 270"
-                                        android:textAllCaps="false"
-                                        android:textColor="@color/text_muted" />
-                                </LinearLayout>
+                                android:layout_marginTop="@dimen/space_xxs"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal"
+                                app:layout_constraintEnd_toEndOf="parent"
+                                app:layout_constraintStart_toEndOf="@id/ivHeroCover"
+                                app:layout_constraintTop_toTopOf="parent">
 
                                 <TextView
-                                    android:id="@+id/tvHeroTitle"
-                                    style="@style/TextAppearance.EReader.HeadlineSm"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginTop="@dimen/space_xxs"
-                                    android:ellipsize="end"
-                                    android:maxLines="1"
-                                    android:text="1984" />
-
-                                <TextView
-                                    android:id="@+id/tvHeroAuthor"
-                                    style="@style/TextAppearance.EReader.Caption"
-                                    android:layout_width="match_parent"
+                                    android:id="@+id/tvHeroChapterBadge"
+                                    style="@style/TextAppearance.EReader.LabelBadge"
+                                    android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:ellipsize="end"
                                     android:maxLines="1"
-                                    android:text="George Orwell" />
+                                    android:text="@string/sample_hero_chapter"
+                                    android:textColor="@color/primary" />
 
-                                <View
+                                <TextView
+                                    style="@style/TextAppearance.EReader.LabelBadge"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginHorizontal="@dimen/space_xs"
+                                    android:text="@string/symbol_bullet"
+                                    android:textColor="@color/text_placeholder" />
+
+                                <TextView
+                                    android:id="@+id/tvHeroPageCount"
+                                    style="@style/TextAppearance.EReader.LabelBadge"
                                     android:layout_width="0dp"
-                                    android:layout_height="0dp"
-                                    android:layout_weight="1" />
-
-                                <LinearLayout
-                                    android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:orientation="horizontal">
-
-                                    <TextView
-                                        style="@style/TextAppearance.EReader.Caption"
-                                        android:layout_width="0dp"
-                                        android:layout_height="wrap_content"
-                                        android:layout_weight="1"
-                                        android:text="@string/label_progress"
-                                        android:textColor="@color/text_muted" />
-
-                                    <TextView
-                                        android:id="@+id/tvHeroPercent"
-                                        style="@style/TextAppearance.EReader.Caption"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:text="68%"
-                                        android:textColor="@color/primary"
-                                        android:textStyle="bold" />
-                                </LinearLayout>
-
-                                <com.google.android.material.progressindicator.LinearProgressIndicator
-                                    android:id="@+id/progressHero"
-                                    style="@style/Widget.EReader.ProgressBar"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginTop="@dimen/space_xs"
-                                    android:progress="68" />
+                                    android:layout_weight="1"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="@string/sample_hero_pages"
+                                    android:textAllCaps="false"
+                                    android:textColor="@color/text_muted" />
                             </LinearLayout>
-                        </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/tvHeroTitle"
+                                style="@style/TextAppearance.EReader.HeadlineSm"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="@dimen/space_md"
+                                android:layout_marginTop="@dimen/space_xxs"
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:text="@string/sample_book_1984_title"
+                                app:layout_constraintEnd_toEndOf="parent"
+                                app:layout_constraintStart_toEndOf="@id/ivHeroCover"
+                                app:layout_constraintTop_toBottomOf="@id/heroBadgeRow" />
+
+                            <TextView
+                                android:id="@+id/tvHeroAuthor"
+                                style="@style/TextAppearance.EReader.Caption"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="@dimen/space_md"
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:text="@string/sample_book_1984_author"
+                                app:layout_constraintEnd_toEndOf="parent"
+                                app:layout_constraintStart_toEndOf="@id/ivHeroCover"
+                                app:layout_constraintTop_toBottomOf="@id/tvHeroTitle" />
+
+                            <LinearLayout
+                                android:id="@+id/heroProgressHeader"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="@dimen/space_md"
+                                android:layout_marginTop="@dimen/space_sm"
+                                android:orientation="horizontal"
+                                app:layout_constraintBottom_toTopOf="@id/progressHero"
+                                app:layout_constraintEnd_toEndOf="parent"
+                                app:layout_constraintStart_toEndOf="@id/ivHeroCover"
+                                app:layout_constraintTop_toBottomOf="@id/tvHeroAuthor"
+                                app:layout_constraintVertical_bias="1.0">
+
+                                <TextView
+                                    style="@style/TextAppearance.EReader.Caption"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginEnd="@dimen/space_xs"
+                                    android:layout_weight="1"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="@string/label_progress"
+                                    android:textColor="@color/text_muted" />
+
+                                <TextView
+                                    android:id="@+id/tvHeroPercent"
+                                    style="@style/TextAppearance.EReader.Caption"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/sample_progress_68_percent"
+                                    android:textColor="@color/primary"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+
+                            <com.google.android.material.progressindicator.LinearProgressIndicator
+                                android:id="@+id/progressHero"
+                                style="@style/Widget.EReader.ProgressBar"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="@dimen/space_md"
+                                android:layout_marginTop="@dimen/space_xs"
+                                android:layout_marginBottom="@dimen/space_xxs"
+                                android:progress="68"
+                                app:layout_constraintBottom_toBottomOf="parent"
+                                app:layout_constraintEnd_toEndOf="parent"
+                                app:layout_constraintStart_toEndOf="@id/ivHeroCover" />
+                        </androidx.constraintlayout.widget.ConstraintLayout>
 
                         <!-- Quick Action Bar -->
-                        <LinearLayout
+                        <androidx.constraintlayout.widget.ConstraintLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/space_base"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
+                            android:layout_marginTop="@dimen/space_base">
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnHeroIndex"
                                 style="@style/Widget.EReader.Button.Secondary"
                                 android:layout_width="wrap_content"
-                                android:layout_height="34dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="@dimen/space_sm"
+                                android:ellipsize="end"
+                                android:maxLines="1"
                                 android:minWidth="0dp"
+                                android:minHeight="@dimen/touch_target_min"
                                 android:paddingHorizontal="@dimen/space_md"
                                 android:text="@string/action_index"
                                 app:backgroundTint="@color/surface_container_high"
@@ -249,19 +277,24 @@
                                 app:icon="@drawable/ic_list"
                                 app:iconSize="14dp"
                                 app:iconTint="@color/on_surface_variant"
+                                app:layout_constrainedWidth="true"
+                                app:layout_constraintBottom_toBottomOf="parent"
+                                app:layout_constraintEnd_toStartOf="@id/btnHeroResume"
+                                app:layout_constraintHorizontal_bias="0.0"
+                                app:layout_constraintHorizontal_chainStyle="spread_inside"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toTopOf="parent"
                                 app:strokeWidth="0dp" />
-
-                            <View
-                                android:layout_width="0dp"
-                                android:layout_height="0dp"
-                                android:layout_weight="1" />
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnHeroResume"
                                 style="@style/Widget.EReader.Button.Primary"
                                 android:layout_width="wrap_content"
-                                android:layout_height="36dp"
+                                android:layout_height="wrap_content"
+                                android:ellipsize="end"
+                                android:maxLines="1"
                                 android:minWidth="0dp"
+                                android:minHeight="@dimen/touch_target_min"
                                 android:paddingHorizontal="@dimen/space_base"
                                 android:text="@string/action_resume"
                                 android:textSize="12sp"
@@ -269,53 +302,81 @@
                                 app:icon="@drawable/ic_arrow_forward"
                                 app:iconGravity="textEnd"
                                 app:iconSize="14dp"
-                                app:iconTint="@color/text_primary" />
-                        </LinearLayout>
+                                app:iconTint="@color/text_primary"
+                                app:layout_constrainedWidth="true"
+                                app:layout_constraintBottom_toBottomOf="parent"
+                                app:layout_constraintEnd_toEndOf="parent"
+                                app:layout_constraintStart_toEndOf="@id/btnHeroIndex"
+                                app:layout_constraintTop_toTopOf="parent" />
+                        </androidx.constraintlayout.widget.ConstraintLayout>
                     </LinearLayout>
                 </FrameLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <!-- Section Header: Da Leggere & Completati -->
-            <LinearLayout
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_xl"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:layout_marginTop="@dimen/space_xl">
 
                 <TextView
+                    android:id="@+id/tvNextSectionTitle"
                     style="@style/TextAppearance.EReader.HeadlineSm"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/library_next_section" />
-
-                <View
-                    android:layout_width="6dp"
-                    android:layout_height="6dp"
-                    android:layout_marginHorizontal="@dimen/space_sm"
-                    android:background="@drawable/bg_dot_primary" />
-
-                <TextView
-                    style="@style/TextAppearance.EReader.Caption"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:text="@string/library_next_subtitle" />
+                    android:layout_marginEnd="@dimen/space_sm"
+                    android:text="@string/library_next_section"
+                    app:layout_constraintBottom_toBottomOf="@id/btnSeeAllBooks"
+                    app:layout_constraintEnd_toStartOf="@id/btnSeeAllBooks"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/btnSeeAllBooks" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_xxs"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    app:layout_constraintEnd_toStartOf="@id/btnSeeAllBooks"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tvNextSectionTitle">
+
+                    <View
+                        android:layout_width="6dp"
+                        android:layout_height="6dp"
+                        android:background="@drawable/bg_dot_primary" />
+
+                    <TextView
+                        style="@style/TextAppearance.EReader.Caption"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/space_xs"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="@string/library_next_subtitle" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/btnSeeAllBooks"
                     style="@style/TextAppearance.EReader.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:drawableEnd="@drawable/ic_chevron_right"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
                     android:drawablePadding="2dp"
-                    android:drawableTint="@color/primary"
-                    android:gravity="center_vertical"
+                    android:focusable="true"
+                    android:gravity="center_vertical|end"
+                    android:minWidth="@dimen/touch_target_min"
+                    android:minHeight="@dimen/touch_target_min"
+                    android:paddingHorizontal="@dimen/space_xs"
                     android:text="@string/library_see_all"
-                    android:textColor="@color/primary" />
-            </LinearLayout>
+                    android:textColor="@color/primary"
+                    app:drawableEndCompat="@drawable/ic_chevron_right"
+                    app:drawableTint="@color/primary"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
             <!-- 2-Column Book Grid (Sample cards for preview; swap or bind via RecyclerView) -->
             <LinearLayout
@@ -330,88 +391,118 @@
                 <com.google.android.material.card.MaterialCardView
                     style="@style/Widget.EReader.Card"
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:layout_marginEnd="6dp"
-                    android:layout_weight="1">
+                    android:layout_weight="1"
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:rippleColor="@color/glow_primary">
 
-                    <LinearLayout
+                    <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
+                        android:layout_height="match_parent"
                         android:padding="@dimen/space_sm">
 
                         <com.google.android.material.imageview.ShapeableImageView
-                            android:layout_width="match_parent"
-                            android:layout_height="205dp"
+                            android:id="@+id/ivSampleCoverGatsby"
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
                             android:background="@color/artwork_plum"
                             android:contentDescription="@null"
                             android:scaleType="centerCrop"
                             android:src="@drawable/cover_gatsby"
+                            app:layout_constraintDimensionRatio="2:3"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"
                             app:shapeAppearanceOverlay="@style/ShapeAppearance.EReader.Cover" />
 
                         <TextView
+                            android:id="@+id/tvSampleTitleGatsby"
                             style="@style/TextAppearance.EReader.BodyMd"
-                            android:layout_width="match_parent"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_md"
                             android:ellipsize="end"
                             android:maxLines="1"
-                            android:text="Il Grande Gatsby"
+                            android:text="@string/sample_book_gatsby_title"
                             android:textColor="@color/text_primary"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@id/ivSampleCoverGatsby" />
 
                         <TextView
+                            android:id="@+id/tvSampleAuthorGatsby"
                             style="@style/TextAppearance.EReader.Caption"
-                            android:layout_width="match_parent"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_xxs"
                             android:ellipsize="end"
                             android:maxLines="1"
-                            android:text="F. Scott Fitzgerald" />
+                            android:text="@string/sample_book_gatsby_author"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@id/tvSampleTitleGatsby" />
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
+                        <TextView
+                            android:id="@+id/tvSampleStatusLabelGatsby"
+                            style="@style/TextAppearance.EReader.LabelMd"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_sm"
-                            android:orientation="horizontal">
+                            android:layout_marginEnd="@dimen/space_xs"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:text="@string/label_status"
+                            app:layout_constraintEnd_toStartOf="@id/tvSampleStatusValueGatsby"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@id/tvSampleAuthorGatsby" />
 
-                            <TextView
-                                style="@style/TextAppearance.EReader.LabelMd"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="@string/label_status"
-                                android:textSize="10sp" />
-
-                            <TextView
-                                style="@style/TextAppearance.EReader.LabelMd"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/status_completed"
-                                android:textColor="@color/primary"
-                                android:textSize="10sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
+                        <TextView
+                            android:id="@+id/tvSampleStatusValueGatsby"
+                            style="@style/TextAppearance.EReader.LabelMd"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:text="@string/status_completed"
+                            android:textColor="@color/primary"
+                            android:textStyle="bold"
+                            app:layout_constraintBaseline_toBaselineOf="@id/tvSampleStatusLabelGatsby"
+                            app:layout_constraintEnd_toEndOf="parent" />
 
                         <com.google.android.material.progressindicator.LinearProgressIndicator
+                            android:id="@+id/progressSampleGatsby"
                             style="@style/Widget.EReader.ProgressBar"
-                            android:layout_width="match_parent"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_xs"
                             android:progress="100"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@id/tvSampleStatusLabelGatsby"
                             app:trackThickness="@dimen/progress_track_height_sm" />
 
                         <com.google.android.material.button.MaterialButton
                             style="@style/Widget.EReader.Button.Secondary"
-                            android:layout_width="match_parent"
-                            android:layout_height="34dp"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_md"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:minHeight="@dimen/touch_target_min"
                             android:text="@string/action_reread"
                             android:textColor="@color/text_muted"
                             android:textSize="12sp"
                             app:cornerRadius="@dimen/radius_sm"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@id/progressSampleGatsby"
+                            app:layout_constraintVertical_bias="1.0"
                             app:strokeWidth="0dp" />
-                    </LinearLayout>
+                    </androidx.constraintlayout.widget.ConstraintLayout>
                 </com.google.android.material.card.MaterialCardView>
 
                 <!-- Card 2: Fahrenheit 451 -->
@@ -420,67 +511,90 @@
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_marginStart="6dp"
-                    android:layout_weight="1">
+                    android:layout_weight="1"
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:rippleColor="@color/glow_primary">
 
-                    <LinearLayout
+                    <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:orientation="vertical"
                         android:padding="@dimen/space_sm">
 
                         <com.google.android.material.imageview.ShapeableImageView
-                            android:layout_width="match_parent"
-                            android:layout_height="205dp"
+                            android:id="@+id/ivSampleCoverFahrenheit"
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
                             android:background="@color/artwork_plum"
                             android:contentDescription="@null"
                             android:scaleType="centerCrop"
                             android:src="@drawable/cover_fahrenheit451"
+                            app:layout_constraintDimensionRatio="2:3"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"
                             app:shapeAppearanceOverlay="@style/ShapeAppearance.EReader.Cover" />
 
                         <TextView
+                            android:id="@+id/tvSampleTitleFahrenheit"
                             style="@style/TextAppearance.EReader.BodyMd"
-                            android:layout_width="match_parent"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_md"
                             android:ellipsize="end"
                             android:maxLines="1"
-                            android:text="Fahrenheit 451"
+                            android:text="@string/sample_book_fahrenheit_title"
                             android:textColor="@color/text_primary"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@id/ivSampleCoverFahrenheit" />
 
                         <TextView
+                            android:id="@+id/tvSampleAuthorFahrenheit"
                             style="@style/TextAppearance.EReader.Caption"
-                            android:layout_width="match_parent"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_xxs"
                             android:ellipsize="end"
                             android:maxLines="1"
-                            android:text="Ray Bradbury" />
+                            android:text="@string/sample_book_fahrenheit_author"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@id/tvSampleTitleFahrenheit" />
 
                         <TextView
+                            android:id="@+id/tvSampleStatusFahrenheit"
                             style="@style/TextAppearance.EReader.LabelMd"
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_sm"
+                            android:ellipsize="end"
+                            android:maxLines="1"
                             android:text="@string/status_to_start"
-                            android:textSize="10sp" />
-
-                        <View
-                            android:layout_width="0dp"
-                            android:layout_height="0dp"
-                            android:layout_weight="1" />
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@id/tvSampleAuthorFahrenheit" />
 
                         <com.google.android.material.button.MaterialButton
                             style="@style/Widget.EReader.Button.Secondary"
-                            android:layout_width="match_parent"
-                            android:layout_height="34dp"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_md"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:minHeight="@dimen/touch_target_min"
                             android:text="@string/action_start_reading"
                             android:textColor="@color/primary"
                             android:textSize="12sp"
                             app:cornerRadius="@dimen/radius_sm"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@id/tvSampleStatusFahrenheit"
+                            app:layout_constraintVertical_bias="1.0"
                             app:strokeWidth="0dp" />
-                    </LinearLayout>
+                    </androidx.constraintlayout.widget.ConstraintLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
         </LinearLayout>
@@ -488,6 +602,7 @@
 
     <!-- Bottom Navigation Dock -->
     <include
+        android:id="@+id/includeBottomNav"
         layout="@layout/layout_bottom_nav"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

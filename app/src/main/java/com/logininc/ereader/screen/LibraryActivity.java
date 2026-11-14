@@ -1,7 +1,9 @@
-package com.logininc.ereader;
+package com.logininc.ereader.screen;
 
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.logininc.ereader.R;
 
 public class LibraryActivity extends AppCompatActivity {
 

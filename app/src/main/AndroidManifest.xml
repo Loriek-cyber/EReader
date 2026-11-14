@@ -12,7 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.EReader">
         <activity
-            android:name=".LibraryActivity"
+            android:name=".screen.LibraryActivity"
             android:exported="true"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>

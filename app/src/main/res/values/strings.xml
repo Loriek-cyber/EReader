@@ -2,6 +2,26 @@
 <resources>
     <string name="app_name">EReader</string>
 
+    <!-- Common Symbols & Accessibility Content Descriptions -->
+    <string name="symbol_bullet">•</string>
+    <string name="cd_back">Torna indietro</string>
+    <string name="cd_play_pause">Riproduci o metti in pausa</string>
+    <string name="cd_play_audiobook">Riproduci audiolibro</string>
+    <string name="cd_play_chapter">Riproduci capitolo</string>
+    <string name="cd_rewind_15">Riavvolgi di 15 secondi</string>
+    <string name="cd_forward_30">Avanza di 30 secondi</string>
+    <string name="cd_previous_chapter">Capitolo precedente</string>
+    <string name="cd_next_chapter">Capitolo successivo</string>
+    <string name="cd_collapse_player">Riduci lettore audio</string>
+    <string name="cd_add_bookmark">Aggiungi segnalibro</string>
+    <string name="cd_audio_progress">Avanzamento riproduzione audio</string>
+    <string name="cd_font_decrease">Diminuisci dimensione carattere</string>
+    <string name="cd_font_increase">Aumenta dimensione carattere</string>
+    <string name="cd_edit_profile">Modifica profilo</string>
+    <string name="cd_pick_ebook_folder">Seleziona cartella eBook</string>
+    <string name="cd_pick_audio_folder">Seleziona cartella audiolibri</string>
+    <string name="cd_manage_drive">Gestisci account Google Drive</string>
+
     <!-- Bottom Navigation -->
     <string name="nav_library">Libreria</string>
     <string name="nav_audiobooks">Audiolibri</string>
@@ -23,6 +43,16 @@
     <string name="label_status">Stato</string>
     <string name="status_completed">Completato</string>
     <string name="status_to_start">Da iniziare</string>
+    <string name="sample_hero_chapter">Capitolo 5</string>
+    <string name="sample_hero_pages">Pag. 184 / 270</string>
+    <string name="sample_progress_68_percent">68%</string>
+    <string name="sample_book_1984_title">1984</string>
+    <string name="sample_book_1984_author">George Orwell</string>
+    <string name="sample_book_1984_header">1984 — George Orwell</string>
+    <string name="sample_book_gatsby_title">Il Grande Gatsby</string>
+    <string name="sample_book_gatsby_author">F. Scott Fitzgerald</string>
+    <string name="sample_book_fahrenheit_title">Fahrenheit 451</string>
+    <string name="sample_book_fahrenheit_author">Ray Bradbury</string>
 
     <!-- Audiobooks Screen -->
     <string name="audiobooks_title">I tuoi Audiolibri</string>
@@ -32,6 +62,14 @@
     <string name="audiobooks_all_title">Tutti gli audiolibri</string>
     <string name="audiobooks_count_sample">5 titoli</string>
     <string name="action_chapters">Capitoli</string>
+    <string name="audiobooks_badge_audio_edition">ED. AUDIO</string>
+    <string name="audiobooks_hero_chapter_sample">Capitolo 5 di 18</string>
+    <string name="audiobooks_hero_time_sample">14:18 / 42:00</string>
+    <string name="audiobooks_hero_narrator_sample">Voce: Marco Baliani</string>
+    <string name="audiobooks_hero_progress_sample">34% completato</string>
+    <string name="audiobooks_hero_remaining_sample">3h 12m rimanenti</string>
+    <string name="audiobooks_mini_title_sample">1984 • Cap. 5</string>
+    <string name="audiobooks_mini_subtitle_sample">3h 12m rimasti • Velocità 1.2x</string>
 
     <!-- Reader Screen -->
     <string name="reader_chapter_pill">1984 • Capitolo V</string>
@@ -44,6 +82,9 @@
     <string name="reader_hud_index">Indice</string>
     <string name="reader_hud_save">Salva</string>
     <string name="reader_font_size_label">Dimensione Carattere</string>
+    <string name="reader_font_decrease">-</string>
+    <string name="reader_font_increase">+</string>
+    <string name="reader_font_size_sample">16sp</string>
     <string name="reader_font_serif">Serif</string>
     <string name="reader_font_sans">Sans</string>
     <string name="reader_theme_oled">Notturno OLED</string>
@@ -70,28 +111,77 @@
     <string name="current_chapter">Capitolo Corrente</string>
     <string name="action_continue">Continua</string>
     <string name="action_resume_reading">Riprendi lettura</string>
+    <string name="chapters_book_meta_sample">George Orwell • Mondadori</string>
+    <string name="chapters_progress_percent_sample">68% completato</string>
+    <string name="chapters_page_progress_sample">Pag. 142 / 208</string>
+    <string name="part_one_range_sample">Cap. I – VIII • Pag. 1 – 94</string>
+    <string name="chapter_active_status_sample">In Lettura • Pag. 142</string>
+    <string name="chapter_active_badge_sample">Cap. V</string>
+    <string name="chapter_progress_label">Progresso capitolo</string>
+    <string name="chapter_progress_read_sample">68% letto</string>
+    <string name="part_two_range_sample">Cap. IX – XVIII • Pag. 209 – 340</string>
+    <string name="chapters_current_summary_sample">Cap. V — Pag. 142</string>
+    <string name="chapters_audio_listening_progress">Avanzamento ascolto</string>
+    <string name="chapters_audio_progress_percent_sample">28%</string>
+    <string name="chapters_audio_active_time_sample">• 14:18</string>
+    <string name="chapters_audio_active_title_sample">Capitolo 5: Il Ministero della Verità</string>
+    <string name="chapters_audio_active_progress_sample">34% ascoltato</string>
+    <string name="chapters_audio_active_remaining_sample">27 min rimanenti</string>
+    <string name="chapters_audio_part_two_meta_sample">6 capitoli • 4h 10m</string>
+    <string name="chapters_audio_mini_eyebrow">Riproduzione attiva</string>
+    <string name="chapters_audio_mini_title_sample">Cap. 5: Il Ministero della Verità</string>
 
     <!-- Audio Player -->
     <string name="player_now_playing">IN RIPRODUZIONE</string>
     <string name="player_hd_badge">MASTER AUDIO HD</string>
     <string name="player_speed_label">Velocità</string>
     <string name="player_timer_sample">15 min</string>
+    <string name="player_chapter_pill_sample">Capitolo 5 • Il Grande Fratello ti osserva</string>
+    <string name="player_elapsed_sample">15:08</string>
+    <string name="player_remaining_sample">-28:45</string>
+    <string name="player_skip_15s">15s</string>
+    <string name="player_skip_30s">30s</string>
+    <string name="sample_default_speed_value">1.0x</string>
 
     <!-- Profile & Settings -->
+    <string name="sample_profile_initials">MR</string>
+    <string name="sample_profile_name">Marco Rossi</string>
+    <string name="settings_account_local_subtitle">Account Locale • Memoria interna</string>
+    <string name="sample_drive_connected_chip">Google Drive collegato • marco.rossi@gmail.com</string>
     <string name="settings_storage_title">Archiviazione &amp; Cartelle</string>
     <string name="settings_storage_desc">Configura i percorsi separati sul dispositivo per la scansione automatica dei tuoi file.</string>
     <string name="settings_ebook_folder">Cartella eBook</string>
+    <string name="sample_ebook_folder_path">/Memoria/Documenti/eBooks/EPUB</string>
+    <string name="sample_ebook_folder_stats">42 file rilevati • 1.2 GB</string>
+    <string name="settings_ebook_formats">Formati: EPUB, PDF</string>
     <string name="settings_audiobook_folder">Cartella Audiolibri</string>
+    <string name="sample_audio_folder_path">/Memoria/Audio/Audiolibri/M4B</string>
+    <string name="sample_audio_folder_stats">18 titoli • 14.8 GB</string>
+    <string name="settings_audio_formats">Formati: M4B, MP3</string>
     <string name="settings_scan_now">Scansiona cartelle ora</string>
     <string name="settings_cloud_title">Cloud &amp; Sincronizzazione</string>
     <string name="settings_cloud_desc">Gestisci il backup cloud e sincronizza i tuoi progressi su più dispositivi.</string>
+    <string name="settings_cloud_provider_drive">Google Drive</string>
+    <string name="settings_status_active">Attivo</string>
+    <string name="sample_drive_email">marco.rossi@gmail.com</string>
+    <string name="settings_last_backup_label">Ultimo backup eseguito</string>
+    <string name="sample_last_backup_time">Sincronizzato 12 min fa</string>
+    <string name="settings_auto_cloud_sync_title">Sincronizzazione automatica Cloud</string>
+    <string name="settings_auto_cloud_sync_desc">Salva segnalibri e note ad ogni interruzione</string>
+    <string name="settings_wifi_only_title">Sincronizza solo sotto rete Wi-Fi</string>
+    <string name="settings_wifi_only_desc">Risparmia traffico dati cellulare</string>
     <string name="settings_sync_now">Sincronizza ora</string>
     <string name="settings_sleep_title">Protezione Notturna Anti-Sonno</string>
     <string name="settings_sleep_banner">Blocco anti-addormentamento: interrompe la lettura o l’audio dopo un intervallo prestabilito e richiede una conferma per verificare se sei ancora sveglio prima di continuare.</string>
     <string name="settings_sleep_enable">Attiva Timer Sonno Notturno</string>
     <string name="settings_sleep_enable_desc">Monitoraggio attivo nelle sessioni serali</string>
     <string name="settings_sleep_window">Fascia oraria attiva</string>
+    <string name="sample_sleep_window_range">22:30 — 07:00</string>
     <string name="settings_sleep_interval">Intervallo di controllo</string>
+    <string name="settings_sleep_auto_pause">Pausa automatica</string>
+    <string name="settings_interval_30m">30 min</string>
+    <string name="settings_interval_45m">45 min</string>
+    <string name="settings_interval_60m">60 min</string>
     <string name="settings_sleep_verify_title">Modalità di verifica veglia</string>
     <string name="settings_sleep_verify_desc">Scuoti il telefono leggermente o tocca lo schermo per confermare che sei ancora sveglio.</string>
     <string name="settings_sleep_timeout_note">Se non rispondi entro 60 secondi, la posizione viene salvata e la riproduzione va in pausa.</string>

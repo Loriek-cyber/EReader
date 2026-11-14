@@ -30,10 +30,11 @@
             <!-- Search Bar -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/search_bar_height"
+                android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_lg"
                 android:background="@drawable/bg_search_input"
                 android:gravity="center_vertical"
+                android:minHeight="@dimen/search_bar_height"
                 android:orientation="horizontal"
                 android:paddingHorizontal="@dimen/space_md">
 
@@ -48,14 +49,16 @@
                     android:id="@+id/etAudioSearch"
                     style="@style/TextAppearance.EReader.BodySm"
                     android:layout_width="0dp"
-                    android:layout_height="match_parent"
+                    android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/space_sm"
                     android:layout_weight="1"
                     android:background="@null"
                     android:hint="@string/audiobooks_search_hint"
                     android:imeOptions="actionSearch"
+                    android:importantForAutofill="no"
                     android:inputType="text"
                     android:maxLines="1"
+                    android:minHeight="@dimen/search_bar_height"
                     android:textColor="@color/text_primary"
                     android:textColorHint="@color/text_placeholder" />
             </LinearLayout>
@@ -117,15 +120,18 @@
                         android:orientation="vertical"
                         android:padding="@dimen/space_base">
 
-                        <LinearLayout
+                        <androidx.constraintlayout.widget.ConstraintLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal">
+                            android:minHeight="128dp">
 
                             <!-- Cover Artwork with Badge -->
                             <FrameLayout
+                                android:id="@+id/layoutAudioHeroCover"
                                 android:layout_width="96dp"
-                                android:layout_height="128dp">
+                                android:layout_height="128dp"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toTopOf="parent">
 
                                 <com.google.android.material.imageview.ShapeableImageView
                                     android:id="@+id/ivAudioHeroCover"
@@ -159,43 +165,60 @@
                                     android:layout_height="wrap_content"
                                     android:layout_gravity="bottom|start"
                                     android:layout_margin="6dp"
-                                    android:text="ED. AUDIO"
+                                    android:text="@string/audiobooks_badge_audio_edition"
                                     android:textColor="@color/text_lavender"
                                     android:textSize="9sp" />
                             </FrameLayout>
 
                             <!-- Content Info -->
                             <LinearLayout
+                                android:id="@+id/layoutHeroMeta"
                                 android:layout_width="0dp"
-                                android:layout_height="match_parent"
+                                android:layout_height="wrap_content"
                                 android:layout_marginStart="@dimen/space_md"
-                                android:layout_weight="1"
-                                android:orientation="vertical">
+                                android:orientation="vertical"
+                                app:layout_constraintEnd_toEndOf="parent"
+                                app:layout_constraintStart_toEndOf="@id/layoutAudioHeroCover"
+                                app:layout_constraintTop_toTopOf="parent">
 
-                                <LinearLayout
+                                <androidx.constraintlayout.widget.ConstraintLayout
                                     android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:gravity="center_vertical"
-                                    android:orientation="horizontal">
+                                    android:layout_height="wrap_content">
 
                                     <TextView
+                                        android:id="@+id/tvHeroChapterBadge"
                                         style="@style/TextAppearance.EReader.LabelBadge"
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
                                         android:background="@drawable/bg_badge_lavender"
+                                        android:ellipsize="end"
+                                        android:maxLines="1"
                                         android:paddingHorizontal="6dp"
                                         android:paddingVertical="2dp"
-                                        android:text="Capitolo 5 di 18"
-                                        android:textColor="@color/text_lavender" />
+                                        android:text="@string/audiobooks_hero_chapter_sample"
+                                        android:textColor="@color/text_lavender"
+                                        app:layout_constrainedWidth="true"
+                                        app:layout_constraintBottom_toBottomOf="parent"
+                                        app:layout_constraintEnd_toStartOf="@id/tvHeroChapterTime"
+                                        app:layout_constraintHorizontal_bias="0.0"
+                                        app:layout_constraintHorizontal_chainStyle="packed"
+                                        app:layout_constraintStart_toStartOf="parent"
+                                        app:layout_constraintTop_toTopOf="parent" />
 
                                     <TextView
+                                        android:id="@+id/tvHeroChapterTime"
                                         style="@style/TextAppearance.EReader.Caption"
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
                                         android:layout_marginStart="@dimen/space_xs"
-                                        android:text="14:18 / 42:00"
-                                        android:textColor="@color/text_muted" />
-                                </LinearLayout>
+                                        android:maxLines="1"
+                                        android:text="@string/audiobooks_hero_time_sample"
+                                        android:textColor="@color/text_muted"
+                                        app:layout_constraintBottom_toBottomOf="parent"
+                                        app:layout_constraintEnd_toEndOf="parent"
+                                        app:layout_constraintStart_toEndOf="@id/tvHeroChapterBadge"
+                                        app:layout_constraintTop_toTopOf="parent" />
+                                </androidx.constraintlayout.widget.ConstraintLayout>
 
                                 <TextView
                                     style="@style/TextAppearance.EReader.HeadlineLg"
@@ -204,7 +227,7 @@
                                     android:layout_marginTop="@dimen/space_xs"
                                     android:ellipsize="end"
                                     android:maxLines="1"
-                                    android:text="1984" />
+                                    android:text="@string/sample_book_1984_title" />
 
                                 <TextView
                                     style="@style/TextAppearance.EReader.BodySm"
@@ -212,7 +235,7 @@
                                     android:layout_height="wrap_content"
                                     android:ellipsize="end"
                                     android:maxLines="1"
-                                    android:text="George Orwell" />
+                                    android:text="@string/sample_book_1984_author" />
 
                                 <LinearLayout
                                     android:layout_width="match_parent"
@@ -230,13 +253,56 @@
 
                                     <TextView
                                         style="@style/TextAppearance.EReader.Caption"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginStart="@dimen/space_xs"
+                                        android:layout_weight="1"
+                                        android:ellipsize="end"
+                                        android:maxLines="1"
+                                        android:text="@string/audiobooks_hero_narrator_sample"
+                                        android:textColor="@color/primary" />
+                                </LinearLayout>
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="@dimen/space_md"
+                                android:layout_marginTop="@dimen/space_xs"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal"
+                                app:layout_constraintBottom_toBottomOf="parent"
+                                app:layout_constraintEnd_toEndOf="parent"
+                                app:layout_constraintStart_toEndOf="@id/layoutAudioHeroCover"
+                                app:layout_constraintTop_toBottomOf="@id/layoutHeroMeta"
+                                app:layout_constraintVertical_bias="1.0">
+
+                                <LinearLayout
+                                    android:id="@+id/btnAudioHeroChapters"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:background="?attr/selectableItemBackground"
+                                    android:clickable="true"
+                                    android:focusable="true"
+                                    android:gravity="center_vertical"
+                                    android:minHeight="@dimen/touch_target_min"
+                                    android:orientation="horizontal"
+                                    android:paddingHorizontal="@dimen/space_xs">
+
+                                    <ImageView
+                                        android:layout_width="16dp"
+                                        android:layout_height="16dp"
+                                        android:contentDescription="@null"
+                                        android:src="@drawable/ic_list"
+                                        app:tint="@color/text_secondary" />
+
+                                    <TextView
+                                        style="@style/TextAppearance.EReader.LabelMd"
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
                                         android:layout_marginStart="@dimen/space_xs"
-                                        android:ellipsize="end"
-                                        android:maxLines="1"
-                                        android:text="Voce: Marco Baliani"
-                                        android:textColor="@color/primary" />
+                                        android:text="@string/action_chapters"
+                                        android:textColor="@color/text_secondary" />
                                 </LinearLayout>
 
                                 <View
@@ -244,56 +310,18 @@
                                     android:layout_height="0dp"
                                     android:layout_weight="1" />
 
-                                <LinearLayout
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:gravity="center_vertical"
-                                    android:orientation="horizontal">
-
-                                    <LinearLayout
-                                        android:id="@+id/btnAudioHeroChapters"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:clickable="true"
-                                        android:focusable="true"
-                                        android:gravity="center_vertical"
-                                        android:orientation="horizontal"
-                                        android:paddingVertical="4dp">
-
-                                        <ImageView
-                                            android:layout_width="16dp"
-                                            android:layout_height="16dp"
-                                            android:contentDescription="@null"
-                                            android:src="@drawable/ic_list"
-                                            app:tint="@color/text_secondary" />
-
-                                        <TextView
-                                            style="@style/TextAppearance.EReader.LabelMd"
-                                            android:layout_width="wrap_content"
-                                            android:layout_height="wrap_content"
-                                            android:layout_marginStart="@dimen/space_xs"
-                                            android:text="@string/action_chapters"
-                                            android:textColor="@color/text_secondary" />
-                                    </LinearLayout>
-
-                                    <View
-                                        android:layout_width="0dp"
-                                        android:layout_height="0dp"
-                                        android:layout_weight="1" />
-
-                                    <ImageButton
-                                        android:id="@+id/btnHeroPlayPause"
-                                        android:layout_width="44dp"
-                                        android:layout_height="44dp"
-                                        android:background="@drawable/bg_circle_primary"
-                                        android:contentDescription="@null"
-                                        android:padding="11dp"
-                                        android:scaleType="centerInside"
-                                        android:src="@drawable/ic_pause"
-                                        app:tint="@color/on_primary_container" />
-                                </LinearLayout>
+                                <ImageButton
+                                    android:id="@+id/btnHeroPlayPause"
+                                    android:layout_width="@dimen/touch_target_min"
+                                    android:layout_height="@dimen/touch_target_min"
+                                    android:background="@drawable/bg_circle_primary"
+                                    android:contentDescription="@string/cd_play_pause"
+                                    android:padding="13dp"
+                                    android:scaleType="centerInside"
+                                    android:src="@drawable/ic_pause"
+                                    app:tint="@color/on_primary_container" />
                             </LinearLayout>
-                        </LinearLayout>
+                        </androidx.constraintlayout.widget.ConstraintLayout>
 
                         <!-- Scrubber & Timers -->
                         <com.google.android.material.progressindicator.LinearProgressIndicator
@@ -322,14 +350,18 @@
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="@dimen/space_xs"
+                                android:layout_marginEnd="@dimen/space_xs"
                                 android:layout_weight="1"
-                                android:text="34% completato" />
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:text="@string/audiobooks_hero_progress_sample" />
 
                             <TextView
                                 style="@style/TextAppearance.EReader.Caption"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="3h 12m rimanenti"
+                                android:maxLines="1"
+                                android:text="@string/audiobooks_hero_remaining_sample"
                                 android:textColor="@color/text_muted" />
                         </LinearLayout>
                     </LinearLayout>
@@ -356,13 +388,17 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/space_xs"
+                    android:layout_marginEnd="@dimen/space_xs"
                     android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
                     android:text="@string/audiobooks_all_title" />
 
                 <TextView
                     style="@style/TextAppearance.EReader.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:maxLines="1"
                     android:text="@string/audiobooks_count_sample"
                     android:textColor="@color/text_muted" />
             </LinearLayout>
@@ -375,9 +411,15 @@
                 android:layout_marginTop="@dimen/space_sm"
                 android:orientation="vertical">
 
-                <include layout="@layout/item_audiobook_row" />
-                <include layout="@layout/item_audiobook_row" />
-                <include layout="@layout/item_audiobook_row" />
+                <include
+                    android:id="@+id/itemAudiobook1"
+                    layout="@layout/item_audiobook_row" />
+                <include
+                    android:id="@+id/itemAudiobook2"
+                    layout="@layout/item_audiobook_row" />
+                <include
+                    android:id="@+id/itemAudiobook3"
+                    layout="@layout/item_audiobook_row" />
             </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
@@ -426,7 +468,8 @@
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="@dimen/space_sm"
+            android:layout_marginStart="@dimen/space_sm"
+            android:layout_marginEnd="@dimen/space_xs"
             android:layout_weight="1"
             android:orientation="vertical">
 
@@ -436,7 +479,7 @@
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="1984 • Cap. 5"
+                android:text="@string/audiobooks_mini_title_sample"
                 android:textColor="@color/text_primary"
                 android:textStyle="bold" />
 
@@ -446,44 +489,47 @@
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="3h 12m rimasti • Velocità 1.2x" />
+                android:text="@string/audiobooks_mini_subtitle_sample" />
         </LinearLayout>
 
         <ImageButton
             android:id="@+id/btnMiniRewind"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="@dimen/touch_target_min"
+            android:layout_height="@dimen/touch_target_min"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@null"
-            android:padding="6dp"
+            android:contentDescription="@string/cd_rewind_15"
+            android:padding="13dp"
+            android:scaleType="centerInside"
             android:src="@drawable/ic_replay_15"
             app:tint="@color/text_secondary" />
 
         <ImageButton
             android:id="@+id/btnMiniPlayPause"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_marginHorizontal="@dimen/space_xs"
+            android:layout_width="@dimen/touch_target_min"
+            android:layout_height="@dimen/touch_target_min"
+            android:layout_marginHorizontal="@dimen/space_xxs"
             android:background="@drawable/bg_circle_primary"
-            android:contentDescription="@null"
-            android:padding="8dp"
+            android:contentDescription="@string/cd_play_pause"
+            android:padding="14dp"
             android:scaleType="centerInside"
             android:src="@drawable/ic_pause"
             app:tint="@color/on_primary_container" />
 
         <ImageButton
             android:id="@+id/btnMiniForward"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="@dimen/touch_target_min"
+            android:layout_height="@dimen/touch_target_min"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@null"
-            android:padding="6dp"
+            android:contentDescription="@string/cd_forward_30"
+            android:padding="13dp"
+            android:scaleType="centerInside"
             android:src="@drawable/ic_forward_30"
             app:tint="@color/text_secondary" />
     </LinearLayout>
 
     <!-- Bottom Navigation Dock -->
     <include
+        android:id="@+id/includeBottomNav"
         layout="@layout/layout_bottom_nav"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

@@ -26,10 +26,11 @@
     <dimen name="radius_pill">999dp</dimen>
 
     <!-- Component Dimensions -->
-    <dimen name="search_bar_height">46dp</dimen>
+    <dimen name="touch_target_min">48dp</dimen>
+    <dimen name="search_bar_height">48dp</dimen>
     <dimen name="chip_height">36dp</dimen>
     <dimen name="button_height_primary">48dp</dimen>
-    <dimen name="button_height_secondary">44dp</dimen>
+    <dimen name="button_height_secondary">48dp</dimen>
     <dimen name="progress_track_height">5dp</dimen>
     <dimen name="progress_track_height_sm">4dp</dimen>
 </resources>

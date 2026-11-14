@@ -3,8 +3,8 @@
     android:shape="rectangle">
     <gradient
         android:angle="90"
-        android:centerColor="#330D0D14"
-        android:endColor="#000D0D14"
-        android:startColor="#E60D0D14"
+        android:centerColor="@color/scrim_vignette_center"
+        android:endColor="@color/scrim_vignette_end"
+        android:startColor="@color/scrim_vignette_start"
         android:type="linear" />
 </shape>

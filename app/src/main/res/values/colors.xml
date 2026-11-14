@@ -3,10 +3,8 @@
     <!-- Base & Canvas -->
     <color name="canvas_base">#FF0D0D14</color>
     <color name="surface">#FF12121E</color>
-    <color name="surface_dim">#FF12121E</color>
     <color name="surface_nav">#FF161622</color>
     <color name="surface_nav_translucent">#D9161622</color>
-    <color name="background">#FF12121E</color>
 
     <!-- Tonal Surface Stack -->
     <color name="surface_container_lowest">#FF0D0D19</color>
@@ -18,10 +16,8 @@
     <color name="surface_chip">#FF222232</color>
     <color name="surface_floating">#FF222234</color>
     <color name="surface_floating_glass">#EB222234</color>
-    <color name="surface_overlay">#FF252538</color>
     <color name="surface_container_high">#FF292936</color>
     <color name="surface_container_highest">#FF343341</color>
-    <color name="surface_variant">#FF343341</color>
     <color name="surface_bright">#FF383845</color>
 
     <!-- Brand & Accents -->
@@ -30,10 +26,9 @@
     <color name="primary_container">#FF6C5CE7</color>
     <color name="on_primary_container">#FFFAF6FF</color>
     <color name="primary_fixed">#FFE4DFFF</color>
-    <color name="primary_fixed_dim">#FFC6BFFF</color>
+    <color name="primary_fixed_dim">@color/primary</color>
 
     <color name="secondary">#FFA29BFE</color>
-    <color name="secondary_m3">#FFC5C0FF</color>
     <color name="on_secondary">#FF2A1F7E</color>
     <color name="secondary_container">#FF413996</color>
     <color name="secondary_container_60">#99413996</color>
@@ -43,13 +38,18 @@
     <color name="tertiary_container">#FF695DE6</color>
     <color name="on_tertiary_container">#FFFAF5FF</color>
 
-    <!-- Artwork & Atmospheric Accents -->
+    <!-- Artwork, Glow & Launcher -->
     <color name="artwork_plum">#FF342852</color>
-    <color name="artwork_violet">#FF7D3C98</color>
     <color name="glow_primary">#266C5CE7</color>
+    <color name="glow_primary_start">#336C5CE7</color>
+    <color name="glow_primary_end">#006C5CE7</color>
+    <color name="launcher_background">#3DDC84</color>
+    <color name="launcher_grid_line">#33FFFFFF</color>
+    <color name="launcher_shadow_start">#44000000</color>
 
     <!-- Text & Iconography -->
-    <color name="text_primary">#FFFFFFFF</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="text_primary">@color/white</color>
     <color name="on_surface">#FFE3E0F2</color>
     <color name="on_surface_variant">#FFC8C4D7</color>
     <color name="text_lavender">#FFC8C0EA</color>
@@ -64,8 +64,10 @@
     <color name="border_subtle">#14FFFFFF</color>
     <color name="border_glass">#1FFFFFFF</color>
     <color name="border_active">#666C5CE7</color>
-    <color name="scrim_dark">#B30D0D14</color>
     <color name="scrim_card">#990D0D14</color>
+    <color name="scrim_vignette_start">#E60D0D14</color>
+    <color name="scrim_vignette_center">#330D0D14</color>
+    <color name="scrim_vignette_end">#000D0D14</color>
 
     <!-- Error -->
     <color name="error">#FFFFB4AB</color>

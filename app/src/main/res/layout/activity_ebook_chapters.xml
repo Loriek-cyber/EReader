@@ -23,11 +23,11 @@
 
             <ImageButton
                 android:id="@+id/btnChaptersBack"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/touch_target_min"
+                android:layout_height="@dimen/touch_target_min"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@null"
-                android:padding="9dp"
+                android:contentDescription="@string/cd_back"
+                android:padding="12dp"
                 android:src="@drawable/ic_arrow_back"
                 app:tint="@color/on_surface" />
 
@@ -52,7 +52,7 @@
                     android:layout_height="wrap_content"
                     android:ellipsize="end"
                     android:maxLines="1"
-                    android:text="1984 — George Orwell" />
+                    android:text="@string/sample_book_1984_header" />
             </LinearLayout>
         </LinearLayout>
 
@@ -61,7 +61,7 @@
             android:layout_height="0dp"
             android:layout_weight="1"
             android:clipToPadding="false"
-            android:paddingBottom="100dp">
+            android:paddingBottom="116dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -103,9 +103,10 @@
 
                         <LinearLayout
                             android:layout_width="0dp"
-                            android:layout_height="match_parent"
+                            android:layout_height="wrap_content"
                             android:layout_marginStart="@dimen/space_md"
                             android:layout_weight="1"
+                            android:minHeight="112dp"
                             android:orientation="vertical">
 
                             <TextView
@@ -114,7 +115,7 @@
                                 android:layout_height="wrap_content"
                                 android:ellipsize="end"
                                 android:maxLines="1"
-                                android:text="1984" />
+                                android:text="@string/sample_book_1984_title" />
 
                             <TextView
                                 style="@style/TextAppearance.EReader.BodySm"
@@ -122,7 +123,7 @@
                                 android:layout_height="wrap_content"
                                 android:ellipsize="end"
                                 android:maxLines="1"
-                                android:text="George Orwell • Mondadori" />
+                                android:text="@string/chapters_book_meta_sample" />
 
                             <View
                                 android:layout_width="0dp"
@@ -132,14 +133,18 @@
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/space_sm"
                                 android:orientation="horizontal">
 
                                 <TextView
                                     style="@style/TextAppearance.EReader.LabelMd"
                                     android:layout_width="0dp"
                                     android:layout_height="wrap_content"
+                                    android:layout_marginEnd="@dimen/space_sm"
                                     android:layout_weight="1"
-                                    android:text="68% completato"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="@string/chapters_progress_percent_sample"
                                     android:textColor="@color/primary_fixed_dim"
                                     android:textStyle="bold" />
 
@@ -147,7 +152,8 @@
                                     style="@style/TextAppearance.EReader.LabelMd"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="Pag. 142 / 208" />
+                                    android:maxLines="1"
+                                    android:text="@string/chapters_page_progress_sample" />
                             </LinearLayout>
 
                             <com.google.android.material.progressindicator.LinearProgressIndicator
@@ -173,9 +179,13 @@
                         android:id="@+id/tabEbookChapters"
                         style="@style/Widget.EReader.Button.Primary"
                         android:layout_width="0dp"
-                        android:layout_height="36dp"
+                        android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:padding="0dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:minHeight="@dimen/touch_target_min"
+                        android:paddingHorizontal="@dimen/space_xs"
+                        android:paddingVertical="@dimen/space_xs"
                         android:text="@string/tab_chapters"
                         android:textSize="12sp"
                         app:cornerRadius="@dimen/radius_sm" />
@@ -184,36 +194,47 @@
                         android:id="@+id/tabEbookBookmarks"
                         style="@style/Widget.EReader.Button.Secondary"
                         android:layout_width="0dp"
-                        android:layout_height="36dp"
+                        android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:padding="0dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:minHeight="@dimen/touch_target_min"
+                        android:paddingHorizontal="@dimen/space_xs"
+                        android:paddingVertical="@dimen/space_xs"
                         android:text="@string/tab_bookmarks_ebook"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp"
                         app:backgroundTint="@android:color/transparent"
+                        app:cornerRadius="@dimen/radius_sm"
                         app:strokeWidth="0dp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/tabEbookNotes"
                         style="@style/Widget.EReader.Button.Secondary"
                         android:layout_width="0dp"
-                        android:layout_height="36dp"
+                        android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:padding="0dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:minHeight="@dimen/touch_target_min"
+                        android:paddingHorizontal="@dimen/space_xs"
+                        android:paddingVertical="@dimen/space_xs"
                         android:text="@string/tab_notes_ebook"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp"
                         app:backgroundTint="@android:color/transparent"
+                        app:cornerRadius="@dimen/radius_sm"
                         app:strokeWidth="0dp" />
                 </LinearLayout>
 
                 <!-- Search Bar -->
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/search_bar_height"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_base"
                     android:background="@drawable/bg_search_input"
                     android:gravity="center_vertical"
+                    android:minHeight="@dimen/search_bar_height"
                     android:orientation="horizontal"
                     android:paddingHorizontal="@dimen/space_md">
 
@@ -228,14 +249,16 @@
                         android:id="@+id/etEbookChapterSearch"
                         style="@style/TextAppearance.EReader.BodySm"
                         android:layout_width="0dp"
-                        android:layout_height="match_parent"
+                        android:layout_height="wrap_content"
                         android:layout_marginStart="@dimen/space_sm"
                         android:layout_weight="1"
                         android:background="@null"
                         android:hint="@string/chapters_search_hint"
                         android:imeOptions="actionSearch"
+                        android:importantForAutofill="no"
                         android:inputType="text"
                         android:maxLines="1"
+                        android:minHeight="@dimen/search_bar_height"
                         android:textColor="@color/text_primary"
                         android:textColorHint="@color/text_placeholder" />
                 </LinearLayout>
@@ -258,6 +281,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="@dimen/space_sm"
+                        android:layout_marginEnd="@dimen/space_sm"
                         android:layout_weight="1"
                         android:text="@string/part_one" />
 
@@ -268,7 +292,7 @@
                         android:background="@drawable/bg_rounded_container"
                         android:paddingHorizontal="@dimen/space_sm"
                         android:paddingVertical="3dp"
-                        android:text="Cap. I – VIII • Pag. 1 – 94" />
+                        android:text="@string/part_one_range_sample" />
                 </LinearLayout>
 
                 <!-- Completed Chapters Sample -->
@@ -308,8 +332,9 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="@dimen/space_sm"
+                            android:layout_marginEnd="@dimen/space_sm"
                             android:layout_weight="1"
-                            android:text="In Lettura • Pag. 142"
+                            android:text="@string/chapter_active_status_sample"
                             android:textColor="@color/primary" />
 
                         <TextView
@@ -319,7 +344,7 @@
                             android:background="@drawable/bg_chip_default"
                             android:paddingHorizontal="@dimen/space_sm"
                             android:paddingVertical="2dp"
-                            android:text="Cap. V"
+                            android:text="@string/chapter_active_badge_sample"
                             android:textColor="@color/text_lavender" />
                     </LinearLayout>
 
@@ -328,7 +353,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_sm"
-                        android:text="Il Volto nel Corridoio" />
+                        android:text="@string/reader_chapter_title" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -340,14 +365,15 @@
                             style="@style/TextAppearance.EReader.LabelMd"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_marginEnd="@dimen/space_sm"
                             android:layout_weight="1"
-                            android:text="Progresso capitolo" />
+                            android:text="@string/chapter_progress_label" />
 
                         <TextView
                             style="@style/TextAppearance.EReader.LabelMd"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="68% letto"
+                            android:text="@string/chapter_progress_read_sample"
                             android:textColor="@color/primary_fixed_dim"
                             android:textStyle="bold" />
                     </LinearLayout>
@@ -363,9 +389,11 @@
                         android:id="@+id/btnResumeChapter"
                         style="@style/Widget.EReader.Button.Primary"
                         android:layout_width="wrap_content"
-                        android:layout_height="38dp"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_md"
+                        android:minHeight="@dimen/button_height_secondary"
                         android:paddingHorizontal="@dimen/space_base"
+                        android:paddingVertical="@dimen/space_sm"
                         android:text="@string/action_resume_reading"
                         android:textSize="13sp"
                         app:icon="@drawable/ic_play"
@@ -397,6 +425,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="@dimen/space_sm"
+                        android:layout_marginEnd="@dimen/space_sm"
                         android:layout_weight="1"
                         android:text="@string/part_two" />
 
@@ -407,7 +436,7 @@
                         android:background="@drawable/bg_rounded_container"
                         android:paddingHorizontal="@dimen/space_sm"
                         android:paddingVertical="3dp"
-                        android:text="Cap. IX – XVIII • Pag. 209 – 340" />
+                        android:text="@string/part_two_range_sample" />
                 </LinearLayout>
 
                 <include layout="@layout/item_chapter_ebook" />
@@ -433,6 +462,7 @@
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/space_sm"
             android:layout_weight="1"
             android:orientation="vertical">
 
@@ -449,7 +479,7 @@
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="Cap. V — Pag. 142"
+                android:text="@string/chapters_current_summary_sample"
                 android:textColor="@color/text_primary"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -458,8 +488,10 @@
             android:id="@+id/btnContinueFromIndex"
             style="@style/Widget.EReader.Button.Primary"
             android:layout_width="wrap_content"
-            android:layout_height="44dp"
+            android:layout_height="wrap_content"
+            android:minHeight="@dimen/button_height_secondary"
             android:paddingHorizontal="@dimen/space_lg"
+            android:paddingVertical="@dimen/space_sm"
             android:text="@string/action_continue"
             app:cornerRadius="@dimen/radius_pill"
             app:icon="@drawable/ic_arrow_forward"

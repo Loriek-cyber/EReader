@@ -6,24 +6,24 @@
     android:layout_height="match_parent"
     android:background="@color/surface"
     android:fitsSystemWindows="true"
-    android:orientation="vertical"
-    android:paddingHorizontal="@dimen/space_xl"
-    android:paddingBottom="@dimen/space_base">
+    android:orientation="vertical">
 
     <!-- Top Navigation Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="@dimen/top_bar_height"
         android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:paddingHorizontal="@dimen/margin_screen">
 
         <ImageButton
             android:id="@+id/btnPlayerCollapse"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="@dimen/touch_target_min"
+            android:layout_height="@dimen/touch_target_min"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@null"
-            android:padding="8dp"
+            android:contentDescription="@string/cd_collapse_player"
+            android:padding="12dp"
+            android:scaleType="centerInside"
             android:src="@drawable/ic_expand_more"
             app:tint="@color/on_surface" />
 
@@ -32,407 +32,456 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:ellipsize="end"
             android:gravity="center"
             android:letterSpacing="0.16"
+            android:maxLines="1"
             android:text="@string/player_now_playing"
             android:textColor="@color/text_muted"
             android:textSize="11sp" />
 
         <View
-            android:layout_width="40dp"
-            android:layout_height="40dp" />
+            android:layout_width="@dimen/touch_target_min"
+            android:layout_height="@dimen/touch_target_min" />
     </LinearLayout>
 
-    <!-- Central Artwork Stage -->
-    <FrameLayout
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:fillViewport="true">
 
-        <View
-            android:layout_width="240dp"
-            android:layout_height="240dp"
-            android:layout_gravity="center"
-            android:background="@drawable/bg_ambient_glow" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="@dimen/margin_screen"
+            android:paddingBottom="@dimen/space_base">
 
-        <com.google.android.material.card.MaterialCardView
-            style="@style/Widget.EReader.Card.Elevated"
-            android:layout_width="230dp"
-            android:layout_height="300dp"
-            android:layout_gravity="center"
-            app:cardCornerRadius="@dimen/radius_xl"
-            app:cardElevation="16dp">
-
+            <!-- Central Artwork Stage -->
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent">
-
-                <ImageView
-                    android:id="@+id/ivPlayerCover"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:contentDescription="@null"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/cover_1984" />
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:minHeight="308dp"
+                android:paddingVertical="@dimen/space_xs">
 
                 <View
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="@drawable/bg_cover_vignette" />
+                    android:layout_width="240dp"
+                    android:layout_height="240dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/bg_ambient_glow" />
 
-                <!-- HD Audio Badge -->
+                <com.google.android.material.card.MaterialCardView
+                    style="@style/Widget.EReader.Card.Elevated"
+                    android:layout_width="230dp"
+                    android:layout_height="300dp"
+                    android:layout_gravity="center"
+                    app:cardCornerRadius="@dimen/radius_xl"
+                    app:cardElevation="16dp">
+
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+
+                        <ImageView
+                            android:id="@+id/ivPlayerCover"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@null"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/cover_1984" />
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/bg_cover_vignette" />
+
+                        <!-- HD Audio Badge -->
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="top|start"
+                            android:layout_margin="@dimen/space_md"
+                            android:background="@drawable/bg_chip_default"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="4dp">
+
+                            <View
+                                android:layout_width="6dp"
+                                android:layout_height="6dp"
+                                android:background="@drawable/bg_dot_primary" />
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.LabelBadge"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:text="@string/player_hd_badge"
+                                android:textColor="@color/text_lavender"
+                                android:textSize="9sp" />
+                        </LinearLayout>
+
+                        <!-- Bookmark Button -->
+                        <ImageButton
+                            android:id="@+id/btnPlayerBookmark"
+                            android:layout_width="@dimen/touch_target_min"
+                            android:layout_height="@dimen/touch_target_min"
+                            android:layout_gravity="bottom|end"
+                            android:layout_margin="@dimen/space_sm"
+                            android:background="@drawable/bg_circle_surface"
+                            android:contentDescription="@string/cd_add_bookmark"
+                            android:padding="14dp"
+                            android:scaleType="centerInside"
+                            android:src="@drawable/ic_bookmark"
+                            app:tint="@color/text_lavender" />
+                    </FrameLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </FrameLayout>
+
+            <!-- Track Information & Chapter Pill -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="top|start"
-                    android:layout_margin="@dimen/space_md"
                     android:background="@drawable/bg_chip_default"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingHorizontal="10dp"
-                    android:paddingVertical="4dp">
+                    android:paddingHorizontal="@dimen/space_md"
+                    android:paddingVertical="5dp">
 
-                    <View
-                        android:layout_width="6dp"
-                        android:layout_height="6dp"
-                        android:background="@drawable/bg_dot_primary" />
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_equalizer"
+                        app:tint="@color/secondary" />
+
+                    <TextView
+                        android:id="@+id/tvPlayerChapterPill"
+                        style="@style/TextAppearance.EReader.LabelMd"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="@string/player_chapter_pill_sample"
+                        android:textColor="@color/text_lavender" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvPlayerTitle"
+                    style="@style/TextAppearance.EReader.DisplayLg"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_md"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:maxLines="2"
+                    android:text="@string/sample_book_1984_title" />
+
+                <TextView
+                    android:id="@+id/tvPlayerAuthor"
+                    style="@style/TextAppearance.EReader.BodyMd"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:text="@string/sample_book_1984_author"
+                    android:textColor="@color/text_secondary" />
+            </LinearLayout>
+
+            <!-- Timeline Scrubber -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_lg"
+                android:orientation="vertical">
+
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/sliderAudioProgress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/cd_audio_progress"
+                    android:value="35"
+                    android:valueFrom="0"
+                    android:valueTo="100"
+                    app:thumbColor="@color/text_primary"
+                    app:thumbRadius="7dp"
+                    app:trackColorActive="@color/primary_container"
+                    app:trackColorInactive="@color/track_neutral"
+                    app:trackHeight="5dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="@dimen/space_xs">
+
+                    <TextView
+                        android:id="@+id/tvPlayerElapsed"
+                        style="@style/TextAppearance.EReader.Caption"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="@dimen/space_xs"
+                        android:layout_weight="1"
+                        android:maxLines="1"
+                        android:text="@string/player_elapsed_sample"
+                        android:textColor="@color/text_lavender"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvPlayerRemaining"
+                        style="@style/TextAppearance.EReader.Caption"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:maxLines="1"
+                        android:text="@string/player_remaining_sample"
+                        android:textColor="@color/text_muted" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Primary Playback Controls -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginVertical="@dimen/space_md"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <!-- -15s -->
+                <LinearLayout
+                    android:id="@+id/btnSkipBack15"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="@string/cd_rewind_15"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:minWidth="@dimen/touch_target_min"
+                    android:minHeight="@dimen/touch_target_min"
+                    android:orientation="vertical">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_replay_15"
+                        app:tint="@color/text_secondary" />
 
                     <TextView
                         style="@style/TextAppearance.EReader.LabelBadge"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="6dp"
-                        android:text="@string/player_hd_badge"
-                        android:textColor="@color/text_lavender"
+                        android:importantForAccessibility="no"
+                        android:text="@string/player_skip_15s"
+                        android:textAllCaps="false"
+                        android:textColor="@color/text_muted"
                         android:textSize="9sp" />
                 </LinearLayout>
 
-                <!-- Bookmark Button -->
+                <!-- Previous Chapter -->
                 <ImageButton
-                    android:id="@+id/btnPlayerBookmark"
-                    android:layout_width="34dp"
-                    android:layout_height="34dp"
-                    android:layout_gravity="bottom|end"
-                    android:layout_margin="@dimen/space_md"
-                    android:background="@drawable/bg_circle_surface"
-                    android:contentDescription="@null"
-                    android:padding="8dp"
+                    android:id="@+id/btnPrevChapter"
+                    android:layout_width="@dimen/touch_target_min"
+                    android:layout_height="@dimen/touch_target_min"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/cd_previous_chapter"
+                    android:padding="12dp"
+                    android:src="@drawable/ic_skip_previous"
+                    app:tint="@color/on_surface" />
+
+                <!-- Play / Pause -->
+                <ImageButton
+                    android:id="@+id/btnPlayPauseMain"
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:layout_marginHorizontal="@dimen/space_md"
+                    android:background="@drawable/bg_circle_primary"
+                    android:contentDescription="@string/cd_play_pause"
+                    android:elevation="8dp"
+                    android:padding="18dp"
                     android:scaleType="centerInside"
-                    android:src="@drawable/ic_bookmark"
-                    app:tint="@color/text_lavender" />
-            </FrameLayout>
-        </com.google.android.material.card.MaterialCardView>
-    </FrameLayout>
+                    android:src="@drawable/ic_play"
+                    app:tint="@color/on_primary_container" />
 
-    <!-- Track Information & Chapter Pill -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/space_sm"
-        android:gravity="center_horizontal"
-        android:orientation="vertical">
+                <!-- Next Chapter -->
+                <ImageButton
+                    android:id="@+id/btnNextChapter"
+                    android:layout_width="@dimen/touch_target_min"
+                    android:layout_height="@dimen/touch_target_min"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/cd_next_chapter"
+                    android:padding="12dp"
+                    android:src="@drawable/ic_skip_next"
+                    app:tint="@color/on_surface" />
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_chip_default"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingHorizontal="@dimen/space_md"
-            android:paddingVertical="5dp">
-
-            <ImageView
-                android:layout_width="14dp"
-                android:layout_height="14dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_equalizer"
-                app:tint="@color/secondary" />
-
-            <TextView
-                android:id="@+id/tvPlayerChapterPill"
-                style="@style/TextAppearance.EReader.LabelMd"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="Capitolo 5 • Il Grande Fratello ti osserva"
-                android:textColor="@color/text_lavender" />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/tvPlayerTitle"
-            style="@style/TextAppearance.EReader.DisplayLg"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_md"
-            android:text="1984" />
-
-        <TextView
-            android:id="@+id/tvPlayerAuthor"
-            style="@style/TextAppearance.EReader.BodyMd"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:text="George Orwell"
-            android:textColor="@color/text_secondary" />
-    </LinearLayout>
-
-    <!-- Timeline Scrubber -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/space_lg"
-        android:orientation="vertical">
-
-        <com.google.android.material.slider.Slider
-            android:id="@+id/sliderAudioProgress"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:value="35"
-            android:valueFrom="0"
-            android:valueTo="100"
-            app:thumbColor="@color/text_primary"
-            app:thumbRadius="7dp"
-            app:trackColorActive="@color/primary_container"
-            app:trackColorInactive="@color/track_neutral"
-            app:trackHeight="5dp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingHorizontal="@dimen/space_xs">
-
-            <TextView
-                android:id="@+id/tvPlayerElapsed"
-                style="@style/TextAppearance.EReader.Caption"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="15:08"
-                android:textColor="@color/text_lavender"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvPlayerRemaining"
-                style="@style/TextAppearance.EReader.Caption"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="-28:45"
-                android:textColor="@color/text_muted" />
-        </LinearLayout>
-    </LinearLayout>
-
-    <!-- Primary Playback Controls -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginVertical="@dimen/space_md"
-        android:gravity="center"
-        android:orientation="horizontal">
-
-        <!-- -15s -->
-        <LinearLayout
-            android:id="@+id/btnSkipBack15"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_replay_15"
-                app:tint="@color/text_secondary" />
-
-            <TextView
-                style="@style/TextAppearance.EReader.LabelBadge"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="15s"
-                android:textAllCaps="false"
-                android:textColor="@color/text_muted"
-                android:textSize="9sp" />
-        </LinearLayout>
-
-        <!-- Previous Chapter -->
-        <ImageButton
-            android:id="@+id/btnPrevChapter"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@null"
-            android:padding="12dp"
-            android:src="@drawable/ic_skip_previous"
-            app:tint="@color/on_surface" />
-
-        <!-- Play / Pause -->
-        <ImageButton
-            android:id="@+id/btnPlayPauseMain"
-            android:layout_width="64dp"
-            android:layout_height="64dp"
-            android:layout_marginHorizontal="@dimen/space_base"
-            android:background="@drawable/bg_circle_primary"
-            android:contentDescription="@null"
-            android:elevation="8dp"
-            android:padding="18dp"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_play"
-            app:tint="@color/text_primary" />
-
-        <!-- Next Chapter -->
-        <ImageButton
-            android:id="@+id/btnNextChapter"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@null"
-            android:padding="12dp"
-            android:src="@drawable/ic_skip_next"
-            app:tint="@color/on_surface" />
-
-        <!-- +30s -->
-        <LinearLayout
-            android:id="@+id/btnSkipForward30"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_forward_30"
-                app:tint="@color/text_secondary" />
-
-            <TextView
-                style="@style/TextAppearance.EReader.LabelBadge"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="30s"
-                android:textAllCaps="false"
-                android:textColor="@color/text_muted"
-                android:textSize="9sp" />
-        </LinearLayout>
-    </LinearLayout>
-
-    <!-- Secondary Tools Bar -->
-    <com.google.android.material.card.MaterialCardView
-        style="@style/Widget.EReader.Card"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:cardCornerRadius="@dimen/radius_xl">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingVertical="10dp">
-
-            <LinearLayout
-                android:id="@+id/btnPlayerSpeed"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/tvPlayerSpeed"
-                    style="@style/TextAppearance.EReader.LabelMd"
-                    android:layout_width="wrap_content"
+                <!-- +30s -->
+                <LinearLayout
+                    android:id="@+id/btnSkipForward30"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/bg_chip_default"
-                    android:paddingHorizontal="@dimen/space_sm"
-                    android:paddingVertical="2dp"
-                    android:text="1.0x"
-                    android:textColor="@color/secondary"
-                    android:textStyle="bold" />
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="@string/cd_forward_30"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:minWidth="@dimen/touch_target_min"
+                    android:minHeight="@dimen/touch_target_min"
+                    android:orientation="vertical">
 
-                <TextView
-                    style="@style/TextAppearance.EReader.LabelMd"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_xs"
-                    android:text="@string/player_speed_label" />
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_forward_30"
+                        app:tint="@color/text_secondary" />
+
+                    <TextView
+                        style="@style/TextAppearance.EReader.LabelBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:importantForAccessibility="no"
+                        android:text="@string/player_skip_30s"
+                        android:textAllCaps="false"
+                        android:textColor="@color/text_muted"
+                        android:textSize="9sp" />
+                </LinearLayout>
             </LinearLayout>
 
-            <View
-                android:layout_width="1dp"
-                android:layout_height="24dp"
-                android:background="@color/border_subtle" />
-
-            <LinearLayout
-                android:id="@+id/btnPlayerSleepTimer"
-                android:layout_width="0dp"
+            <!-- Secondary Tools Bar -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.EReader.Card"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center"
-                android:orientation="vertical">
+                app:cardCornerRadius="@dimen/radius_xl">
 
-                <ImageView
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_moon"
-                    app:tint="@color/text_lavender" />
-
-                <TextView
-                    style="@style/TextAppearance.EReader.LabelMd"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_xs"
-                    android:text="@string/player_timer_sample" />
-            </LinearLayout>
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingVertical="@dimen/space_xs">
 
-            <View
-                android:layout_width="1dp"
-                android:layout_height="24dp"
-                android:background="@color/border_subtle" />
+                    <LinearLayout
+                        android:id="@+id/btnPlayerSpeed"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:minHeight="@dimen/touch_target_min"
+                        android:orientation="vertical"
+                        android:paddingVertical="@dimen/space_xs">
 
-            <LinearLayout
-                android:id="@+id/btnPlayerChapters"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center"
-                android:orientation="vertical">
+                        <TextView
+                            android:id="@+id/tvPlayerSpeed"
+                            style="@style/TextAppearance.EReader.LabelMd"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_chip_default"
+                            android:paddingHorizontal="@dimen/space_sm"
+                            android:paddingVertical="2dp"
+                            android:text="@string/sample_default_speed_value"
+                            android:textColor="@color/secondary"
+                            android:textStyle="bold" />
 
-                <ImageView
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_list"
-                    app:tint="@color/text_lavender" />
+                        <TextView
+                            style="@style/TextAppearance.EReader.LabelMd"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_xs"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:text="@string/player_speed_label" />
+                    </LinearLayout>
 
-                <TextView
-                    style="@style/TextAppearance.EReader.LabelMd"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_xs"
-                    android:text="@string/action_chapters" />
-            </LinearLayout>
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="24dp"
+                        android:background="@color/border_subtle" />
+
+                    <LinearLayout
+                        android:id="@+id/btnPlayerSleepTimer"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:minHeight="@dimen/touch_target_min"
+                        android:orientation="vertical"
+                        android:paddingVertical="@dimen/space_xs">
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_moon"
+                            app:tint="@color/text_lavender" />
+
+                        <TextView
+                            style="@style/TextAppearance.EReader.LabelMd"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_xs"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:text="@string/player_timer_sample" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="24dp"
+                        android:background="@color/border_subtle" />
+
+                    <LinearLayout
+                        android:id="@+id/btnPlayerChapters"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:minHeight="@dimen/touch_target_min"
+                        android:orientation="vertical"
+                        android:paddingVertical="@dimen/space_xs">
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_list"
+                            app:tint="@color/text_lavender" />
+
+                        <TextView
+                            style="@style/TextAppearance.EReader.LabelMd"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_xs"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:text="@string/action_chapters" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+    </androidx.core.widget.NestedScrollView>
 </LinearLayout>

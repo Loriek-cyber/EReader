@@ -54,7 +54,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_gravity="center"
-                                android:text="MR" />
+                                android:text="@string/sample_profile_initials" />
                         </FrameLayout>
 
                         <LinearLayout
@@ -75,18 +75,19 @@
                                     style="@style/TextAppearance.EReader.HeadlineLg"
                                     android:layout_width="0dp"
                                     android:layout_height="wrap_content"
+                                    android:layout_marginEnd="@dimen/space_xs"
                                     android:layout_weight="1"
                                     android:ellipsize="end"
                                     android:maxLines="1"
-                                    android:text="Marco Rossi" />
+                                    android:text="@string/sample_profile_name" />
 
                                 <ImageButton
                                     android:id="@+id/btnEditProfile"
-                                    android:layout_width="32dp"
-                                    android:layout_height="32dp"
+                                    android:layout_width="@dimen/touch_target_min"
+                                    android:layout_height="@dimen/touch_target_min"
                                     android:background="@drawable/bg_rounded_container"
-                                    android:contentDescription="@null"
-                                    android:padding="7dp"
+                                    android:contentDescription="@string/cd_edit_profile"
+                                    android:padding="13dp"
                                     android:scaleType="centerInside"
                                     android:src="@drawable/ic_edit"
                                     app:tint="@color/text_muted" />
@@ -97,7 +98,7 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
-                                android:text="Account Locale • Memoria interna" />
+                                android:text="@string/settings_account_local_subtitle" />
 
                             <LinearLayout
                                 android:layout_width="wrap_content"
@@ -121,7 +122,7 @@
                                     android:layout_marginStart="6dp"
                                     android:ellipsize="end"
                                     android:maxLines="1"
-                                    android:text="Google Drive collegato • marco.rossi@gmail.com"
+                                    android:text="@string/sample_drive_connected_chip"
                                     android:textColor="@color/text_lavender" />
                             </LinearLayout>
                         </LinearLayout>
@@ -194,51 +195,63 @@
                                 android:ellipsize="end"
                                 android:fontFamily="monospace"
                                 android:maxLines="1"
-                                android:text="/Memoria/Documenti/eBooks/EPUB"
+                                android:text="@string/sample_ebook_folder_path"
                                 android:textColor="@color/text_muted" />
                         </LinearLayout>
 
                         <ImageButton
                             android:id="@+id/btnPickEbookFolder"
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
+                            android:layout_width="@dimen/touch_target_min"
+                            android:layout_height="@dimen/touch_target_min"
                             android:background="@drawable/bg_rounded_container"
-                            android:contentDescription="@null"
-                            android:padding="7dp"
+                            android:contentDescription="@string/cd_pick_ebook_folder"
+                            android:padding="13dp"
                             android:scaleType="centerInside"
                             android:src="@drawable/ic_folder"
                             app:tint="@color/text_lavender" />
                     </LinearLayout>
 
-                    <LinearLayout
+                    <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_sm"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:layout_marginTop="@dimen/space_sm">
 
                         <TextView
+                            android:id="@+id/tvEbookFolderStats"
                             style="@style/TextAppearance.EReader.LabelMd"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginEnd="@dimen/space_sm"
                             android:background="@drawable/bg_chip_default"
+                            android:ellipsize="end"
+                            android:maxLines="1"
                             android:paddingHorizontal="10dp"
                             android:paddingVertical="3dp"
-                            android:text="42 file rilevati • 1.2 GB"
-                            android:textColor="@color/text_lavender" />
-
-                        <View
-                            android:layout_width="0dp"
-                            android:layout_height="0dp"
-                            android:layout_weight="1" />
+                            android:text="@string/sample_ebook_folder_stats"
+                            android:textColor="@color/text_lavender"
+                            app:layout_constrainedWidth="true"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toStartOf="@id/tvEbookFormats"
+                            app:layout_constraintHorizontal_bias="0.0"
+                            app:layout_constraintHorizontal_chainStyle="spread_inside"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
 
                         <TextView
+                            android:id="@+id/tvEbookFormats"
                             style="@style/TextAppearance.EReader.Caption"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Formati: EPUB, PDF"
-                            android:textColor="@color/text_muted" />
-                    </LinearLayout>
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:text="@string/settings_ebook_formats"
+                            android:textColor="@color/text_muted"
+                            app:layout_constrainedWidth="true"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toEndOf="@id/tvEbookFolderStats"
+                            app:layout_constraintTop_toTopOf="parent" />
+                    </androidx.constraintlayout.widget.ConstraintLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -292,51 +305,63 @@
                                 android:ellipsize="end"
                                 android:fontFamily="monospace"
                                 android:maxLines="1"
-                                android:text="/Memoria/Audio/Audiolibri/M4B"
+                                android:text="@string/sample_audio_folder_path"
                                 android:textColor="@color/text_muted" />
                         </LinearLayout>
 
                         <ImageButton
                             android:id="@+id/btnPickAudioFolder"
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
+                            android:layout_width="@dimen/touch_target_min"
+                            android:layout_height="@dimen/touch_target_min"
                             android:background="@drawable/bg_rounded_container"
-                            android:contentDescription="@null"
-                            android:padding="7dp"
+                            android:contentDescription="@string/cd_pick_audio_folder"
+                            android:padding="13dp"
                             android:scaleType="centerInside"
                             android:src="@drawable/ic_folder"
                             app:tint="@color/text_lavender" />
                     </LinearLayout>
 
-                    <LinearLayout
+                    <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_sm"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:layout_marginTop="@dimen/space_sm">
 
                         <TextView
+                            android:id="@+id/tvAudioFolderStats"
                             style="@style/TextAppearance.EReader.LabelMd"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginEnd="@dimen/space_sm"
                             android:background="@drawable/bg_chip_default"
+                            android:ellipsize="end"
+                            android:maxLines="1"
                             android:paddingHorizontal="10dp"
                             android:paddingVertical="3dp"
-                            android:text="18 titoli • 14.8 GB"
-                            android:textColor="@color/text_lavender" />
-
-                        <View
-                            android:layout_width="0dp"
-                            android:layout_height="0dp"
-                            android:layout_weight="1" />
+                            android:text="@string/sample_audio_folder_stats"
+                            android:textColor="@color/text_lavender"
+                            app:layout_constrainedWidth="true"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toStartOf="@id/tvAudioFormats"
+                            app:layout_constraintHorizontal_bias="0.0"
+                            app:layout_constraintHorizontal_chainStyle="spread_inside"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
 
                         <TextView
+                            android:id="@+id/tvAudioFormats"
                             style="@style/TextAppearance.EReader.Caption"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Formati: M4B, MP3"
-                            android:textColor="@color/text_muted" />
-                    </LinearLayout>
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:text="@string/settings_audio_formats"
+                            android:textColor="@color/text_muted"
+                            app:layout_constrainedWidth="true"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toEndOf="@id/tvAudioFolderStats"
+                            app:layout_constraintTop_toTopOf="parent" />
+                    </androidx.constraintlayout.widget.ConstraintLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -344,8 +369,9 @@
                 android:id="@+id/btnScanFolders"
                 style="@style/Widget.EReader.Button.Secondary"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/button_height_secondary"
+                android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_sm"
+                android:minHeight="@dimen/button_height_secondary"
                 android:text="@string/settings_scan_now"
                 app:icon="@drawable/ic_refresh"
                 app:iconGravity="textStart"
@@ -401,46 +427,62 @@
                             android:layout_weight="1"
                             android:orientation="vertical">
 
-                            <LinearLayout
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal">
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content">
 
                                 <TextView
+                                    android:id="@+id/tvCloudProviderName"
                                     style="@style/TextAppearance.EReader.BodyMd"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="Google Drive"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="@string/settings_cloud_provider_drive"
                                     android:textColor="@color/text_primary"
-                                    android:textStyle="bold" />
+                                    android:textStyle="bold"
+                                    app:layout_constrainedWidth="true"
+                                    app:layout_constraintBottom_toBottomOf="parent"
+                                    app:layout_constraintEnd_toStartOf="@id/tvCloudStatusBadge"
+                                    app:layout_constraintHorizontal_bias="0.0"
+                                    app:layout_constraintHorizontal_chainStyle="packed"
+                                    app:layout_constraintStart_toStartOf="parent"
+                                    app:layout_constraintTop_toTopOf="parent" />
 
                                 <TextView
+                                    android:id="@+id/tvCloudStatusBadge"
                                     style="@style/TextAppearance.EReader.LabelMd"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginStart="@dimen/space_sm"
                                     android:background="@drawable/bg_chip_default"
+                                    android:maxLines="1"
                                     android:paddingHorizontal="8dp"
                                     android:paddingVertical="2dp"
-                                    android:text="Attivo"
-                                    android:textColor="@color/text_lavender" />
-                            </LinearLayout>
+                                    android:text="@string/settings_status_active"
+                                    android:textColor="@color/text_lavender"
+                                    app:layout_constraintBottom_toBottomOf="parent"
+                                    app:layout_constraintEnd_toEndOf="parent"
+                                    app:layout_constraintStart_toEndOf="@id/tvCloudProviderName"
+                                    app:layout_constraintTop_toTopOf="parent" />
+                            </androidx.constraintlayout.widget.ConstraintLayout>
 
                             <TextView
                                 style="@style/TextAppearance.EReader.Caption"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="marco.rossi@gmail.com" />
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:text="@string/sample_drive_email" />
                         </LinearLayout>
 
                         <ImageButton
                             android:id="@+id/btnManageDrive"
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
+                            android:layout_width="@dimen/touch_target_min"
+                            android:layout_height="@dimen/touch_target_min"
                             android:background="@drawable/bg_rounded_container"
-                            android:contentDescription="@null"
-                            android:padding="7dp"
+                            android:contentDescription="@string/cd_manage_drive"
+                            android:padding="13dp"
                             android:scaleType="centerInside"
                             android:src="@drawable/ic_edit"
                             app:tint="@color/text_lavender" />
@@ -468,14 +510,19 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="@dimen/space_sm"
+                            android:layout_marginEnd="@dimen/space_sm"
                             android:layout_weight="1"
-                            android:text="Ultimo backup eseguito" />
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:text="@string/settings_last_backup_label" />
 
                         <TextView
                             style="@style/TextAppearance.EReader.LabelMd"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Sincronizzato 12 min fa"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:text="@string/sample_last_backup_time"
                             android:textColor="@color/text_primary"
                             android:textStyle="bold" />
                     </LinearLayout>
@@ -491,6 +538,7 @@
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_marginEnd="@dimen/space_sm"
                             android:layout_weight="1"
                             android:orientation="vertical">
 
@@ -498,7 +546,7 @@
                                 style="@style/TextAppearance.EReader.BodyMd"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Sincronizzazione automatica Cloud"
+                                android:text="@string/settings_auto_cloud_sync_title"
                                 android:textColor="@color/text_primary"
                                 android:textStyle="bold" />
 
@@ -506,7 +554,7 @@
                                 style="@style/TextAppearance.EReader.Caption"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Salva segnalibri e note ad ogni interruzione"
+                                android:text="@string/settings_auto_cloud_sync_desc"
                                 android:textColor="@color/text_muted" />
                         </LinearLayout>
 
@@ -515,7 +563,8 @@
                             style="@style/Widget.EReader.Switch"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:checked="true" />
+                            android:checked="true"
+                            android:contentDescription="@string/settings_auto_cloud_sync_title" />
                     </LinearLayout>
 
                     <View
@@ -534,6 +583,7 @@
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_marginEnd="@dimen/space_sm"
                             android:layout_weight="1"
                             android:orientation="vertical">
 
@@ -541,7 +591,7 @@
                                 style="@style/TextAppearance.EReader.BodySm"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Sincronizza solo sotto rete Wi-Fi"
+                                android:text="@string/settings_wifi_only_title"
                                 android:textColor="@color/text_primary"
                                 android:textStyle="bold" />
 
@@ -549,7 +599,7 @@
                                 style="@style/TextAppearance.EReader.Caption"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Risparmia traffico dati cellulare"
+                                android:text="@string/settings_wifi_only_desc"
                                 android:textColor="@color/text_muted" />
                         </LinearLayout>
 
@@ -558,15 +608,17 @@
                             style="@style/Widget.EReader.Switch"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:checked="true" />
+                            android:checked="true"
+                            android:contentDescription="@string/settings_wifi_only_title" />
                     </LinearLayout>
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnSyncNow"
                         style="@style/Widget.EReader.Button.Secondary"
                         android:layout_width="match_parent"
-                        android:layout_height="@dimen/button_height_secondary"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_base"
+                        android:minHeight="@dimen/button_height_secondary"
                         android:text="@string/settings_sync_now"
                         app:icon="@drawable/ic_refresh"
                         app:iconGravity="textStart"
@@ -648,6 +700,7 @@
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_marginEnd="@dimen/space_sm"
                             android:layout_weight="1"
                             android:orientation="vertical">
 
@@ -672,7 +725,8 @@
                             style="@style/Widget.EReader.Switch"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:checked="true" />
+                            android:checked="true"
+                            android:contentDescription="@string/settings_sleep_enable" />
                     </LinearLayout>
 
                     <!-- Fascia Oraria -->
@@ -683,7 +737,8 @@
                         android:background="@drawable/bg_rounded_container"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:padding="@dimen/space_md">
+                        android:paddingHorizontal="@dimen/space_md"
+                        android:paddingVertical="@dimen/space_xs">
 
                         <ImageView
                             android:layout_width="16dp"
@@ -697,7 +752,10 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="@dimen/space_sm"
+                            android:layout_marginEnd="@dimen/space_sm"
                             android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="1"
                             android:text="@string/settings_sleep_window" />
 
                         <TextView
@@ -705,13 +763,18 @@
                             style="@style/TextAppearance.EReader.Caption"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:drawableEnd="@drawable/ic_chevron_right"
+                            android:background="?attr/selectableItemBackground"
+                            android:clickable="true"
                             android:drawablePadding="4dp"
-                            android:drawableTint="@color/text_muted"
-                            android:gravity="center_vertical"
-                            android:text="22:30 — 07:00"
+                            android:focusable="true"
+                            android:gravity="center_vertical|end"
+                            android:minWidth="@dimen/touch_target_min"
+                            android:minHeight="@dimen/touch_target_min"
+                            android:text="@string/sample_sleep_window_range"
                             android:textColor="@color/text_primary"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            app:drawableEndCompat="@drawable/ic_chevron_right"
+                            app:drawableTint="@color/text_muted" />
                     </LinearLayout>
 
                     <!-- Intervallo di controllo -->
@@ -719,13 +782,17 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_base"
+                        android:gravity="center_vertical"
                         android:orientation="horizontal">
 
                         <TextView
                             style="@style/TextAppearance.EReader.BodySm"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_marginEnd="@dimen/space_sm"
                             android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="1"
                             android:text="@string/settings_sleep_interval"
                             android:textColor="@color/text_primary"
                             android:textStyle="bold" />
@@ -734,7 +801,7 @@
                             style="@style/TextAppearance.EReader.LabelMd"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Pausa automatica"
+                            android:text="@string/settings_sleep_auto_pause"
                             android:textColor="@color/text_lavender" />
                     </LinearLayout>
 
@@ -751,23 +818,32 @@
                             android:id="@+id/btnInterval15"
                             style="@style/Widget.EReader.Button.Secondary"
                             android:layout_width="0dp"
-                            android:layout_height="34dp"
+                            android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:padding="0dp"
-                            android:text="15 min"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:minHeight="@dimen/touch_target_min"
+                            android:paddingHorizontal="4dp"
+                            android:paddingVertical="0dp"
+                            android:text="@string/player_timer_sample"
                             android:textColor="@color/text_muted"
                             android:textSize="12sp"
                             app:backgroundTint="@android:color/transparent"
+                            app:cornerRadius="@dimen/radius_sm"
                             app:strokeWidth="0dp" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnInterval30"
                             style="@style/Widget.EReader.Button.Primary"
                             android:layout_width="0dp"
-                            android:layout_height="34dp"
+                            android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:padding="0dp"
-                            android:text="30 min"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:minHeight="@dimen/touch_target_min"
+                            android:paddingHorizontal="4dp"
+                            android:paddingVertical="0dp"
+                            android:text="@string/settings_interval_30m"
                             android:textSize="12sp"
                             app:cornerRadius="@dimen/radius_sm" />
 
@@ -775,26 +851,36 @@
                             android:id="@+id/btnInterval45"
                             style="@style/Widget.EReader.Button.Secondary"
                             android:layout_width="0dp"
-                            android:layout_height="34dp"
+                            android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:padding="0dp"
-                            android:text="45 min"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:minHeight="@dimen/touch_target_min"
+                            android:paddingHorizontal="4dp"
+                            android:paddingVertical="0dp"
+                            android:text="@string/settings_interval_45m"
                             android:textColor="@color/text_muted"
                             android:textSize="12sp"
                             app:backgroundTint="@android:color/transparent"
+                            app:cornerRadius="@dimen/radius_sm"
                             app:strokeWidth="0dp" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnInterval60"
                             style="@style/Widget.EReader.Button.Secondary"
                             android:layout_width="0dp"
-                            android:layout_height="34dp"
+                            android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:padding="0dp"
-                            android:text="60 min"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:minHeight="@dimen/touch_target_min"
+                            android:paddingHorizontal="4dp"
+                            android:paddingVertical="0dp"
+                            android:text="@string/settings_interval_60m"
                             android:textColor="@color/text_muted"
                             android:textSize="12sp"
                             app:backgroundTint="@android:color/transparent"
+                            app:cornerRadius="@dimen/radius_sm"
                             app:strokeWidth="0dp" />
                     </LinearLayout>
 
@@ -929,7 +1015,8 @@
                             style="@style/Widget.EReader.Switch"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:checked="true" />
+                            android:checked="true"
+                            android:contentDescription="@string/settings_oled_title" />
                     </LinearLayout>
 
                     <View
@@ -982,14 +1069,18 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:background="@drawable/bg_rounded_container"
-                            android:drawableEnd="@drawable/ic_chevron_right"
+                            android:clickable="true"
                             android:drawablePadding="4dp"
-                            android:drawableTint="@color/text_muted"
-                            android:gravity="center_vertical"
-                            android:paddingHorizontal="10dp"
-                            android:paddingVertical="5dp"
-                            android:text="1.0x"
-                            android:textColor="@color/text_primary" />
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:minWidth="@dimen/touch_target_min"
+                            android:minHeight="@dimen/touch_target_min"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="10dp"
+                            android:text="@string/sample_default_speed_value"
+                            android:textColor="@color/text_primary"
+                            app:drawableEndCompat="@drawable/ic_chevron_right"
+                            app:drawableTint="@color/text_muted" />
                     </LinearLayout>
 
                     <View
@@ -1041,7 +1132,8 @@
                             style="@style/Widget.EReader.Switch"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:checked="true" />
+                            android:checked="true"
+                            android:contentDescription="@string/settings_auto_bookmark" />
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -1059,12 +1151,14 @@
                     style="@style/TextAppearance.EReader.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:gravity="center"
                     android:text="@string/settings_footer_version" />
 
                 <com.google.android.material.progressindicator.LinearProgressIndicator
                     style="@style/Widget.EReader.ProgressBar"
-                    android:layout_width="192dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="@dimen/space_2xl"
                     android:layout_marginTop="6dp"
                     android:progress="13"
                     app:trackThickness="@dimen/progress_track_height_sm" />
@@ -1073,8 +1167,9 @@
                     android:id="@+id/btnClearCache"
                     style="@style/Widget.EReader.Button.Secondary"
                     android:layout_width="wrap_content"
-                    android:layout_height="38dp"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_md"
+                    android:minHeight="@dimen/touch_target_min"
                     android:paddingHorizontal="@dimen/space_base"
                     android:text="@string/settings_clear_cache"
                     android:textColor="@color/text_muted"
@@ -1088,6 +1183,7 @@
 
     <!-- Bottom Navigation Dock -->
     <include
+        android:id="@+id/includeBottomNav"
         layout="@layout/layout_bottom_nav"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
