@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/ereaderCanvasBg"
+    android:fitsSystemWindows="true"
+    android:padding="@dimen/space_xl">
+
+    <LinearLayout
+        android:id="@+id/layoutSleepBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_chip_default"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="@dimen/space_md"
+        android:paddingVertical="6dp"
+        app:layout_constraintBottom_toTopOf="@id/ivSleepMoon"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed">
+
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_moon"
+            app:tint="?attr/colorPrimary" />
+
+        <TextView
+            style="@style/TextAppearance.EReader.LabelBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/space_xs"
+            android:text="@string/sleep_verify_badge"
+            android:textColor="?attr/ereaderTextAccent" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/ivSleepMoon"
+        android:layout_width="96dp"
+        android:layout_height="96dp"
+        android:layout_marginTop="@dimen/space_xl"
+        android:background="@drawable/bg_circle_surface"
+        android:contentDescription="@null"
+        android:padding="24dp"
+        android:src="@drawable/ic_moon"
+        app:layout_constraintBottom_toTopOf="@id/tvSleepTitle"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/layoutSleepBadge"
+        app:tint="?attr/colorPrimary" />
+
+    <TextView
+        android:id="@+id/tvSleepTitle"
+        style="@style/TextAppearance.EReader.DisplayLg"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_lg"
+        android:gravity="center"
+        android:text="@string/sleep_verify_title"
+        app:layout_constraintBottom_toTopOf="@id/tvSleepSubtitle"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ivSleepMoon" />
+
+    <TextView
+        android:id="@+id/tvSleepSubtitle"
+        style="@style/TextAppearance.EReader.BodyMd"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_sm"
+        android:gravity="center"
+        android:textColor="?attr/ereaderTextSecondary"
+        app:layout_constraintBottom_toTopOf="@id/tvSleepCountdown"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvSleepTitle" />
+
+    <TextView
+        android:id="@+id/tvSleepCountdown"
+        style="@style/TextAppearance.EReader.Caption"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_base"
+        android:background="@drawable/bg_rounded_container"
+        android:paddingHorizontal="@dimen/space_md"
+        android:paddingVertical="6dp"
+        android:textColor="?attr/ereaderTextAccent"
+        app:layout_constraintBottom_toTopOf="@id/layoutSwipeTrack"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvSleepSubtitle" />
+
+    <!-- Swipe-to-Continue Full-Width Pill Track -->
+    <FrameLayout
+        android:id="@+id/layoutSwipeTrack"
+        android:layout_width="0dp"
+        android:layout_height="64dp"
+        android:layout_marginBottom="@dimen/space_lg"
+        android:background="@drawable/bg_floating_hud"
+        android:padding="6dp"
+        app:layout_constraintBottom_toTopOf="@id/btnSleepStop"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <TextView
+            android:id="@+id/tvSwipeHint"
+            style="@style/TextAppearance.EReader.BodyMd"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:paddingStart="36dp"
+            android:text="@string/sleep_verify_swipe_hint"
+            android:textColor="?attr/ereaderTextAccent"
+            android:textStyle="bold" />
+
+        <SeekBar
+            android:id="@+id/seekSleepSwipe"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/transparent"
+            android:max="100"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:progress="0"
+            android:progressDrawable="@android:color/transparent"
+            android:splitTrack="false"
+            android:thumb="@drawable/bg_swipe_thumb" />
+    </FrameLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnSleepStop"
+        style="@style/Widget.EReader.Button.Secondary"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:minHeight="@dimen/button_height_primary"
+        android:text="@string/sleep_verify_stop_btn"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Base & Canvas -->
+    <!-- Base & Canvas (Dark Elegance) -->
     <color name="canvas_base">#FF0D0D14</color>
     <color name="surface">#FF12121E</color>
     <color name="surface_nav">#FF161622</color>
     <color name="surface_nav_translucent">#D9161622</color>
 
-    <!-- Tonal Surface Stack -->
+    <!-- Tonal Surface Stack (Dark Elegance) -->
     <color name="surface_container_lowest">#FF0D0D19</color>
     <color name="surface_container_low">#FF1A1A27</color>
     <color name="surface_card">#FF1A1A26</color>
@@ -19,6 +19,51 @@
     <color name="surface_container_high">#FF292936</color>
     <color name="surface_container_highest">#FF343341</color>
     <color name="surface_bright">#FF383845</color>
+
+    <!-- OLED Pure Black Palette -->
+    <color name="oled_black">#FF000000</color>
+    <color name="oled_nav_translucent">#D9000000</color>
+    <color name="oled_card">#FF0D0D12</color>
+    <color name="oled_container">#FF14141D</color>
+    <color name="oled_floating_glass">#EB0F0F16</color>
+
+    <!-- Light Paper Palette -->
+    <color name="light_canvas">#FFF7F6F2</color>
+    <color name="light_surface">#FFF7F6F2</color>
+    <color name="light_nav">#FFFFFFFF</color>
+    <color name="light_nav_translucent">#E6FFFFFF</color>
+    <color name="light_card">#FFFFFFFF</color>
+    <color name="light_container_low">#FFF0EEE8</color>
+    <color name="light_container">#FFEBE8E1</color>
+    <color name="light_floating_glass">#F2FFFFFF</color>
+    <color name="light_text_primary">#FF191923</color>
+    <color name="light_text_secondary">#FF4E4E60</color>
+    <color name="light_text_muted">#FF6C6C7E</color>
+    <color name="light_primary">#FF5B4CE0</color>
+    <color name="light_primary_container">#FF6C5CE7</color>
+    <color name="light_text_accent">#FF4B3EC4</color>
+    <color name="light_border_subtle">#1A000000</color>
+    <color name="light_border_glass">#29000000</color>
+    <color name="light_track_neutral">#FFDAD6CC</color>
+
+    <!-- Warm Sepia Palette -->
+    <color name="sepia_canvas">#FFF4ECD8</color>
+    <color name="sepia_surface">#FFF4ECD8</color>
+    <color name="sepia_nav">#FFFAF4E6</color>
+    <color name="sepia_nav_translucent">#E6FAF4E6</color>
+    <color name="sepia_card">#FFFAF4E6</color>
+    <color name="sepia_container_low">#FFEDE2C8</color>
+    <color name="sepia_container">#FFE6D9BA</color>
+    <color name="sepia_floating_glass">#F2FAF4E6</color>
+    <color name="sepia_text_primary">#FF2C221E</color>
+    <color name="sepia_text_secondary">#FF5C4B41</color>
+    <color name="sepia_text_muted">#FF7A685D</color>
+    <color name="sepia_primary">#FF8C4A27</color>
+    <color name="sepia_primary_container">#FF9E562F</color>
+    <color name="sepia_text_accent">#FF7A3E1E</color>
+    <color name="sepia_border_subtle">#1F3E2A1E</color>
+    <color name="sepia_border_glass">#2E3E2A1E</color>
+    <color name="sepia_track_neutral">#FFD8C8A8</color>
 
     <!-- Brand & Accents -->
     <color name="primary">#FFC6BFFF</color>

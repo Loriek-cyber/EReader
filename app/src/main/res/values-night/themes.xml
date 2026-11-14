@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Night mode uses the full Libreria Dark Elegance palette -->
+    <!-- Night mode inherits the same theme attributes defined in values/themes.xml -->
     <style name="Theme.EReader" parent="Theme.Material3.Dark.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
         <item name="colorOnPrimary">@color/on_primary</item>
@@ -37,6 +37,24 @@
         <item name="colorErrorContainer">@color/error_container</item>
         <item name="colorOnErrorContainer">@color/on_error_container</item>
 
+        <item name="ereaderCanvasBg">@color/canvas_base</item>
+        <item name="ereaderSurfaceBg">@color/surface</item>
+        <item name="ereaderNavBg">@color/surface_nav</item>
+        <item name="ereaderNavTranslucentBg">@color/surface_nav_translucent</item>
+        <item name="ereaderCardBg">@color/surface_card</item>
+        <item name="ereaderCardElevatedBg">@color/surface_elevated</item>
+        <item name="ereaderContainerLowBg">@color/surface_container_low</item>
+        <item name="ereaderContainerBg">@color/surface_container</item>
+        <item name="ereaderFloatingGlassBg">@color/surface_floating_glass</item>
+        <item name="ereaderChipBg">@color/surface_chip</item>
+        <item name="ereaderTextPrimary">@color/text_primary</item>
+        <item name="ereaderTextSecondary">@color/text_secondary</item>
+        <item name="ereaderTextMuted">@color/text_muted</item>
+        <item name="ereaderTextAccent">@color/text_lavender</item>
+        <item name="ereaderBorderSubtle">@color/border_subtle</item>
+        <item name="ereaderBorderGlass">@color/border_glass</item>
+        <item name="ereaderTrackNeutral">@color/track_neutral</item>
+
         <item name="android:colorBackground">@color/surface</item>
         <item name="android:windowBackground">@color/surface</item>
         <item name="android:statusBarColor">@color/surface_nav</item>
@@ -45,7 +63,6 @@
         <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">false</item>
     </style>
 
-    <!-- Deeper Canvas Theme for Reader & Chapter Index -->
     <style name="Theme.EReader.Canvas" parent="Theme.EReader">
         <item name="android:colorBackground">@color/canvas_base</item>
         <item name="android:windowBackground">@color/canvas_base</item>

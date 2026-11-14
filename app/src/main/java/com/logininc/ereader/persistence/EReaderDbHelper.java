@@ -6,6 +6,11 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 import androidx.annotation.NonNull;
 
+import com.logininc.ereader.persistence.DatabaseContract.BookmarkNoteEntry;
+import com.logininc.ereader.persistence.DatabaseContract.ChapterEntry;
+import com.logininc.ereader.persistence.DatabaseContract.SettingsEntry;
+import com.logininc.ereader.persistence.DatabaseContract.TitleEntry;
+
 /**
  * Manages SQLite database creation, versioning, and connection lifecycle.
  */
@@ -44,12 +49,23 @@ public class EReaderDbHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        db.execSQL(DatabaseContract.TitleEntry.SQL_CREATE_TABLE);
+        db.execSQL(TitleEntry.SQL_CREATE_TABLE);
+        db.execSQL(ChapterEntry.SQL_CREATE_TABLE);
+        db.execSQL(BookmarkNoteEntry.SQL_CREATE_TABLE);
+        db.execSQL(SettingsEntry.SQL_CREATE_TABLE);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL(DatabaseContract.TitleEntry.SQL_DROP_TABLE);
+        db.execSQL(BookmarkNoteEntry.SQL_DROP_TABLE);
+        db.execSQL(ChapterEntry.SQL_DROP_TABLE);
+        db.execSQL(TitleEntry.SQL_DROP_TABLE);
+        db.execSQL(SettingsEntry.SQL_DROP_TABLE);
         onCreate(db);
+    }
+
+    @Override
+    public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        onUpgrade(db, oldVersion, newVersion);
     }
 }

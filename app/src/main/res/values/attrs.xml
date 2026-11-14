@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="ereaderCanvasBg" format="color" />
+    <attr name="ereaderSurfaceBg" format="color" />
+    <attr name="ereaderNavBg" format="color" />
+    <attr name="ereaderNavTranslucentBg" format="color" />
+    <attr name="ereaderCardBg" format="color" />
+    <attr name="ereaderCardElevatedBg" format="color" />
+    <attr name="ereaderContainerLowBg" format="color" />
+    <attr name="ereaderContainerBg" format="color" />
+    <attr name="ereaderFloatingGlassBg" format="color" />
+    <attr name="ereaderChipBg" format="color" />
+    <attr name="ereaderTextPrimary" format="color" />
+    <attr name="ereaderTextSecondary" format="color" />
+    <attr name="ereaderTextMuted" format="color" />
+    <attr name="ereaderTextAccent" format="color" />
+    <attr name="ereaderBorderSubtle" format="color" />
+    <attr name="ereaderBorderGlass" format="color" />
+    <attr name="ereaderTrackNeutral" format="color" />
+</resources>

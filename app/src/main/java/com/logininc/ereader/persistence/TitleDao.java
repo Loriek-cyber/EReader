@@ -49,14 +49,37 @@ public class TitleDao {
 
     /**
      * Finds a {@link Title} by its database ID.
-     *
-     * @return the matching {@link Book} or {@link AudioBook}, or {@code null} if not found.
      */
     @Nullable
     public Title getById(int id) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         String selection = TitleEntry._ID + " = ?";
         String[] selectionArgs = {String.valueOf(id)};
+
+        try (Cursor cursor = db.query(
+                TitleEntry.TABLE_NAME,
+                null,
+                selection,
+                selectionArgs,
+                null,
+                null,
+                null
+        )) {
+            if (cursor.moveToFirst()) {
+                return fromCursor(cursor);
+            }
+            return null;
+        }
+    }
+
+    /**
+     * Finds an existing title by its persisted document URI string.
+     */
+    @Nullable
+    public Title findByContentUri(@NonNull Uri uri) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        String selection = TitleEntry.COLUMN_CONTENT_URI + " = ?";
+        String[] selectionArgs = {uri.toString()};
 
         try (Cursor cursor = db.query(
                 TitleEntry.TABLE_NAME,
@@ -83,14 +106,14 @@ public class TitleDao {
     }
 
     /**
-     * Returns all stored {@link Book} entries ordered by title ascending.
+     * Returns all stored {@link Book} entries ordered by last opened desc then title asc.
      */
     @NonNull
     public List<Book> getAllBooks() {
         List<Title> titles = queryTitles(
                 TitleEntry.COLUMN_TYPE + " = ?",
                 new String[]{TitleEntry.TYPE_BOOK},
-                TitleEntry.COLUMN_TITLE + " ASC"
+                TitleEntry.COLUMN_LAST_OPENED_AT + " DESC, " + TitleEntry.COLUMN_TITLE + " ASC"
         );
         List<Book> books = new ArrayList<>(titles.size());
         for (Title title : titles) {
@@ -102,14 +125,14 @@ public class TitleDao {
     }
 
     /**
-     * Returns all stored {@link AudioBook} entries ordered by title ascending.
+     * Returns all stored {@link AudioBook} entries ordered by last opened desc then title asc.
      */
     @NonNull
     public List<AudioBook> getAllAudioBooks() {
         List<Title> titles = queryTitles(
                 TitleEntry.COLUMN_TYPE + " = ?",
                 new String[]{TitleEntry.TYPE_AUDIOBOOK},
-                TitleEntry.COLUMN_TITLE + " ASC"
+                TitleEntry.COLUMN_LAST_OPENED_AT + " DESC, " + TitleEntry.COLUMN_TITLE + " ASC"
         );
         List<AudioBook> audioBooks = new ArrayList<>(titles.size());
         for (Title title : titles) {
@@ -121,7 +144,55 @@ public class TitleDao {
     }
 
     /**
-     * Searches titles whose name contains {@code query} (case-insensitive in ASCII).
+     * Returns the most recently opened in-progress Book, or null if none is in progress.
+     */
+    @Nullable
+    public Book getMostRecentInProgressBook() {
+        List<Title> titles = queryTitles(
+                TitleEntry.COLUMN_TYPE + " = ? AND " + TitleEntry.COLUMN_STATUS + " = ?",
+                new String[]{TitleEntry.TYPE_BOOK, Title.STATUS_IN_PROGRESS},
+                TitleEntry.COLUMN_LAST_OPENED_AT + " DESC LIMIT 1"
+        );
+        if (!titles.isEmpty() && titles.get(0) instanceof Book) {
+            return (Book) titles.get(0);
+        }
+        return null;
+    }
+
+    /**
+     * Returns the most recently opened in-progress AudioBook, or null if none is in progress.
+     */
+    @Nullable
+    public AudioBook getMostRecentInProgressAudioBook() {
+        List<Title> titles = queryTitles(
+                TitleEntry.COLUMN_TYPE + " = ? AND " + TitleEntry.COLUMN_STATUS + " = ?",
+                new String[]{TitleEntry.TYPE_AUDIOBOOK, Title.STATUS_IN_PROGRESS},
+                TitleEntry.COLUMN_LAST_OPENED_AT + " DESC LIMIT 1"
+        );
+        if (!titles.isEmpty() && titles.get(0) instanceof AudioBook) {
+            return (AudioBook) titles.get(0);
+        }
+        return null;
+    }
+
+    /**
+     * Searches titles of a given type matching title or author.
+     */
+    @NonNull
+    public List<Title> searchByTypeAndQuery(@NonNull String type, @NonNull String query) {
+        String like = "%" + query + "%";
+        return queryTitles(
+                TitleEntry.COLUMN_TYPE + " = ? AND ("
+                        + TitleEntry.COLUMN_TITLE + " LIKE ? OR "
+                        + TitleEntry.COLUMN_AUTHOR + " LIKE ? OR "
+                        + TitleEntry.COLUMN_NARRATOR + " LIKE ?)",
+                new String[]{type, like, like, like},
+                TitleEntry.COLUMN_LAST_OPENED_AT + " DESC, " + TitleEntry.COLUMN_TITLE + " ASC"
+        );
+    }
+
+    /**
+     * Searches titles whose name contains {@code query}.
      */
     @NonNull
     public List<Title> searchByTitle(@NonNull String query) {
@@ -134,8 +205,6 @@ public class TitleDao {
 
     /**
      * Updates an existing {@link Title} matched by its ID.
-     *
-     * @return the number of rows affected.
      */
     public int update(@NonNull Title title) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
@@ -146,8 +215,6 @@ public class TitleDao {
 
     /**
      * Deletes a {@link Title} by its ID.
-     *
-     * @return the number of rows deleted.
      */
     public int deleteById(int id) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
@@ -158,8 +225,6 @@ public class TitleDao {
 
     /**
      * Deletes all rows from the {@code titles} table.
-     *
-     * @return the number of rows deleted.
      */
     public int deleteAll() {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
@@ -195,10 +260,36 @@ public class TitleDao {
     private ContentValues toContentValues(@NonNull Title title) {
         ContentValues values = new ContentValues();
         values.put(TitleEntry.COLUMN_TITLE, title.getTitle());
+        values.put(TitleEntry.COLUMN_AUTHOR, title.getAuthor());
         values.put(TitleEntry.COLUMN_LEN_CHAPTERS, title.getLenChapters());
-        Uri uri = title.getContentUri();
-        values.put(TitleEntry.COLUMN_CONTENT_URI, uri != null ? uri.toString() : "");
+        values.put(TitleEntry.COLUMN_CURRENT_CHAPTER, title.getCurrentChapter());
+        values.put(TitleEntry.COLUMN_CURRENT_CHAPTER_COMPLETED, title.isCurrentChapterCompleted() ? 1 : 0);
+        values.put(TitleEntry.COLUMN_PROGRESS_PERCENT, title.getProgressPercent());
+
+        Uri contentUri = title.getContentUri();
+        values.put(TitleEntry.COLUMN_CONTENT_URI, contentUri != null ? contentUri.toString() : "");
+        Uri coverUri = title.getCoverUri();
+        values.put(TitleEntry.COLUMN_COVER_URI, coverUri != null ? coverUri.toString() : "");
+
         values.put(TitleEntry.COLUMN_TYPE, resolveType(title));
+        values.put(TitleEntry.COLUMN_STATUS, title.getStatus());
+        values.put(TitleEntry.COLUMN_LAST_OPENED_AT, title.getLastOpenedAt());
+
+        if (title instanceof Book) {
+            Book book = (Book) title;
+            values.put(TitleEntry.COLUMN_NARRATOR, "");
+            values.put(TitleEntry.COLUMN_CURRENT_PAGE, book.getCurrentPage());
+            values.put(TitleEntry.COLUMN_TOTAL_PAGES, book.getTotalPages());
+            values.put(TitleEntry.COLUMN_CURRENT_POSITION_MS, 0L);
+            values.put(TitleEntry.COLUMN_TOTAL_DURATION_MS, 0L);
+        } else if (title instanceof AudioBook) {
+            AudioBook audioBook = (AudioBook) title;
+            values.put(TitleEntry.COLUMN_NARRATOR, audioBook.getNarrator());
+            values.put(TitleEntry.COLUMN_CURRENT_PAGE, 1);
+            values.put(TitleEntry.COLUMN_TOTAL_PAGES, 1);
+            values.put(TitleEntry.COLUMN_CURRENT_POSITION_MS, audioBook.getCurrentPositionMs());
+            values.put(TitleEntry.COLUMN_TOTAL_DURATION_MS, audioBook.getTotalDurationMs());
+        }
         return values;
     }
 
@@ -217,15 +308,46 @@ public class TitleDao {
     private Title fromCursor(@NonNull Cursor cursor) {
         int id = cursor.getInt(cursor.getColumnIndexOrThrow(TitleEntry._ID));
         String titleText = cursor.getString(cursor.getColumnIndexOrThrow(TitleEntry.COLUMN_TITLE));
+        String author = cursor.getString(cursor.getColumnIndexOrThrow(TitleEntry.COLUMN_AUTHOR));
+        String narrator = cursor.getString(cursor.getColumnIndexOrThrow(TitleEntry.COLUMN_NARRATOR));
         int lenChapters = cursor.getInt(cursor.getColumnIndexOrThrow(TitleEntry.COLUMN_LEN_CHAPTERS));
+        int currentChapter = cursor.getInt(cursor.getColumnIndexOrThrow(TitleEntry.COLUMN_CURRENT_CHAPTER));
+        boolean chapterCompleted = cursor.getInt(cursor.getColumnIndexOrThrow(TitleEntry.COLUMN_CURRENT_CHAPTER_COMPLETED)) == 1;
+        int progressPercent = cursor.getInt(cursor.getColumnIndexOrThrow(TitleEntry.COLUMN_PROGRESS_PERCENT));
+        int currentPage = cursor.getInt(cursor.getColumnIndexOrThrow(TitleEntry.COLUMN_CURRENT_PAGE));
+        int totalPages = cursor.getInt(cursor.getColumnIndexOrThrow(TitleEntry.COLUMN_TOTAL_PAGES));
+        long currentPositionMs = cursor.getLong(cursor.getColumnIndexOrThrow(TitleEntry.COLUMN_CURRENT_POSITION_MS));
+        long totalDurationMs = cursor.getLong(cursor.getColumnIndexOrThrow(TitleEntry.COLUMN_TOTAL_DURATION_MS));
         String uriString = cursor.getString(cursor.getColumnIndexOrThrow(TitleEntry.COLUMN_CONTENT_URI));
+        String coverString = cursor.getString(cursor.getColumnIndexOrThrow(TitleEntry.COLUMN_COVER_URI));
         String type = cursor.getString(cursor.getColumnIndexOrThrow(TitleEntry.COLUMN_TYPE));
+        String status = cursor.getString(cursor.getColumnIndexOrThrow(TitleEntry.COLUMN_STATUS));
+        long lastOpenedAt = cursor.getLong(cursor.getColumnIndexOrThrow(TitleEntry.COLUMN_LAST_OPENED_AT));
 
         Uri contentUri = (uriString != null && !uriString.isEmpty()) ? Uri.parse(uriString) : Uri.EMPTY;
+        Uri coverUri = (coverString != null && !coverString.isEmpty()) ? Uri.parse(coverString) : null;
 
+        Title result;
         if (TitleEntry.TYPE_AUDIOBOOK.equals(type)) {
-            return new AudioBook(id, titleText, lenChapters, contentUri);
+            AudioBook audioBook = new AudioBook(id, titleText, lenChapters, contentUri);
+            audioBook.setNarrator(narrator);
+            audioBook.setCurrentPositionMs(currentPositionMs);
+            audioBook.setTotalDurationMs(totalDurationMs);
+            result = audioBook;
+        } else {
+            Book book = new Book(id, titleText, lenChapters, contentUri);
+            book.setCurrentPage(currentPage);
+            book.setTotalPages(totalPages);
+            result = book;
         }
-        return new Book(id, titleText, lenChapters, contentUri);
+
+        result.setAuthor(author);
+        result.setCurrentChapter(currentChapter);
+        result.setCurrentChapterCompleted(chapterCompleted);
+        result.setProgressPercent(progressPercent);
+        result.setCoverUri(coverUri);
+        result.setStatus(status);
+        result.setLastOpenedAt(lastOpenedAt);
+        return result;
     }
 }

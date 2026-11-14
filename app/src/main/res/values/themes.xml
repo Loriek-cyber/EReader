@@ -37,6 +37,24 @@
         <item name="colorErrorContainer">@color/error_container</item>
         <item name="colorOnErrorContainer">@color/on_error_container</item>
 
+        <item name="ereaderCanvasBg">@color/canvas_base</item>
+        <item name="ereaderSurfaceBg">@color/surface</item>
+        <item name="ereaderNavBg">@color/surface_nav</item>
+        <item name="ereaderNavTranslucentBg">@color/surface_nav_translucent</item>
+        <item name="ereaderCardBg">@color/surface_card</item>
+        <item name="ereaderCardElevatedBg">@color/surface_elevated</item>
+        <item name="ereaderContainerLowBg">@color/surface_container_low</item>
+        <item name="ereaderContainerBg">@color/surface_container</item>
+        <item name="ereaderFloatingGlassBg">@color/surface_floating_glass</item>
+        <item name="ereaderChipBg">@color/surface_chip</item>
+        <item name="ereaderTextPrimary">@color/text_primary</item>
+        <item name="ereaderTextSecondary">@color/text_secondary</item>
+        <item name="ereaderTextMuted">@color/text_muted</item>
+        <item name="ereaderTextAccent">@color/text_lavender</item>
+        <item name="ereaderBorderSubtle">@color/border_subtle</item>
+        <item name="ereaderBorderGlass">@color/border_glass</item>
+        <item name="ereaderTrackNeutral">@color/track_neutral</item>
+
         <item name="android:colorBackground">@color/surface</item>
         <item name="android:windowBackground">@color/surface</item>
         <item name="android:statusBarColor">@color/surface_nav</item>
@@ -51,5 +69,102 @@
         <item name="android:windowBackground">@color/canvas_base</item>
         <item name="android:statusBarColor">@color/canvas_base</item>
         <item name="android:navigationBarColor">@color/canvas_base</item>
+    </style>
+
+    <!-- Pure OLED Black Theme -->
+    <style name="Theme.EReader.Oled" parent="Theme.EReader">
+        <item name="colorSurface">@color/oled_black</item>
+        <item name="ereaderCanvasBg">@color/oled_black</item>
+        <item name="ereaderSurfaceBg">@color/oled_black</item>
+        <item name="ereaderNavBg">@color/oled_black</item>
+        <item name="ereaderNavTranslucentBg">@color/oled_nav_translucent</item>
+        <item name="ereaderCardBg">@color/oled_card</item>
+        <item name="ereaderCardElevatedBg">@color/oled_container</item>
+        <item name="ereaderContainerLowBg">@color/oled_card</item>
+        <item name="ereaderContainerBg">@color/oled_container</item>
+        <item name="ereaderFloatingGlassBg">@color/oled_floating_glass</item>
+        <item name="ereaderChipBg">@color/oled_container</item>
+        <item name="android:colorBackground">@color/oled_black</item>
+        <item name="android:windowBackground">@color/oled_black</item>
+        <item name="android:statusBarColor">@color/oled_black</item>
+        <item name="android:navigationBarColor">@color/oled_black</item>
+    </style>
+
+    <!-- Daylight Light Theme -->
+    <style name="Theme.EReader.Light" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/light_primary</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/light_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/white</item>
+        <item name="colorSecondary">@color/light_primary</item>
+        <item name="colorSurface">@color/light_surface</item>
+        <item name="colorOnSurface">@color/light_text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/light_text_secondary</item>
+        <item name="colorSurfaceContainerLow">@color/light_container_low</item>
+        <item name="colorSurfaceContainer">@color/light_container</item>
+
+        <item name="ereaderCanvasBg">@color/light_canvas</item>
+        <item name="ereaderSurfaceBg">@color/light_surface</item>
+        <item name="ereaderNavBg">@color/light_nav</item>
+        <item name="ereaderNavTranslucentBg">@color/light_nav_translucent</item>
+        <item name="ereaderCardBg">@color/light_card</item>
+        <item name="ereaderCardElevatedBg">@color/light_card</item>
+        <item name="ereaderContainerLowBg">@color/light_container_low</item>
+        <item name="ereaderContainerBg">@color/light_container</item>
+        <item name="ereaderFloatingGlassBg">@color/light_floating_glass</item>
+        <item name="ereaderChipBg">@color/light_container</item>
+        <item name="ereaderTextPrimary">@color/light_text_primary</item>
+        <item name="ereaderTextSecondary">@color/light_text_secondary</item>
+        <item name="ereaderTextMuted">@color/light_text_muted</item>
+        <item name="ereaderTextAccent">@color/light_text_accent</item>
+        <item name="ereaderBorderSubtle">@color/light_border_subtle</item>
+        <item name="ereaderBorderGlass">@color/light_border_glass</item>
+        <item name="ereaderTrackNeutral">@color/light_track_neutral</item>
+
+        <item name="android:colorBackground">@color/light_surface</item>
+        <item name="android:windowBackground">@color/light_surface</item>
+        <item name="android:statusBarColor">@color/light_nav</item>
+        <item name="android:navigationBarColor">@color/light_nav</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
+    </style>
+
+    <!-- Warm Sepia Reading Theme -->
+    <style name="Theme.EReader.Sepia" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/sepia_primary</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/sepia_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/white</item>
+        <item name="colorSecondary">@color/sepia_primary</item>
+        <item name="colorSurface">@color/sepia_surface</item>
+        <item name="colorOnSurface">@color/sepia_text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/sepia_text_secondary</item>
+        <item name="colorSurfaceContainerLow">@color/sepia_container_low</item>
+        <item name="colorSurfaceContainer">@color/sepia_container</item>
+
+        <item name="ereaderCanvasBg">@color/sepia_canvas</item>
+        <item name="ereaderSurfaceBg">@color/sepia_surface</item>
+        <item name="ereaderNavBg">@color/sepia_nav</item>
+        <item name="ereaderNavTranslucentBg">@color/sepia_nav_translucent</item>
+        <item name="ereaderCardBg">@color/sepia_card</item>
+        <item name="ereaderCardElevatedBg">@color/sepia_card</item>
+        <item name="ereaderContainerLowBg">@color/sepia_container_low</item>
+        <item name="ereaderContainerBg">@color/sepia_container</item>
+        <item name="ereaderFloatingGlassBg">@color/sepia_floating_glass</item>
+        <item name="ereaderChipBg">@color/sepia_container</item>
+        <item name="ereaderTextPrimary">@color/sepia_text_primary</item>
+        <item name="ereaderTextSecondary">@color/sepia_text_secondary</item>
+        <item name="ereaderTextMuted">@color/sepia_text_muted</item>
+        <item name="ereaderTextAccent">@color/sepia_text_accent</item>
+        <item name="ereaderBorderSubtle">@color/sepia_border_subtle</item>
+        <item name="ereaderBorderGlass">@color/sepia_border_glass</item>
+        <item name="ereaderTrackNeutral">@color/sepia_track_neutral</item>
+
+        <item name="android:colorBackground">@color/sepia_surface</item>
+        <item name="android:windowBackground">@color/sepia_surface</item>
+        <item name="android:statusBarColor">@color/sepia_nav</item>
+        <item name="android:navigationBarColor">@color/sepia_nav</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
     </style>
 </resources>

@@ -10,6 +10,7 @@
     <string name="cd_play_chapter">Riproduci capitolo</string>
     <string name="cd_rewind_15">Riavvolgi di 15 secondi</string>
     <string name="cd_forward_30">Avanza di 30 secondi</string>
+    <string name="cd_stop_session">Blocca sessione attiva</string>
     <string name="cd_previous_chapter">Capitolo precedente</string>
     <string name="cd_next_chapter">Capitolo successivo</string>
     <string name="cd_collapse_player">Riduci lettore audio</string>
@@ -20,21 +21,28 @@
     <string name="cd_edit_profile">Modifica profilo</string>
     <string name="cd_pick_ebook_folder">Seleziona cartella eBook</string>
     <string name="cd_pick_audio_folder">Seleziona cartella audiolibri</string>
-    <string name="cd_manage_drive">Gestisci account Google Drive</string>
 
     <!-- Bottom Navigation -->
     <string name="nav_library">Libreria</string>
     <string name="nav_audiobooks">Audiolibri</string>
     <string name="nav_profile">Profilo</string>
 
+    <!-- Permissions -->
+    <string name="permission_rationale_title">Permesso di accesso ai file</string>
+    <string name="permission_rationale_message">Concedi l’accesso ai file audio e ai documenti locali per importare e riprodurre i tuoi eBook e audiolibri.</string>
+    <string name="permission_grant">Consenti</string>
+    <string name="permission_later">Più tardi</string>
+
     <!-- Library Screen -->
     <string name="library_eyebrow">Santuario Personale</string>
     <string name="library_title">La tua Libreria</string>
-    <string name="library_search_hint">Cerca per titolo, autore o ISBN</string>
+    <string name="library_search_hint">Cerca per titolo o autore</string>
     <string name="library_in_progress">In Corso</string>
-    <string name="library_next_section">Da Leggere &amp; Completati</string>
-    <string name="library_next_subtitle">Prossimi in lista</string>
-    <string name="library_see_all">Tutti</string>
+    <string name="library_next_section">La tua Collezione</string>
+    <string name="library_next_subtitle">eBook salvati in libreria</string>
+    <string name="library_import_btn">Importa file</string>
+    <string name="library_empty_title">Nessun eBook in libreria</string>
+    <string name="library_empty_desc">Importa un file EPUB, PDF o TXT oppure configura la cartella eBook nelle Impostazioni.</string>
     <string name="action_index">Indice</string>
     <string name="action_resume">Riprendi</string>
     <string name="action_reread">Rileggi</string>
@@ -43,16 +51,12 @@
     <string name="label_status">Stato</string>
     <string name="status_completed">Completato</string>
     <string name="status_to_start">Da iniziare</string>
-    <string name="sample_hero_chapter">Capitolo 5</string>
-    <string name="sample_hero_pages">Pag. 184 / 270</string>
-    <string name="sample_progress_68_percent">68%</string>
-    <string name="sample_book_1984_title">1984</string>
-    <string name="sample_book_1984_author">George Orwell</string>
-    <string name="sample_book_1984_header">1984 — George Orwell</string>
-    <string name="sample_book_gatsby_title">Il Grande Gatsby</string>
-    <string name="sample_book_gatsby_author">F. Scott Fitzgerald</string>
-    <string name="sample_book_fahrenheit_title">Fahrenheit 451</string>
-    <string name="sample_book_fahrenheit_author">Ray Bradbury</string>
+    <string name="status_in_progress">In corso</string>
+    <string name="format_chapter_n">Capitolo %1$d</string>
+    <string name="format_pages_of">Pag. %1$d / %2$d</string>
+    <string name="format_percent">%1$d%%</string>
+    <string name="format_percent_completed">%1$d%% completato</string>
+    <string name="format_titles_count">%1$d titoli</string>
 
     <!-- Audiobooks Screen -->
     <string name="audiobooks_title">I tuoi Audiolibri</string>
@@ -60,138 +64,147 @@
     <string name="audiobooks_now_playing">In Riproduzione</string>
     <string name="audiobooks_current_device">Dispositivo attuale</string>
     <string name="audiobooks_all_title">Tutti gli audiolibri</string>
-    <string name="audiobooks_count_sample">5 titoli</string>
+    <string name="audiobooks_import_btn">Importa audio</string>
+    <string name="audiobooks_empty_title">Nessun audiolibro</string>
+    <string name="audiobooks_empty_desc">Importa un file audio (MP3, M4B, M4A) o scansiona la tua cartella nelle Impostazioni.</string>
     <string name="action_chapters">Capitoli</string>
     <string name="audiobooks_badge_audio_edition">ED. AUDIO</string>
-    <string name="audiobooks_hero_chapter_sample">Capitolo 5 di 18</string>
-    <string name="audiobooks_hero_time_sample">14:18 / 42:00</string>
-    <string name="audiobooks_hero_narrator_sample">Voce: Marco Baliani</string>
-    <string name="audiobooks_hero_progress_sample">34% completato</string>
-    <string name="audiobooks_hero_remaining_sample">3h 12m rimanenti</string>
-    <string name="audiobooks_mini_title_sample">1984 • Cap. 5</string>
-    <string name="audiobooks_mini_subtitle_sample">3h 12m rimasti • Velocità 1.2x</string>
+    <string name="format_chapter_of_total">Capitolo %1$d di %2$d</string>
+    <string name="format_narrator">Voce: %1$s</string>
+    <string name="format_remaining_time">%1$s rimanenti</string>
+
+    <!-- Mini Player -->
+    <string name="action_stop_session">Blocca</string>
+    <string name="mini_player_reading">Lettura attiva • Cap. %1$d</string>
+    <string name="mini_player_listening">In ascolto • Cap. %1$d</string>
+    <string name="mini_player_paused">In pausa • Cap. %1$d</string>
 
     <!-- Reader Screen -->
-    <string name="reader_chapter_pill">1984 • Capitolo V</string>
-    <string name="reader_chapter_label">CAPITOLO V</string>
-    <string name="reader_chapter_title">Il Volto nel Corridoio</string>
-    <string name="reader_page_counter">Pagina 142 di 208</string>
+    <string name="reader_chapter_label">CAPITOLO %1$d</string>
+    <string name="reader_page_counter">Pagina %1$d di %2$d</string>
     <string name="reader_font_aa">Aa</string>
     <string name="reader_hud_text">Testo</string>
-    <string name="reader_hud_theme">Sfondo</string>
+    <string name="reader_hud_theme">Tema</string>
     <string name="reader_hud_index">Indice</string>
     <string name="reader_hud_save">Salva</string>
     <string name="reader_font_size_label">Dimensione Carattere</string>
     <string name="reader_font_decrease">-</string>
     <string name="reader_font_increase">+</string>
-    <string name="reader_font_size_sample">16sp</string>
+    <string name="reader_font_size_fmt">%1$dsp</string>
     <string name="reader_font_serif">Serif</string>
     <string name="reader_font_sans">Sans</string>
     <string name="reader_theme_oled">Notturno OLED</string>
-    <string name="reader_prose_dropcap">E</string>
-    <string name="reader_prose_p1">ra una limpida e fredda giornata d’aprile, e gli orologi battevano tredici colpi. Winston Smith, con il mento affondato nel bavero per sfuggire al vento sferzante, scivolò rapido attraverso le porte a vetri degli Appartamenti Vittoria, sebbene non abbastanza in fretta da impedire che una ventata di polvere grigia entrasse con lui.</string>
-    <string name="reader_prose_p2">Nell’atrio l’odore di cavolo bollito e di vecchi tappeti si mescolava a quello della polvere. In fondo al corridoio un manifesto a colori, troppo grande per essere appeso all’interno, era stato fissato alla parete con puntine da disegno.</string>
-    <string name="reader_prose_p3">Winston si diresse verso le scale. Era inutile tentare l’ascensore. Anche nei momenti migliori funzionava di rado, e al presente l’erogazione della corrente elettrica veniva interrotta nelle ore diurne. Era parte dell’opera di economia in preparazione della Settimana dell’Odio.</string>
-    <string name="reader_prose_p4">L’appartamento era al settimo piano e Winston, che aveva trentanove anni e un’ulcera varicosa alla caviglia destra, saliva lentamente, fermandosi varie volte per riposare. A ogni pianerottolo, proprio di fronte al pozzo dell’ascensore, il cartellone con l’enorme volto scrutava dalla parete.</string>
-    <string name="reader_vignette_caption">Londra, Pista di Atterraggio Uno • Airstrip One</string>
-    <string name="reader_vignette_badge">MINITRUE</string>
-    <string name="reader_prose_p5">Era uno di quei ritratti fatti in modo tale che gli occhi vi seguono ovunque vi muoviate. IL GRANDE FRATELLO TI GUARDA, diceva la scritta sottostante.</string>
+    <string name="reader_complete_chapter">Concludi capitolo</string>
+    <string name="reader_prev_chapter">Prec.</string>
+    <string name="reader_next_chapter">Succ.</string>
+    <string name="reader_prev_page">Pag. prec.</string>
+    <string name="reader_next_page">Pag. succ.</string>
+    <string name="reader_bookmark_saved">Segnalibro salvato</string>
+    <string name="reader_note_dialog_title">Aggiungi segnalibro o nota</string>
+    <string name="reader_note_hint">Nota opzionale sul passaggio…</string>
+    <string name="reader_save_bookmark_only">Segnalibro</string>
+    <string name="reader_save_note">Salva Nota</string>
+    <string name="reader_no_text">Nessun contenuto testuale disponibile per questo capitolo.</string>
+    <string name="reader_file_error">Impossibile aprire il file collegato. Seleziona nuovamente il file o concedi il permesso.</string>
 
     <!-- Chapter Index (eBook & Audiobook) -->
     <string name="chapters_title">Indice Capitoli</string>
-    <string name="chapters_search_hint">Cerca capitolo, pagina o frase…</string>
-    <string name="chapters_audio_search_hint">Cerca capitolo o tema…</string>
-    <string name="tab_chapters">Capitoli (18)</string>
-    <string name="tab_bookmarks_ebook">Segnalibri (4)</string>
-    <string name="tab_notes_ebook">Note (7)</string>
-    <string name="tab_bookmarks_audio">Segnalibri (3)</string>
-    <string name="tab_notes_audio">Note (5)</string>
-    <string name="part_one">Parte Prima</string>
-    <string name="part_two">Parte Seconda</string>
+    <string name="chapters_search_hint">Cerca capitolo o titolo…</string>
+    <string name="chapters_audio_search_hint">Cerca capitolo audio…</string>
+    <string name="tab_chapters_fmt">Capitoli (%1$d)</string>
+    <string name="tab_bookmarks_fmt">Segnalibri (%1$d)</string>
+    <string name="tab_notes_fmt">Note (%1$d)</string>
     <string name="current_chapter">Capitolo Corrente</string>
     <string name="action_continue">Continua</string>
     <string name="action_resume_reading">Riprendi lettura</string>
-    <string name="chapters_book_meta_sample">George Orwell • Mondadori</string>
-    <string name="chapters_progress_percent_sample">68% completato</string>
-    <string name="chapters_page_progress_sample">Pag. 142 / 208</string>
-    <string name="part_one_range_sample">Cap. I – VIII • Pag. 1 – 94</string>
-    <string name="chapter_active_status_sample">In Lettura • Pag. 142</string>
-    <string name="chapter_active_badge_sample">Cap. V</string>
+    <string name="chapter_active_status_fmt">In Corso • %1$s</string>
+    <string name="chapter_active_badge_fmt">Cap. %1$d</string>
     <string name="chapter_progress_label">Progresso capitolo</string>
-    <string name="chapter_progress_read_sample">68% letto</string>
-    <string name="part_two_range_sample">Cap. IX – XVIII • Pag. 209 – 340</string>
-    <string name="chapters_current_summary_sample">Cap. V — Pag. 142</string>
     <string name="chapters_audio_listening_progress">Avanzamento ascolto</string>
-    <string name="chapters_audio_progress_percent_sample">28%</string>
-    <string name="chapters_audio_active_time_sample">• 14:18</string>
-    <string name="chapters_audio_active_title_sample">Capitolo 5: Il Ministero della Verità</string>
-    <string name="chapters_audio_active_progress_sample">34% ascoltato</string>
-    <string name="chapters_audio_active_remaining_sample">27 min rimanenti</string>
-    <string name="chapters_audio_part_two_meta_sample">6 capitoli • 4h 10m</string>
     <string name="chapters_audio_mini_eyebrow">Riproduzione attiva</string>
-    <string name="chapters_audio_mini_title_sample">Cap. 5: Il Ministero della Verità</string>
+    <string name="chapters_empty_items">Nessun elemento salvato in questa sezione.</string>
+    <string name="chapter_status_completed">Completato</string>
+    <string name="chapter_status_to_start">Da iniziare</string>
 
     <!-- Audio Player -->
     <string name="player_now_playing">IN RIPRODUZIONE</string>
-    <string name="player_hd_badge">MASTER AUDIO HD</string>
+    <string name="player_hd_badge">AUDIO LOCALE</string>
     <string name="player_speed_label">Velocità</string>
-    <string name="player_timer_sample">15 min</string>
-    <string name="player_chapter_pill_sample">Capitolo 5 • Il Grande Fratello ti osserva</string>
-    <string name="player_elapsed_sample">15:08</string>
-    <string name="player_remaining_sample">-28:45</string>
+    <string name="player_timer_off">Timer Off</string>
+    <string name="player_timer_fmt">%1$d min</string>
     <string name="player_skip_15s">15s</string>
     <string name="player_skip_30s">30s</string>
-    <string name="sample_default_speed_value">1.0x</string>
+    <string name="player_sleep_dialog_title">Timer di sospensione</string>
+    <string name="player_sleep_off">Disattivo</string>
+    <string name="player_audio_error">Impossibile riprodurre il file audio selezionato.</string>
 
     <!-- Profile & Settings -->
-    <string name="sample_profile_initials">MR</string>
-    <string name="sample_profile_name">Marco Rossi</string>
-    <string name="settings_account_local_subtitle">Account Locale • Memoria interna</string>
-    <string name="sample_drive_connected_chip">Google Drive collegato • marco.rossi@gmail.com</string>
+    <string name="default_profile_name">Lettore</string>
+    <string name="settings_account_local_subtitle">Profilo Locale • Database SQLite</string>
+    <string name="settings_edit_profile_title">Modifica nome profilo</string>
     <string name="settings_storage_title">Archiviazione &amp; Cartelle</string>
-    <string name="settings_storage_desc">Configura i percorsi separati sul dispositivo per la scansione automatica dei tuoi file.</string>
+    <string name="settings_storage_desc">Seleziona le cartelle locali per scansionare i tuoi file e salvarli nel database.</string>
     <string name="settings_ebook_folder">Cartella eBook</string>
-    <string name="sample_ebook_folder_path">/Memoria/Documenti/eBooks/EPUB</string>
-    <string name="sample_ebook_folder_stats">42 file rilevati • 1.2 GB</string>
-    <string name="settings_ebook_formats">Formati: EPUB, PDF</string>
+    <string name="settings_folder_not_set">Nessuna cartella selezionata</string>
+    <string name="settings_ebook_formats">Formati: EPUB, PDF, TXT</string>
     <string name="settings_audiobook_folder">Cartella Audiolibri</string>
-    <string name="sample_audio_folder_path">/Memoria/Audio/Audiolibri/M4B</string>
-    <string name="sample_audio_folder_stats">18 titoli • 14.8 GB</string>
-    <string name="settings_audio_formats">Formati: M4B, MP3</string>
+    <string name="settings_audio_formats">Formati: M4B, MP3, M4A, OGG</string>
     <string name="settings_scan_now">Scansiona cartelle ora</string>
-    <string name="settings_cloud_title">Cloud &amp; Sincronizzazione</string>
-    <string name="settings_cloud_desc">Gestisci il backup cloud e sincronizza i tuoi progressi su più dispositivi.</string>
-    <string name="settings_cloud_provider_drive">Google Drive</string>
-    <string name="settings_status_active">Attivo</string>
-    <string name="sample_drive_email">marco.rossi@gmail.com</string>
-    <string name="settings_last_backup_label">Ultimo backup eseguito</string>
-    <string name="sample_last_backup_time">Sincronizzato 12 min fa</string>
-    <string name="settings_auto_cloud_sync_title">Sincronizzazione automatica Cloud</string>
-    <string name="settings_auto_cloud_sync_desc">Salva segnalibri e note ad ogni interruzione</string>
-    <string name="settings_wifi_only_title">Sincronizza solo sotto rete Wi-Fi</string>
-    <string name="settings_wifi_only_desc">Risparmia traffico dati cellulare</string>
-    <string name="settings_sync_now">Sincronizza ora</string>
+    <string name="settings_scan_result">Scansione completata: %1$d nuovi, %2$d già presenti</string>
+    <string name="settings_scan_no_folders">Seleziona almeno una cartella eBook o Audiolibri prima di scansionare.</string>
+
     <string name="settings_sleep_title">Protezione Notturna Anti-Sonno</string>
-    <string name="settings_sleep_banner">Blocco anti-addormentamento: interrompe la lettura o l’audio dopo un intervallo prestabilito e richiede una conferma per verificare se sei ancora sveglio prima di continuare.</string>
+    <string name="settings_sleep_banner">Blocco anti-addormentamento: interrompe la lettura o l’audio allo scadere dei minuti impostati nella fascia notturna e mostra la schermata a tutto schermo per continuare con uno swipe.</string>
     <string name="settings_sleep_enable">Attiva Timer Sonno Notturno</string>
     <string name="settings_sleep_enable_desc">Monitoraggio attivo nelle sessioni serali</string>
     <string name="settings_sleep_window">Fascia oraria attiva</string>
-    <string name="sample_sleep_window_range">22:30 — 07:00</string>
     <string name="settings_sleep_interval">Intervallo di controllo</string>
     <string name="settings_sleep_auto_pause">Pausa automatica</string>
+    <string name="settings_interval_15m">15 min</string>
     <string name="settings_interval_30m">30 min</string>
     <string name="settings_interval_45m">45 min</string>
     <string name="settings_interval_60m">60 min</string>
-    <string name="settings_sleep_verify_title">Modalità di verifica veglia</string>
-    <string name="settings_sleep_verify_desc">Scuoti il telefono leggermente o tocca lo schermo per confermare che sei ancora sveglio.</string>
-    <string name="settings_sleep_timeout_note">Se non rispondi entro 60 secondi, la posizione viene salvata e la riproduzione va in pausa.</string>
-    <string name="settings_prefs_title">Preferenze Lettore &amp; Audio</string>
+    <string name="settings_sleep_verify_title">Verifica veglia con swipe</string>
+    <string name="settings_sleep_verify_desc">Allo scadere dell’intervallo si apre una schermata a tutto schermo: scorri per continuare la sessione.</string>
+    <string name="settings_sleep_timeout_note">Se non rispondi entro 60 secondi, la posizione viene salvata e la riproduzione resta in pausa.</string>
+    <string name="settings_sleep_start_picker">Ora di inizio fascia notturna</string>
+    <string name="settings_sleep_end_picker">Ora di fine fascia notturna</string>
+
+    <string name="settings_prefs_title">Preferenze Lettore, Temi &amp; Lingua</string>
     <string name="settings_oled_title">Tema scuro profondo (OLED)</string>
     <string name="settings_oled_desc">Nero assoluto #000000 per minor consumo</string>
+    <string name="settings_theme_title">Tema applicazione</string>
+    <string name="settings_theme_desc">Scegli la palette visiva dell’app</string>
+    <string name="theme_dark">Scuro Elegante</string>
+    <string name="theme_oled">Notturno OLED</string>
+    <string name="theme_light">Chiaro Carta</string>
+    <string name="theme_sepia">Seppia Caldo</string>
+    <string name="settings_language_title">Lingua</string>
+    <string name="settings_language_desc">Seleziona la lingua dell’interfaccia</string>
+    <string name="lang_system">Sistema</string>
+    <string name="lang_italian">Italiano</string>
+    <string name="lang_english">English</string>
     <string name="settings_default_speed">Velocità predefinita</string>
     <string name="settings_default_speed_desc">Ritmo di ascolto audiolibri</string>
     <string name="settings_auto_bookmark">Salvataggio segnalibri auto</string>
-    <string name="settings_auto_bookmark_desc">Memorizza la pagina ad ogni chiusura</string>
-    <string name="settings_footer_version">Libreria v2.4.1 • Spazio utilizzato: 16.0 GB su 128 GB</string>
-    <string name="settings_clear_cache">Cancella cache temporanea (142 MB)</string>
+    <string name="settings_auto_bookmark_desc">Memorizza la posizione ad ogni chiusura</string>
+    <string name="settings_footer_fmt">Database locale: %1$d eBook • %2$d Audiolibri</string>
+    <string name="settings_clear_cache">Svuota cache copertine (%1$s)</string>
+    <string name="settings_cache_cleared">Cache copertine svuotata</string>
+
+    <!-- Sleep Verify Fullscreen Activity -->
+    <string name="sleep_verify_badge">PROTEZIONE NOTTURNA</string>
+    <string name="sleep_verify_title">Sei ancora sveglio?</string>
+    <string name="sleep_verify_subtitle">La sessione di "%1$s" è stata messa in pausa automaticamente.</string>
+    <string name="sleep_verify_swipe_hint">Scorri verso destra per continuare →</string>
+    <string name="sleep_verify_countdown">Pausa definitiva tra %1$d s</string>
+    <string name="sleep_verify_stop_btn">Ferma e dormi</string>
+    <string name="sleep_verify_resumed">Sessione ripresa</string>
+
+    <!-- Notification & Common Dialog Buttons -->
+    <string name="notification_audio_channel">Riproduzione Audiolibri</string>
+    <string name="action_save">Salva</string>
+    <string name="action_cancel">Annulla</string>
+    <string name="action_delete">Elimina</string>
+    <string name="action_close">Chiudi</string>
 </resources>
