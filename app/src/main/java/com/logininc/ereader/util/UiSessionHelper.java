@@ -15,7 +15,10 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.logininc.ereader.R;
 import com.logininc.ereader.model.AudioBook;
 import com.logininc.ereader.model.Title;
+import com.logininc.ereader.persistence.TitleDao;
+import com.logininc.ereader.screen.AudioChaptersActivity;
 import com.logininc.ereader.screen.AudiobooksActivity;
+import com.logininc.ereader.screen.EbookChaptersActivity;
 import com.logininc.ereader.screen.LibraryActivity;
 import com.logininc.ereader.screen.ProfileSettingsActivity;
 import com.logininc.ereader.service.PlaybackSessionManager;
@@ -35,29 +38,57 @@ public final class UiSessionHelper {
             @NonNull BottomNavigationView bottomNav,
             int selectedItemId
     ) {
+        bottomNav.setSaveEnabled(false);
+        bottomNav.setOnItemSelectedListener(null);
+        bottomNav.setOnItemReselectedListener(null);
         bottomNav.setSelectedItemId(selectedItemId);
+        bottomNav.setOnItemReselectedListener(item -> {
+            // No-op when reselecting the current tab
+        });
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == selectedItemId) {
                 return true;
             }
-            Class<?> target = null;
-            if (itemId == R.id.nav_libreria) {
-                target = LibraryActivity.class;
-            } else if (itemId == R.id.nav_audiolibri) {
-                target = AudiobooksActivity.class;
-            } else if (itemId == R.id.nav_profilo) {
-                target = ProfileSettingsActivity.class;
-            }
+            Class<?> target = resolveBottomNavTarget(itemId);
             if (target != null) {
-                Intent intent = new Intent(activity, target);
-                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_NO_ANIMATION);
-                activity.startActivity(intent);
-                activity.overridePendingTransition(0, 0);
-                return true;
+                navigateToBottomNavTarget(activity, target);
             }
             return false;
         });
+    }
+
+    public static void syncBottomNavigation(@NonNull Activity activity, int selectedItemId) {
+        BottomNavigationView bottomNav = activity.findViewById(R.id.bottomNavigation);
+        if (bottomNav != null && bottomNav.getSelectedItemId() != selectedItemId) {
+            bindBottomNavigation(activity, bottomNav, selectedItemId);
+        }
+    }
+
+    @Nullable
+    private static Class<?> resolveBottomNavTarget(int itemId) {
+        if (itemId == R.id.nav_libreria) {
+            return LibraryActivity.class;
+        } else if (itemId == R.id.nav_audiolibri) {
+            return AudiobooksActivity.class;
+        } else if (itemId == R.id.nav_profilo) {
+            return ProfileSettingsActivity.class;
+        }
+        return null;
+    }
+
+    public static void navigateToBottomNavTarget(@NonNull Activity activity, @NonNull Class<?> target) {
+        if (activity.isFinishing() || activity.isDestroyed()) {
+            return;
+        }
+        Intent intent = new Intent(activity, target);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NO_ANIMATION);
+        activity.startActivity(intent);
+        activity.overridePendingTransition(0, 0);
+        if (!activity.getClass().equals(target)) {
+            activity.finish();
+            activity.overridePendingTransition(0, 0);
+        }
     }
 
     @NonNull
@@ -78,7 +109,12 @@ public final class UiSessionHelper {
             miniBar.setOnClickListener(v -> {
                 Title active = sessionManager.getActiveTitle();
                 if (active != null) {
-                    NavigationFlowHelper.openReaderOrPlayer(activity, active, active.getCurrentChapter());
+                    Title fresh = new TitleDao(activity).getById(active.getId());
+                    Title targetTitle = fresh != null ? fresh : active;
+                    NavigationFlowHelper.openReaderOrPlayer(activity, targetTitle, targetTitle.getCurrentChapter());
+                    if (activity instanceof EbookChaptersActivity || activity instanceof AudioChaptersActivity) {
+                        activity.finish();
+                    }
                 }
             });
         }
@@ -162,11 +198,16 @@ public final class UiSessionHelper {
         if (coverUri != null && "file".equals(coverUri.getScheme())) {
             String path = coverUri.getPath();
             if (path != null && new File(path).exists()) {
-                imageView.setImageURI(null);
-                imageView.setImageURI(coverUri);
+                Object currentTag = imageView.getTag(R.id.ivMiniCover);
+                if (!coverUri.toString().equals(currentTag) || imageView.getDrawable() == null) {
+                    imageView.setImageURI(null);
+                    imageView.setImageURI(coverUri);
+                    imageView.setTag(R.id.ivMiniCover, coverUri.toString());
+                }
                 return;
             }
         }
+        imageView.setTag(R.id.ivMiniCover, null);
         imageView.setImageDrawable(null);
     }
 }

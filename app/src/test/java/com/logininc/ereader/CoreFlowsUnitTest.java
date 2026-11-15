@@ -8,16 +8,27 @@ import static org.junit.Assert.assertTrue;
 
 import com.logininc.ereader.model.AudioBook;
 import com.logininc.ereader.model.Book;
+import com.logininc.ereader.model.Chapter;
 import com.logininc.ereader.model.Title;
 import com.logininc.ereader.service.PlaybackSessionManager;
 import com.logininc.ereader.service.SleepTimerController;
+import com.logininc.ereader.util.EbookParser;
 import com.logininc.ereader.util.FileScanner;
 import com.logininc.ereader.util.M4bParser;
 import com.logininc.ereader.util.NavigationFlowHelper;
+import com.tom_roush.pdfbox.pdmodel.PDDocument;
+import com.tom_roush.pdfbox.pdmodel.PDDocumentInformation;
+import com.tom_roush.pdfbox.pdmodel.PDPage;
+import com.tom_roush.pdfbox.pdmodel.PDPageContentStream;
+import com.tom_roush.pdfbox.pdmodel.font.PDType1Font;
+import com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocumentOutline;
+import com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem;
 
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
@@ -280,6 +291,121 @@ public class CoreFlowsUnitTest {
         assertEquals("Parte Prima", parsed.chapters.get(1).title);
         assertEquals(45_000L, parsed.chapters.get(1).startMs);
         assertEquals(95_000L, parsed.chapters.get(1).durationMs);
+    }
+
+    @Test
+    public void ebookParserExtractsRealTestFileEpubMetadataCoverAndChapters() throws IOException {
+        File epubFile = findTestEpubFile();
+        assertNotNull("Test EPUB file must exist in test_file/", epubFile);
+
+        EbookParser.EbookMetadata parsed = EbookParser.parseEpubFile(epubFile);
+        assertEquals(
+                "Claude AI Bible: The Complete Guide to Mastering Claude, Claude Code, Claude Cowork, MCP, AI Agents, Automation & Advanced Prompting",
+                parsed.title
+        );
+        assertEquals("Stephen Clear", parsed.author);
+        assertNotNull(parsed.coverBytes);
+        assertEquals(104717, parsed.coverBytes.length);
+        assertEquals(452, parsed.totalPages);
+        assertEquals(33, parsed.chapters.size());
+
+        assertEquals("Disclaimer", parsed.chapters.get(0).getChapterTitle());
+        assertEquals("How to Use This Book", parsed.chapters.get(1).getChapterTitle());
+        assertEquals("The 90 Percent You Haven't Touched", parsed.chapters.get(2).getChapterTitle());
+        assertEquals("Chapter 1: The Machine With a Conscience", parsed.chapters.get(3).getChapterTitle());
+        assertEquals("About the Author", parsed.chapters.get(32).getChapterTitle());
+
+        for (Chapter ch : parsed.chapters) {
+            String text = ch.getContentText();
+            assertFalse("Chapter text should not be empty: " + ch.getChapterTitle(), text.trim().isEmpty());
+            assertFalse("Chapter text must not contain HTML tags: " + ch.getChapterTitle(),
+                    text.contains("<p") || text.contains("</p>") || text.contains("<h1"));
+        }
+        assertTrue(parsed.chapters.get(3).getContentText().contains("Most software does exactly what it is told"));
+    }
+
+    @Test
+    public void ebookParserExtractsPdfMetadataOutlineAndTextWithPdfBox() throws IOException {
+        byte[] pdfBytes;
+        try (PDDocument doc = new PDDocument();
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            PDDocumentInformation info = new PDDocumentInformation();
+            info.setTitle("Test PDF EBook");
+            info.setAuthor("Ada Lovelace");
+            doc.setDocumentInformation(info);
+
+            PDPage page1 = new PDPage();
+            doc.addPage(page1);
+            try (PDPageContentStream cs = new PDPageContentStream(doc, page1)) {
+                cs.beginText();
+                cs.setFont(PDType1Font.HELVETICA, 12);
+                cs.newLineAtOffset(50, 700);
+                cs.showText("First PDF chapter content");
+                cs.endText();
+            }
+
+            PDPage page2 = new PDPage();
+            doc.addPage(page2);
+            try (PDPageContentStream cs = new PDPageContentStream(doc, page2)) {
+                cs.beginText();
+                cs.setFont(PDType1Font.HELVETICA, 12);
+                cs.newLineAtOffset(50, 700);
+                cs.showText("Second PDF chapter content");
+                cs.endText();
+            }
+
+            PDDocumentOutline outline = new PDDocumentOutline();
+            doc.getDocumentCatalog().setDocumentOutline(outline);
+            PDOutlineItem item1 = new PDOutlineItem();
+            item1.setTitle("Introduzione PDF");
+            item1.setDestination(page1);
+            outline.addLast(item1);
+
+            PDOutlineItem item2 = new PDOutlineItem();
+            item2.setTitle("Capitolo Finale PDF");
+            item2.setDestination(page2);
+            outline.addLast(item2);
+
+            doc.save(out);
+            pdfBytes = out.toByteArray();
+        }
+
+        EbookParser.EbookMetadata parsed = EbookParser.parsePdfStream(
+                null,
+                new ByteArrayInputStream(pdfBytes),
+                "fallback"
+        );
+        assertEquals("Test PDF EBook", parsed.title);
+        assertEquals("Ada Lovelace", parsed.author);
+        assertEquals(2, parsed.totalPages);
+        assertEquals(2, parsed.chapters.size());
+
+        assertEquals("Introduzione PDF", parsed.chapters.get(0).getChapterTitle());
+        assertEquals(1L, parsed.chapters.get(0).getAudioStartMs());
+        assertEquals(1L, parsed.chapters.get(0).getAudioDurationMs());
+        assertTrue(parsed.chapters.get(0).getContentText().contains("First PDF chapter content"));
+
+        assertEquals("Capitolo Finale PDF", parsed.chapters.get(1).getChapterTitle());
+        assertEquals(2L, parsed.chapters.get(1).getAudioStartMs());
+        assertEquals(2L, parsed.chapters.get(1).getAudioDurationMs());
+        assertTrue(parsed.chapters.get(1).getContentText().contains("Second PDF chapter content"));
+    }
+
+    private static File findTestEpubFile() {
+        for (String dirPath : new String[]{"test_file", "../test_file"}) {
+            File dir = new File(dirPath);
+            if (dir.isDirectory()) {
+                File[] files = dir.listFiles();
+                if (files != null) {
+                    for (File f : files) {
+                        if (f.isFile() && f.getName().toLowerCase().endsWith(".epub")) {
+                            return f;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     private static byte[] qtTextSample(String text) {

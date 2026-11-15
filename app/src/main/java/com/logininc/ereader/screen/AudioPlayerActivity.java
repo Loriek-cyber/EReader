@@ -1,5 +1,6 @@
 package com.logininc.ereader.screen;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -109,6 +110,17 @@ public class AudioPlayerActivity extends AppCompatActivity {
         startOrAttachSession();
     }
 
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handledCompletion = false;
+        if (resolveTargetAudioBook()) {
+            bindViews();
+            startOrAttachSession();
+        }
+    }
+
     private boolean resolveTargetAudioBook() {
         PlaybackSessionManager sessionManager = PlaybackSessionManager.getInstance();
         int titleId = getIntent().getIntExtra(NavigationFlowHelper.EXTRA_TITLE_ID, -1);
@@ -184,6 +196,7 @@ public class AudioPlayerActivity extends AppCompatActivity {
             finish();
         });
 
+        sliderProgress.clearOnSliderTouchListeners();
         sliderProgress.addOnSliderTouchListener(new Slider.OnSliderTouchListener() {
             @Override
             public void onStartTrackingTouch(@NonNull Slider slider) {
@@ -201,6 +214,7 @@ public class AudioPlayerActivity extends AppCompatActivity {
             }
         });
 
+        sliderProgress.clearOnChangeListeners();
         sliderProgress.addOnChangeListener((slider, value, fromUser) -> {
             if (fromUser) {
                 long totalMs = PlaybackSessionManager.getInstance().getTotalDurationMs();

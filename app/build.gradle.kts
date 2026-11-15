@@ -73,4 +73,6 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.ext.junit)
+    implementation("io.documentnode:epub4j-core:4.2.1") { exclude(group = "xmlpull", module = "xmlpull") }
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
 }

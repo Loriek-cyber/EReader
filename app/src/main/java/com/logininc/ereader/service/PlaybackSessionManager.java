@@ -150,6 +150,10 @@ public class PlaybackSessionManager {
             releaseMediaPlayer();
         }
 
+        boolean switchingChapter = !switchingTitle
+                && activeTitle != null
+                && activeTitle.getCurrentChapter() != Math.max(1, chapterIndex);
+
         title.setCurrentChapter(Math.max(1, chapterIndex));
         title.setCurrentChapterCompleted(false);
         title.setStatus(Title.STATUS_IN_PROGRESS);
@@ -169,8 +173,24 @@ public class PlaybackSessionManager {
             AudioBook audioBook = (AudioBook) title;
             if (!sameAudioAlreadyPrepared) {
                 prepareAndPlayAudio(appContext, audioBook, chapterIndex, startPlaying);
-            } else if (startPlaying && !playing) {
-                resume(appContext);
+            } else {
+                if (switchingChapter) {
+                    Chapter ch = new ChapterDao(appContext).getChapter(audioBook.getId(), Math.max(1, chapterIndex));
+                    if (ch != null) {
+                        long chStart = ch.getAudioStartMs();
+                        long chEnd = chStart + ch.getAudioDurationMs();
+                        long pos = audioBook.getCurrentPositionMs();
+                        if (pos < chStart || (ch.getAudioDurationMs() > 0 && pos >= chEnd)) {
+                            pos = chStart;
+                        }
+                        seekToMs(pos);
+                    }
+                }
+                if (startPlaying && !playing) {
+                    resume(appContext);
+                } else {
+                    notifyListeners();
+                }
             }
         } else {
             // Active eBook session stays active in background/mini-player until stopped or replaced

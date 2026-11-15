@@ -14,9 +14,11 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -45,6 +47,8 @@ public class AudiobooksActivity extends AppCompatActivity {
     private TitleDao titleDao;
     private SettingsDao settingsDao;
     private String appliedThemeMode;
+    private String appliedLanguageTag;
+    private int currentHeroAudioId = -1;
     private final ExecutorService ioExecutor = Executors.newSingleThreadExecutor();
 
     private EditText etSearch;
@@ -67,6 +71,7 @@ public class AudiobooksActivity extends AppCompatActivity {
     private LinearLayout listAudiobooks;
 
     private PlaybackSessionManager.SessionListener miniPlayerListener;
+    private PlaybackSessionManager.SessionListener heroSessionListener;
 
     private final ActivityResultLauncher<String[]> openAudioLauncher =
             registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
@@ -80,23 +85,36 @@ public class AudiobooksActivity extends AppCompatActivity {
         ThemeHelper.applySavedLocale(this);
         settingsDao = new SettingsDao(this);
         appliedThemeMode = settingsDao.getThemeMode();
+        appliedLanguageTag = settingsDao.getLanguageTag();
         ThemeHelper.applyTheme(this, false);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_audiobooks);
 
         titleDao = new TitleDao(this);
         bindViews();
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                UiSessionHelper.navigateToBottomNavTarget(AudiobooksActivity.this, LibraryActivity.class);
+            }
+        });
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (!settingsDao.getThemeMode().equals(appliedThemeMode)) {
+        if (!settingsDao.getThemeMode().equals(appliedThemeMode)
+                || !settingsDao.getLanguageTag().equals(appliedLanguageTag)) {
             recreate();
             return;
         }
+        UiSessionHelper.syncBottomNavigation(this, R.id.nav_audiolibri);
         miniPlayerListener = UiSessionHelper.attachMiniPlayer(this);
         refreshAudiobooks();
+        heroSessionListener = (activeTitle, isPlaying, positionMs, durationMs) ->
+                runOnUiThread(() -> syncHeroWithSession(activeTitle, isPlaying, positionMs, durationMs));
+        PlaybackSessionManager.getInstance().addListener(heroSessionListener);
     }
 
     @Override
@@ -105,6 +123,10 @@ public class AudiobooksActivity extends AppCompatActivity {
         if (miniPlayerListener != null) {
             PlaybackSessionManager.getInstance().removeListener(miniPlayerListener);
             miniPlayerListener = null;
+        }
+        if (heroSessionListener != null) {
+            PlaybackSessionManager.getInstance().removeListener(heroSessionListener);
+            heroSessionListener = null;
         }
     }
 
@@ -224,9 +246,11 @@ public class AudiobooksActivity extends AppCompatActivity {
 
     private void bindHeroAudioBook(AudioBook hero) {
         if (hero == null) {
+            currentHeroAudioId = -1;
             sectionNowPlaying.setVisibility(View.GONE);
             return;
         }
+        currentHeroAudioId = hero.getId();
         sectionNowPlaying.setVisibility(View.VISIBLE);
         UiSessionHelper.loadCover(ivAudioHeroCover, hero.getCoverUri());
         tvHeroChapterBadge.setText(getString(R.string.format_chapter_of_total,
@@ -265,6 +289,45 @@ public class AudiobooksActivity extends AppCompatActivity {
                 NavigationFlowHelper.openTitle(this, hero);
             }
         });
+    }
+
+    private void syncHeroWithSession(
+            @Nullable Title activeTitle,
+            boolean isPlaying,
+            long positionMs,
+            long durationMs
+    ) {
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+        if (activeTitle == null) {
+            if (currentHeroAudioId != -1) {
+                refreshAudiobooks();
+            }
+            return;
+        }
+        if (!(activeTitle instanceof AudioBook)) {
+            return;
+        }
+        AudioBook activeAudio = (AudioBook) activeTitle;
+        if (activeAudio.getId() != currentHeroAudioId) {
+            refreshAudiobooks();
+            return;
+        }
+        btnHeroPlayPause.setImageResource(isPlaying ? R.drawable.ic_pause : R.drawable.ic_play);
+        long totalMs = Math.max(durationMs, activeAudio.getTotalDurationMs());
+        long safePos = Math.max(0L, positionMs);
+        tvHeroChapterBadge.setText(getString(R.string.format_chapter_of_total,
+                activeAudio.getCurrentChapter(), activeAudio.getLenChapters()));
+        tvHeroChapterTime.setText(FileScanner.formatDuration(safePos)
+                + " / " + FileScanner.formatDuration(totalMs));
+        int pct = totalMs > 0
+                ? (int) Math.min(100L, Math.max(0L, (safePos * 100L) / totalMs))
+                : activeAudio.getProgressPercent();
+        progressAudioHero.setProgress(pct);
+        tvAudioHeroProgressLabel.setText(getString(R.string.format_percent_completed, pct));
+        long remainingMs = Math.max(0L, totalMs - safePos);
+        tvAudioHeroRemaining.setText(getString(R.string.format_remaining_time, FileScanner.formatDuration(remainingMs)));
     }
 
     private void renderAudiobooksList(@NonNull List<AudioBook> items) {

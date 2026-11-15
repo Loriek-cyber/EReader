@@ -41,15 +41,23 @@ import java.util.Locale;
 
 public class EbookReaderActivity extends AppCompatActivity {
 
+    private static final String STATE_CHAPTER_INDEX = "state_chapter_index";
+    private static final String STATE_PDF_PAGE = "state_pdf_page";
+    private static final String STATE_SCROLL_Y = "state_scroll_y";
+    private static final String STATE_HUD_VISIBLE = "state_hud_visible";
+
     private TitleDao titleDao;
     private ChapterDao chapterDao;
     private BookmarkNoteDao bookmarkNoteDao;
     private SettingsDao settingsDao;
+    private String appliedThemeMode;
 
     private Book book;
     private Chapter currentChapter;
     private int currentChapterIndex = 1;
     private int currentPdfPageZeroBased = 0;
+    private int pendingRestoreScrollY = -1;
+    private int pendingRestorePdfPage = -1;
 
     @Nullable
     private ParcelFileDescriptor pdfPfd;
@@ -83,6 +91,7 @@ public class EbookReaderActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         ThemeHelper.applySavedLocale(this);
         settingsDao = new SettingsDao(this);
+        appliedThemeMode = settingsDao.getThemeMode();
         ThemeHelper.applyTheme(this, true);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_ebook_reader);
@@ -100,11 +109,37 @@ public class EbookReaderActivity extends AppCompatActivity {
         book = (Book) loaded;
         currentChapterIndex = getIntent().getIntExtra(
                 NavigationFlowHelper.EXTRA_CHAPTER_INDEX, book.getCurrentChapter());
+        if (savedInstanceState != null) {
+            currentChapterIndex = savedInstanceState.getInt(STATE_CHAPTER_INDEX, currentChapterIndex);
+            pendingRestorePdfPage = savedInstanceState.getInt(STATE_PDF_PAGE, -1);
+            pendingRestoreScrollY = savedInstanceState.getInt(STATE_SCROLL_Y, -1);
+        }
 
         bindViews();
+        if (savedInstanceState != null && savedInstanceState.getBoolean(STATE_HUD_VISIBLE, false)) {
+            typographyHud.setVisibility(View.VISIBLE);
+        }
         PlaybackSessionManager.getInstance().startOrSwitchSession(this, book, currentChapterIndex, true);
         loadChapter(currentChapterIndex);
         applyTypographyFromSettings();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!settingsDao.getThemeMode().equals(appliedThemeMode)) {
+            recreate();
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        saveCurrentReadingPosition();
+        super.onSaveInstanceState(outState);
+        outState.putInt(STATE_CHAPTER_INDEX, currentChapterIndex);
+        outState.putInt(STATE_PDF_PAGE, currentPdfPageZeroBased);
+        outState.putInt(STATE_SCROLL_Y, scrollContent != null ? scrollContent.getScrollY() : 0);
+        outState.putBoolean(STATE_HUD_VISIBLE, typographyHud != null && typographyHud.getVisibility() == View.VISIBLE);
     }
 
     @Override
@@ -153,6 +188,7 @@ public class EbookReaderActivity extends AppCompatActivity {
         View.OnClickListener openChaptersListener = v -> {
             saveCurrentReadingPosition();
             NavigationFlowHelper.openChapterSelector(this, book);
+            finish();
         };
         findViewById(R.id.btnChapterPill).setOnClickListener(openChaptersListener);
         findViewById(R.id.btnActionIndex).setOnClickListener(openChaptersListener);
@@ -181,10 +217,14 @@ public class EbookReaderActivity extends AppCompatActivity {
                     ? SettingsDao.THEME_DARK
                     : SettingsDao.THEME_OLED;
             settingsDao.setThemeMode(next);
+            saveCurrentReadingPosition();
+            getIntent().putExtra(NavigationFlowHelper.EXTRA_CHAPTER_INDEX, currentChapterIndex);
             recreate();
         });
         findViewById(R.id.btnActionTheme).setOnClickListener(v -> {
             ThemeHelper.cycleNextTheme(this);
+            saveCurrentReadingPosition();
+            getIntent().putExtra(NavigationFlowHelper.EXTRA_CHAPTER_INDEX, currentChapterIndex);
             recreate();
         });
         findViewById(R.id.btnActionBookmark).setOnClickListener(v -> showSaveBookmarkNoteDialog());
@@ -215,6 +255,8 @@ public class EbookReaderActivity extends AppCompatActivity {
             }
         }
 
+        boolean sameChapterAsBook = book.getCurrentChapter() == currentChapterIndex;
+        getIntent().putExtra(NavigationFlowHelper.EXTRA_CHAPTER_INDEX, currentChapterIndex);
         book.setCurrentChapter(currentChapterIndex);
         book.setCurrentChapterCompleted(false);
         book.setStatus(Title.STATUS_IN_PROGRESS);
@@ -233,8 +275,9 @@ public class EbookReaderActivity extends AppCompatActivity {
         btnPrevChapter.setAlpha(currentChapterIndex > 1 ? 1f : 0.4f);
 
         String displayName = FileScanner.queryDisplayName(this, book.getContentUri()).toLowerCase(Locale.ROOT);
-        boolean isPdf = displayName.endsWith(".pdf")
-                || (currentChapter != null && currentChapter.getContentText().isEmpty() && currentChapter.getAudioStartMs() > 0);
+        boolean hasProseText = currentChapter != null && !currentChapter.getContentText().trim().isEmpty();
+        boolean isPdf = !hasProseText && (displayName.endsWith(".pdf")
+                || (currentChapter != null && currentChapter.getAudioStartMs() > 0));
 
         if (isPdf) {
             tvProseBody.setVisibility(View.GONE);
@@ -242,13 +285,34 @@ public class EbookReaderActivity extends AppCompatActivity {
             int startPageOneBased = currentChapter != null && currentChapter.getAudioStartMs() > 0
                     ? (int) currentChapter.getAudioStartMs()
                     : 1;
-            openPdfAndShowPage(Math.max(0, startPageOneBased - 1));
+            int endPageOneBased = currentChapter != null && currentChapter.getAudioDurationMs() > 0
+                    ? (int) currentChapter.getAudioDurationMs()
+                    : Integer.MAX_VALUE;
+            boolean pageInCurrentChapter = book.getCurrentPage() >= startPageOneBased
+                    && book.getCurrentPage() <= endPageOneBased;
+            int targetZeroBased;
+            if (pendingRestorePdfPage >= 0) {
+                targetZeroBased = pendingRestorePdfPage;
+                pendingRestorePdfPage = -1;
+            } else if (sameChapterAsBook && pageInCurrentChapter && book.getCurrentPage() > 1) {
+                targetZeroBased = book.getCurrentPage() - 1;
+            } else {
+                targetZeroBased = Math.max(0, startPageOneBased - 1);
+            }
+            openPdfAndShowPage(targetZeroBased);
         } else {
             layoutPdfContainer.setVisibility(View.GONE);
             tvProseBody.setVisibility(View.VISIBLE);
             String body = currentChapter != null ? currentChapter.getContentText() : "";
             tvProseBody.setText(body.isEmpty() ? getString(R.string.reader_no_text) : body);
-            scrollContent.post(() -> scrollContent.scrollTo(0, 0));
+            if (pendingRestoreScrollY > 0) {
+                final int restoreY = pendingRestoreScrollY;
+                pendingRestoreScrollY = -1;
+                scrollContent.post(() -> scrollContent.scrollTo(0, restoreY));
+            } else {
+                pendingRestoreScrollY = -1;
+                scrollContent.post(() -> scrollContent.scrollTo(0, 0));
+            }
         }
         updateProgressFooter();
     }
@@ -327,7 +391,16 @@ public class EbookReaderActivity extends AppCompatActivity {
         int totalChapters = Math.max(1, book.getLenChapters());
         int overallPct = ((currentChapterIndex - 1) * 100 + chPercent) / totalChapters;
         book.setProgressPercent(Math.max(book.getProgressPercent(), overallPct));
-        int estPage = Math.max(1, (int) Math.ceil((book.getProgressPercent() / 100.0) * book.getTotalPages()));
+        int estPage;
+        if (currentChapter != null
+                && currentChapter.getAudioStartMs() > 0
+                && currentChapter.getAudioDurationMs() >= currentChapter.getAudioStartMs()) {
+            long startPage = currentChapter.getAudioStartMs();
+            long endPage = currentChapter.getAudioDurationMs();
+            estPage = (int) (startPage + Math.round(((endPage - startPage) * chPercent) / 100.0));
+        } else {
+            estPage = Math.max(1, (int) Math.ceil((book.getProgressPercent() / 100.0) * book.getTotalPages()));
+        }
         book.setCurrentPage(estPage);
         updateProgressFooter();
     }

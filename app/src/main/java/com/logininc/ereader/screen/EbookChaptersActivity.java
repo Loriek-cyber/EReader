@@ -254,7 +254,9 @@ public class EbookChaptersActivity extends AppCompatActivity {
             tvActiveProgress.setText(getString(R.string.format_percent, currentCh.getProgressPercent()));
             progressActive.setProgress(currentCh.getProgressPercent());
             final int chIndex = currentCh.getChapterIndex();
-            btnResumeChapter.setOnClickListener(v -> openChapterInReader(chIndex));
+            View.OnClickListener resumeListener = v -> openChapterInReader(chIndex);
+            cardActiveChapter.setOnClickListener(resumeListener);
+            btnResumeChapter.setOnClickListener(resumeListener);
         } else {
             cardActiveChapter.setVisibility(View.GONE);
         }

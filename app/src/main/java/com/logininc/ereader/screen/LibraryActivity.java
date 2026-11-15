@@ -43,9 +43,12 @@ import java.util.concurrent.Executors;
 
 public class LibraryActivity extends AppCompatActivity {
 
+    private static boolean permissionPromptShown = false;
+
     private TitleDao titleDao;
     private SettingsDao settingsDao;
     private String appliedThemeMode;
+    private String appliedLanguageTag;
     private final ExecutorService ioExecutor = Executors.newSingleThreadExecutor();
 
     private EditText etSearch;
@@ -77,6 +80,7 @@ public class LibraryActivity extends AppCompatActivity {
         ThemeHelper.applySavedLocale(this);
         settingsDao = new SettingsDao(this);
         appliedThemeMode = settingsDao.getThemeMode();
+        appliedLanguageTag = settingsDao.getLanguageTag();
         ThemeHelper.applyTheme(this, false);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_library);
@@ -89,10 +93,12 @@ public class LibraryActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (!settingsDao.getThemeMode().equals(appliedThemeMode)) {
+        if (!settingsDao.getThemeMode().equals(appliedThemeMode)
+                || !settingsDao.getLanguageTag().equals(appliedLanguageTag)) {
             recreate();
             return;
         }
+        UiSessionHelper.syncBottomNavigation(this, R.id.nav_libreria);
         miniPlayerListener = UiSessionHelper.attachMiniPlayer(this);
         refreshLibrary();
     }
@@ -153,7 +159,8 @@ public class LibraryActivity extends AppCompatActivity {
     }
 
     private void requestStoragePermissionsIfNeeded() {
-        if (!PermissionHelper.hasStorageOrAudioPermission(this)) {
+        if (!permissionPromptShown && !PermissionHelper.hasStorageOrAudioPermission(this)) {
+            permissionPromptShown = true;
             new AlertDialog.Builder(this)
                     .setTitle(R.string.permission_rationale_title)
                     .setMessage(R.string.permission_rationale_message)

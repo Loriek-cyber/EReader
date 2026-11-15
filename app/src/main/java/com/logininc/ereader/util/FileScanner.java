@@ -3,7 +3,6 @@ package com.logininc.ereader.util;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.database.Cursor;
-import android.graphics.pdf.PdfRenderer;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
@@ -20,21 +19,12 @@ import com.logininc.ereader.model.Title;
 import com.logininc.ereader.persistence.ChapterDao;
 import com.logininc.ereader.persistence.TitleDao;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 /**
  * Scans SAF folders or selected document URIs, parses real book/audiobook metadata and chapters,
@@ -56,8 +46,6 @@ public final class FileScanner {
 
     private static final int MAX_SCAN_DEPTH = 3;
     private static final long AUDIO_SEGMENT_MS = 10 * 60 * 1000L; // 10 min per chapter for long single-file audiobooks
-    private static final Pattern CHAPTER_SPLIT_PATTERN =
-            Pattern.compile("(?im)^\\s*(capitolo|chapter|parte|part)\\s+[\\divxlc0-9]+.*$");
 
     private FileScanner() {
     }
@@ -184,39 +172,12 @@ public final class FileScanner {
             @NonNull TitleDao titleDao,
             @NonNull ChapterDao chapterDao
     ) {
-        String lower = displayName.toLowerCase(Locale.ROOT);
-        String baseTitle = stripExtension(displayName);
-        String author = "";
-        Uri coverUri = null;
-        int totalPages = 1;
-        List<Chapter> chapters;
+        EbookParser.EbookMetadata parsed = EbookParser.parse(context, uri, displayName);
 
-        if (lower.endsWith(".epub")) {
-            EpubParseResult epub = parseEpub(context, uri, baseTitle);
-            if (!epub.title.isEmpty()) {
-                baseTitle = epub.title;
-            }
-            author = epub.author;
-            coverUri = epub.coverUri;
-            chapters = epub.chapters;
-            totalPages = Math.max(1, epub.estimatedPages);
-        } else if (lower.endsWith(".pdf")) {
-            totalPages = readPdfPageCount(context, uri);
-            chapters = buildPdfChapters(totalPages);
-        } else {
-            String rawText = readTextFully(context, uri);
-            chapters = buildTextChapters(rawText);
-            totalPages = Math.max(1, rawText.length() / 1600 + 1);
-        }
-
-        if (chapters.isEmpty()) {
-            chapters.add(new Chapter(0, 0, 1, baseTitle, "", "1", "", 0L, 0L, 0, false));
-        }
-
-        Book book = new Book(0, baseTitle, chapters.size(), uri);
-        book.setAuthor(author);
-        book.setCoverUri(coverUri);
-        book.setTotalPages(totalPages);
+        Book book = new Book(0, parsed.title, parsed.chapters.size(), uri);
+        book.setAuthor(parsed.author);
+        book.setCoverUri(parsed.coverUri);
+        book.setTotalPages(Math.max(1, parsed.totalPages));
         book.setCurrentPage(1);
         book.setStatus(Title.STATUS_TO_START);
 
@@ -224,7 +185,7 @@ public final class FileScanner {
         if (id == -1) {
             return null;
         }
-        chapterDao.replaceChapters(book.getId(), chapters);
+        chapterDao.replaceChapters(book.getId(), parsed.chapters);
         return book;
     }
 
@@ -401,190 +362,8 @@ public final class FileScanner {
         return chapters;
     }
 
-    private static int readPdfPageCount(@NonNull Context context, @NonNull Uri uri) {
-        try (ParcelFileDescriptor pfd = context.getContentResolver().openFileDescriptor(uri, "r")) {
-            if (pfd == null) {
-                return 1;
-            }
-            try (PdfRenderer renderer = new PdfRenderer(pfd)) {
-                return Math.max(1, renderer.getPageCount());
-            }
-        } catch (IOException | SecurityException e) {
-            return 1;
-        }
-    }
-
-    @NonNull
-    private static List<Chapter> buildPdfChapters(int totalPages) {
-        List<Chapter> chapters = new ArrayList<>();
-        int pagesPerChapter = Math.max(1, Math.min(15, (int) Math.ceil(totalPages / 10.0)));
-        int index = 1;
-        for (int startPage = 1; startPage <= totalPages; startPage += pagesPerChapter) {
-            int endPage = Math.min(totalPages, startPage + pagesPerChapter - 1);
-            String rangeLabel = startPage == endPage
-                    ? "Pag. " + startPage
-                    : "Pag. " + startPage + "–" + endPage;
-            chapters.add(new Chapter(
-                    0, 0, index,
-                    "Sezione " + index + " (" + rangeLabel + ")",
-                    rangeLabel,
-                    "Pag. " + startPage,
-                    "",
-                    startPage, // store start page in audioStartMs for PDF section lookup
-                    endPage,   // store end page in audioDurationMs
-                    0,
-                    false
-            ));
-            index++;
-        }
-        return chapters;
-    }
-
-    @NonNull
-    private static List<Chapter> buildTextChapters(@NonNull String rawText) {
-        List<Chapter> chapters = new ArrayList<>();
-        if (rawText.trim().isEmpty()) {
-            return chapters;
-        }
-        Matcher matcher = CHAPTER_SPLIT_PATTERN.matcher(rawText);
-        List<Integer> startIndices = new ArrayList<>();
-        List<String> titles = new ArrayList<>();
-        while (matcher.find()) {
-            startIndices.add(matcher.start());
-            titles.add(matcher.group().trim());
-        }
-
-        if (startIndices.size() >= 2) {
-            for (int i = 0; i < startIndices.size(); i++) {
-                int start = startIndices.get(i);
-                int end = (i + 1 < startIndices.size()) ? startIndices.get(i + 1) : rawText.length();
-                String body = rawText.substring(start, end).trim();
-                int estPage = Math.max(1, start / 1600 + 1);
-                chapters.add(new Chapter(
-                        0, 0, i + 1,
-                        titles.get(i),
-                        "Pag. " + estPage,
-                        "Pag. " + estPage,
-                        body,
-                        0L, 0L, 0, false
-                ));
-            }
-            return chapters;
-        }
-
-        int chunkSize = 3500;
-        int idx = 1;
-        for (int start = 0; start < rawText.length(); start += chunkSize) {
-            int end = Math.min(rawText.length(), start + chunkSize);
-            if (end < rawText.length()) {
-                int nextNewLine = rawText.indexOf('\n', end);
-                if (nextNewLine != -1 && nextNewLine - end < 400) {
-                    end = nextNewLine;
-                }
-            }
-            String chunk = rawText.substring(start, end).trim();
-            if (!chunk.isEmpty()) {
-                int estPage = Math.max(1, start / 1600 + 1);
-                chapters.add(new Chapter(
-                        0, 0, idx,
-                        "Parte " + idx,
-                        firstLinePreview(chunk),
-                        "Pag. " + estPage,
-                        chunk,
-                        0L, 0L, 0, false
-                ));
-                idx++;
-            }
-            start = end - chunkSize;
-            if (end >= rawText.length()) {
-                break;
-            }
-        }
-        return chapters;
-    }
-
-    @NonNull
-    private static EpubParseResult parseEpub(
-            @NonNull Context context,
-            @NonNull Uri uri,
-            @NonNull String fallbackTitle
-    ) {
-        EpubParseResult result = new EpubParseResult(fallbackTitle);
-        List<HtmlEntry> htmlEntries = new ArrayList<>();
-        byte[] coverBytes = null;
-
-        try (InputStream is = context.getContentResolver().openInputStream(uri)) {
-            if (is == null) {
-                return result;
-            }
-            try (ZipInputStream zis = new ZipInputStream(is)) {
-                ZipEntry entry;
-                while ((entry = zis.getNextEntry()) != null) {
-                    if (entry.isDirectory()) {
-                        continue;
-                    }
-                    String name = entry.getName();
-                    String lower = name.toLowerCase(Locale.ROOT);
-                    if (lower.endsWith(".opf")) {
-                        String opf = readEntryString(zis);
-                        String dcTitle = extractXmlTag(opf, "dc:title");
-                        if (!dcTitle.isEmpty()) {
-                            result.title = dcTitle;
-                        }
-                        String dcCreator = extractXmlTag(opf, "dc:creator");
-                        if (!dcCreator.isEmpty()) {
-                            result.author = dcCreator;
-                        }
-                    } else if (lower.endsWith(".xhtml") || lower.endsWith(".html") || lower.endsWith(".htm")) {
-                        String html = readEntryString(zis);
-                        String plain = stripHtml(html);
-                        if (plain.length() > 40) {
-                            String heading = extractHtmlHeading(html);
-                            htmlEntries.add(new HtmlEntry(name, heading, plain));
-                        }
-                    } else if (coverBytes == null
-                            && lower.contains("cover")
-                            && (lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".png"))) {
-                        coverBytes = readEntryBytes(zis);
-                    }
-                    zis.closeEntry();
-                }
-            }
-        } catch (IOException | SecurityException ignored) {
-        }
-
-        if (coverBytes != null && coverBytes.length > 0) {
-            result.coverUri = saveCoverBytes(context, uri.toString().hashCode(), coverBytes);
-        }
-
-        Collections.sort(htmlEntries, new Comparator<HtmlEntry>() {
-            @Override
-            public int compare(HtmlEntry a, HtmlEntry b) {
-                return a.path.compareToIgnoreCase(b.path);
-            }
-        });
-
-        int totalChars = 0;
-        for (int i = 0; i < htmlEntries.size(); i++) {
-            HtmlEntry he = htmlEntries.get(i);
-            String title = !he.heading.isEmpty() ? he.heading : ("Capitolo " + (i + 1));
-            int estPage = Math.max(1, totalChars / 1600 + 1);
-            totalChars += he.plainText.length();
-            result.chapters.add(new Chapter(
-                    0, 0, i + 1,
-                    title,
-                    firstLinePreview(he.plainText),
-                    "Pag. " + estPage,
-                    he.plainText,
-                    0L, 0L, 0, false
-            ));
-        }
-        result.estimatedPages = Math.max(1, totalChars / 1600 + 1);
-        return result;
-    }
-
     @Nullable
-    private static Uri saveCoverBytes(@NonNull Context context, int hash, @NonNull byte[] bytes) {
+    static Uri saveCoverBytes(@NonNull Context context, int hash, @NonNull byte[] bytes) {
         File coversDir = new File(context.getFilesDir(), "covers");
         if (!coversDir.exists() && !coversDir.mkdirs()) {
             return null;
@@ -640,86 +419,6 @@ public final class FileScanner {
     }
 
     @NonNull
-    private static String readTextFully(@NonNull Context context, @NonNull Uri uri) {
-        try (InputStream is = context.getContentResolver().openInputStream(uri)) {
-            if (is == null) {
-                return "";
-            }
-            return new String(readEntryBytes(is), StandardCharsets.UTF_8);
-        } catch (IOException | SecurityException e) {
-            return "";
-        }
-    }
-
-    @NonNull
-    private static String readEntryString(@NonNull InputStream is) throws IOException {
-        return new String(readEntryBytes(is), StandardCharsets.UTF_8);
-    }
-
-    @NonNull
-    private static byte[] readEntryBytes(@NonNull InputStream is) throws IOException {
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        byte[] data = new byte[8192];
-        int nRead;
-        while ((nRead = is.read(data, 0, data.length)) != -1) {
-            buffer.write(data, 0, nRead);
-        }
-        return buffer.toByteArray();
-    }
-
-    @NonNull
-    private static String extractXmlTag(@NonNull String xml, @NonNull String tagName) {
-        Pattern p = Pattern.compile("<" + Pattern.quote(tagName) + "\\b[^>]*>(.*?)</" + Pattern.quote(tagName) + ">",
-                Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
-        Matcher m = p.matcher(xml);
-        if (m.find() && m.group(1) != null) {
-            return stripHtml(m.group(1)).trim();
-        }
-        return "";
-    }
-
-    @NonNull
-    private static String extractHtmlHeading(@NonNull String html) {
-        for (String tag : new String[]{"h1", "h2", "title"}) {
-            String found = extractXmlTag(html, tag);
-            if (!found.isEmpty() && found.length() <= 120) {
-                return found;
-            }
-        }
-        return "";
-    }
-
-    @NonNull
-    private static String stripHtml(@NonNull String html) {
-        String noHead = html.replaceAll("(?is)<(head|style|script)[^>]*>.*?</\\1>", " ");
-        String withBreaks = noHead
-                .replaceAll("(?i)<(br|p|div|h1|h2|h3|h4|li)[^>]*>", "\n")
-                .replaceAll("<[^>]+>", " ");
-        String decoded = withBreaks
-                .replace("&nbsp;", " ")
-                .replace("&amp;", "&")
-                .replace("&lt;", "<")
-                .replace("&gt;", ">")
-                .replace("&quot;", "\"")
-                .replace("&#39;", "'")
-                .replace("&rsquo;", "’")
-                .replace("&lsquo;", "‘")
-                .replace("&ldquo;", "“")
-                .replace("&rdquo;", "”")
-                .replace("&mdash;", "—")
-                .replace("&ndash;", "–");
-        return decoded.replaceAll("[ \\t\\x0B\\f\\r]+", " ")
-                .replaceAll("\\n{3,}", "\n\n")
-                .trim();
-    }
-
-    @NonNull
-    private static String firstLinePreview(@NonNull String text) {
-        String clean = text.replace('\n', ' ').trim();
-        return clean.length() > 70 ? clean.substring(0, 70) + "…" : clean;
-    }
-
-    @NonNull
     private static String stripExtension(@NonNull String filename) {
         int dot = filename.lastIndexOf('.');
         return dot > 0 ? filename.substring(0, dot) : filename;
@@ -734,31 +433,6 @@ public final class FileScanner {
             this.uri = uri;
             this.displayName = displayName;
             this.sizeBytes = sizeBytes;
-        }
-    }
-
-    private static final class HtmlEntry {
-        final String path;
-        final String heading;
-        final String plainText;
-
-        HtmlEntry(String path, String heading, String plainText) {
-            this.path = path;
-            this.heading = heading;
-            this.plainText = plainText;
-        }
-    }
-
-    private static final class EpubParseResult {
-        String title;
-        String author = "";
-        @Nullable
-        Uri coverUri = null;
-        int estimatedPages = 1;
-        final List<Chapter> chapters = new ArrayList<>();
-
-        EpubParseResult(String fallbackTitle) {
-            this.title = fallbackTitle;
         }
     }
 }

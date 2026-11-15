@@ -10,12 +10,15 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.os.LocaleListCompat;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
@@ -48,6 +51,7 @@ public class ProfileSettingsActivity extends AppCompatActivity {
     private SettingsDao settingsDao;
     private TitleDao titleDao;
     private String appliedThemeMode;
+    private String appliedLanguageTag;
     private final ExecutorService ioExecutor = Executors.newSingleThreadExecutor();
 
     private TextView tvProfileInitials;
@@ -110,25 +114,31 @@ public class ProfileSettingsActivity extends AppCompatActivity {
         ThemeHelper.applySavedLocale(this);
         settingsDao = new SettingsDao(this);
         appliedThemeMode = settingsDao.getThemeMode();
+        appliedLanguageTag = settingsDao.getLanguageTag();
         ThemeHelper.applyTheme(this, false);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile_settings);
 
         titleDao = new TitleDao(this);
         bindViews();
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                UiSessionHelper.navigateToBottomNavTarget(ProfileSettingsActivity.this, LibraryActivity.class);
+            }
+        });
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (!settingsDao.getThemeMode().equals(appliedThemeMode)) {
+        if (!settingsDao.getThemeMode().equals(appliedThemeMode)
+                || !settingsDao.getLanguageTag().equals(appliedLanguageTag)) {
             recreate();
             return;
         }
-        BottomNavigationView bottomNav = findViewById(R.id.bottomNavigation);
-        if (bottomNav != null) {
-            bottomNav.setSelectedItemId(R.id.nav_profilo);
-        }
+        UiSessionHelper.syncBottomNavigation(this, R.id.nav_profilo);
         miniPlayerListener = UiSessionHelper.attachMiniPlayer(this);
         renderAllSettings();
     }
@@ -440,9 +450,20 @@ public class ProfileSettingsActivity extends AppCompatActivity {
                 .setSingleChoiceItems(labels, checked, (dialog, which) -> {
                     String chosen = LANGUAGE_TAGS[which];
                     dialog.dismiss();
-                    settingsDao.setLanguageTag(chosen);
-                    ThemeHelper.applySavedLocale(this);
-                    recreate();
+                    if (!chosen.equals(current)) {
+                        settingsDao.setLanguageTag(chosen);
+                        appliedLanguageTag = chosen;
+                        LocaleListCompat beforeLocales = AppCompatDelegate.getApplicationLocales();
+                        ThemeHelper.applySavedLocale(this);
+                        LocaleListCompat desired = chosen.isEmpty()
+                                ? LocaleListCompat.getEmptyLocaleList()
+                                : LocaleListCompat.forLanguageTags(chosen);
+                        if (desired.toLanguageTags().equals(beforeLocales.toLanguageTags())) {
+                            recreate();
+                        } else {
+                            renderAllSettings();
+                        }
+                    }
                 })
                 .setNegativeButton(R.string.action_cancel, null)
                 .show();
