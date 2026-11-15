@@ -3,9 +3,12 @@ package com.logininc.ereader.screen;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -15,6 +18,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.logininc.ereader.R;
 import com.logininc.ereader.model.Book;
@@ -26,6 +30,7 @@ import com.logininc.ereader.persistence.ChapterDao;
 import com.logininc.ereader.persistence.SettingsDao;
 import com.logininc.ereader.persistence.TitleDao;
 import com.logininc.ereader.service.PlaybackSessionManager;
+import com.logininc.ereader.util.ChapterTreeHelper;
 import com.logininc.ereader.util.NavigationFlowHelper;
 import com.logininc.ereader.util.ThemeHelper;
 import com.logininc.ereader.util.UiSessionHelper;
@@ -33,8 +38,10 @@ import com.logininc.ereader.util.UiSessionHelper;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public class EbookChaptersActivity extends AppCompatActivity {
 
@@ -73,10 +80,16 @@ public class EbookChaptersActivity extends AppCompatActivity {
     private LinearProgressIndicator progressActive;
     private MaterialButton btnResumeChapter;
 
+    private View layoutTreeControls;
+    private TextView tvTreeSummary;
+    private MaterialButton btnToggleExpandAll;
     private TextView tvEmpty;
     private LinearLayout containerItems;
     private TextView tvBottomCurrent;
     private MaterialButton btnContinue;
+
+    private List<Chapter> rootChapters = new ArrayList<>();
+    private final Set<Integer> expandedChapterIndices = new HashSet<>();
 
     private PlaybackSessionManager.SessionListener miniPlayerListener;
 
@@ -140,6 +153,9 @@ public class EbookChaptersActivity extends AppCompatActivity {
         progressActive = findViewById(R.id.progressActiveChapter);
         btnResumeChapter = findViewById(R.id.btnResumeChapter);
 
+        layoutTreeControls = findViewById(R.id.layoutEbookTreeControls);
+        tvTreeSummary = findViewById(R.id.tvEbookTreeSummary);
+        btnToggleExpandAll = findViewById(R.id.btnEbookToggleExpandAll);
         tvEmpty = findViewById(R.id.tvEbookChaptersEmpty);
         containerItems = findViewById(R.id.containerEbookChapters);
         tvBottomCurrent = findViewById(R.id.tvBottomCurrentChapter);
@@ -217,6 +233,13 @@ public class EbookChaptersActivity extends AppCompatActivity {
         progressSummary.setProgress(book.getProgressPercent());
 
         List<Chapter> allChapters = chapterDao.getChaptersForTitle(book.getId());
+        rootChapters = chapterDao.getChapterTreeForTitle(book.getId());
+        if (Title.STATUS_IN_PROGRESS.equals(book.getStatus())) {
+            expandedChapterIndices.addAll(
+                    ChapterTreeHelper.collectAncestorIndices(rootChapters, resolveTargetChapterIndex())
+            );
+        }
+
         int bmCount = bookmarkNoteDao.countByTitleAndType(book.getId(), BookmarkNote.TYPE_BOOKMARK);
         int noteCount = bookmarkNoteDao.countByTitleAndType(book.getId(), BookmarkNote.TYPE_NOTE);
 
@@ -229,11 +252,16 @@ public class EbookChaptersActivity extends AppCompatActivity {
         renderActiveTab();
     }
 
-    private void bindActiveChapterAndFooter(@NonNull List<Chapter> allChapters) {
+    private int resolveTargetChapterIndex() {
         int targetChapterIndex = book.getCurrentChapter();
         if (book.isCurrentChapterCompleted() && targetChapterIndex < book.getLenChapters()) {
             targetChapterIndex = targetChapterIndex + 1;
         }
+        return targetChapterIndex;
+    }
+
+    private void bindActiveChapterAndFooter(@NonNull List<Chapter> allChapters) {
+        int targetChapterIndex = resolveTargetChapterIndex();
         Chapter currentCh = null;
         for (Chapter c : allChapters) {
             if (c.getChapterIndex() == targetChapterIndex) {
@@ -274,38 +302,24 @@ public class EbookChaptersActivity extends AppCompatActivity {
         LayoutInflater inflater = LayoutInflater.from(this);
 
         if (selectedTab == TAB_CHAPTERS) {
-            List<Chapter> chapters = query.isEmpty()
-                    ? chapterDao.getChaptersForTitle(book.getId())
-                    : chapterDao.searchChapters(book.getId(), query);
-            tvEmpty.setVisibility(chapters.isEmpty() ? View.VISIBLE : View.GONE);
-            for (Chapter ch : chapters) {
-                View row = inflater.inflate(R.layout.item_chapter_ebook, containerItems, false);
-                ImageView ivStatus = row.findViewById(R.id.ivChapterStatus);
-                TextView tvTitle = row.findViewById(R.id.tvChapterTitle);
-                TextView tvSubtitle = row.findViewById(R.id.tvChapterSubtitle);
-                TextView tvPage = row.findViewById(R.id.tvChapterPage);
-
-                tvTitle.setText(ch.getChapterTitle());
-                tvSubtitle.setText(ch.getSubtitle().isEmpty()
-                        ? (ch.isCompleted() ? getString(R.string.chapter_status_completed) : getString(R.string.chapter_status_to_start))
-                        : ch.getSubtitle());
-                tvPage.setText(ch.getPageOrDurationLabel());
-
-                if (ch.isCompleted()) {
-                    ivStatus.setImageResource(R.drawable.ic_check);
-                } else if (ch.getChapterIndex() == book.getCurrentChapter()
-                        && Title.STATUS_IN_PROGRESS.equals(book.getStatus())) {
-                    ivStatus.setImageResource(R.drawable.ic_play);
-                } else {
-                    ivStatus.setImageResource(R.drawable.ic_radio_unchecked);
-                }
-
-                row.setOnClickListener(v -> openChapterInReader(ch.getChapterIndex()));
-                containerItems.addView(row);
-            }
+            boolean filtering = !query.isEmpty();
+            UiSessionHelper.bindChapterTreeControls(
+                    this,
+                    rootChapters,
+                    !filtering,
+                    layoutTreeControls,
+                    tvTreeSummary,
+                    btnToggleExpandAll,
+                    expandedChapterIndices,
+                    this::renderActiveTab
+            );
+            List<ChapterTreeHelper.TreeNode> displayTree = ChapterTreeHelper.buildDisplayTree(rootChapters, query);
+            tvEmpty.setVisibility(displayTree.isEmpty() ? View.VISIBLE : View.GONE);
+            renderChapterTreeNodes(displayTree, containerItems, 0, filtering, inflater);
             return;
         }
 
+        layoutTreeControls.setVisibility(View.GONE);
         String entryType = selectedTab == TAB_BOOKMARKS
                 ? BookmarkNote.TYPE_BOOKMARK
                 : BookmarkNote.TYPE_NOTE;
@@ -322,6 +336,7 @@ public class EbookChaptersActivity extends AppCompatActivity {
         DateFormat fmt = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT);
         for (BookmarkNote item : filtered) {
             View row = inflater.inflate(R.layout.item_chapter_ebook, containerItems, false);
+            MaterialCardView cardRow = row.findViewById(R.id.cardChapterRow);
             ImageView ivStatus = row.findViewById(R.id.ivChapterStatus);
             TextView tvTitle = row.findViewById(R.id.tvChapterTitle);
             TextView tvSubtitle = row.findViewById(R.id.tvChapterSubtitle);
@@ -334,12 +349,96 @@ public class EbookChaptersActivity extends AppCompatActivity {
             tvSubtitle.setText(fmt.format(new Date(item.getCreatedAt())));
             tvPage.setText(item.getPositionLabel());
 
-            row.setOnClickListener(v -> openChapterInReader(item.getChapterIndex()));
-            row.setOnLongClickListener(v -> {
+            cardRow.setOnClickListener(v -> openChapterInReader(item.getChapterIndex()));
+            cardRow.setOnLongClickListener(v -> {
                 confirmDeleteEntry(item);
                 return true;
             });
             containerItems.addView(row);
+        }
+    }
+
+    private void renderChapterTreeNodes(
+            @NonNull List<ChapterTreeHelper.TreeNode> nodes,
+            @NonNull LinearLayout container,
+            int depth,
+            boolean filtering,
+            @NonNull LayoutInflater inflater
+    ) {
+        Set<Integer> allExpandable = ChapterTreeHelper.collectExpandableIndices(rootChapters);
+        float density = getResources().getDisplayMetrics().density;
+
+        for (ChapterTreeHelper.TreeNode node : nodes) {
+            Chapter ch = node.chapter;
+            View row = inflater.inflate(R.layout.item_chapter_ebook, container, false);
+
+            MaterialCardView cardRow = row.findViewById(R.id.cardChapterRow);
+            ImageView ivStatus = row.findViewById(R.id.ivChapterStatus);
+            TextView tvTitle = row.findViewById(R.id.tvChapterTitle);
+            TextView tvSubtitle = row.findViewById(R.id.tvChapterSubtitle);
+            TextView tvPage = row.findViewById(R.id.tvChapterPage);
+            ImageButton btnExpand = row.findViewById(R.id.btnChapterExpand);
+            ImageView ivChevron = row.findViewById(R.id.ivChapterChevron);
+            View layoutChildrenWrapper = row.findViewById(R.id.layoutChapterChildrenWrapper);
+            View viewTreeGuide = row.findViewById(R.id.viewChapterTreeGuide);
+            LinearLayout containerChildren = row.findViewById(R.id.containerChapterChildren);
+
+            if (depth > 0) {
+                tvTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f);
+                int iconSizePx = Math.round(24f * density);
+                ViewGroup.LayoutParams iconLp = ivStatus.getLayoutParams();
+                iconLp.width = iconSizePx;
+                iconLp.height = iconSizePx;
+                ivStatus.setLayoutParams(iconLp);
+            }
+
+            tvTitle.setText(ch.getChapterTitle());
+            String statusLabel = ch.isCompleted()
+                    ? getString(R.string.chapter_status_completed)
+                    : getString(R.string.chapter_status_to_start);
+            if (!ch.getSubtitle().isEmpty()) {
+                tvSubtitle.setText(ch.getSubtitle());
+            } else if (ch.hasChildren()) {
+                int childCount = ch.getChildren().size();
+                String sectionsLabel = getResources().getQuantityString(
+                        R.plurals.chapter_sections_count, childCount, childCount);
+                tvSubtitle.setText(sectionsLabel + " • " + statusLabel);
+            } else {
+                tvSubtitle.setText(statusLabel);
+            }
+            tvPage.setText(ch.getPageOrDurationLabel());
+
+            boolean isActiveChapter = ch.getChapterIndex() == book.getCurrentChapter()
+                    && Title.STATUS_IN_PROGRESS.equals(book.getStatus());
+            if (ch.isCompleted()) {
+                ivStatus.setImageResource(R.drawable.ic_check);
+            } else if (isActiveChapter) {
+                ivStatus.setImageResource(R.drawable.ic_play);
+                cardRow.setStrokeColor(getColor(R.color.border_active));
+                cardRow.setStrokeWidth(Math.round(1.5f * density));
+            } else {
+                ivStatus.setImageResource(R.drawable.ic_radio_unchecked);
+            }
+
+            cardRow.setOnClickListener(v -> openChapterInReader(ch.getChapterIndex()));
+
+            UiSessionHelper.bindRecursiveChapterChildren(
+                    node,
+                    depth,
+                    filtering,
+                    expandedChapterIndices,
+                    btnExpand,
+                    ivChevron,
+                    layoutChildrenWrapper,
+                    viewTreeGuide,
+                    containerChildren,
+                    () -> UiSessionHelper.updateExpandAllButtonLabel(
+                            btnToggleExpandAll, allExpandable, expandedChapterIndices),
+                    (children, childContainer, nextDepth) ->
+                            renderChapterTreeNodes(children, childContainer, nextDepth, filtering, inflater)
+            );
+
+            container.addView(row);
         }
     }
 

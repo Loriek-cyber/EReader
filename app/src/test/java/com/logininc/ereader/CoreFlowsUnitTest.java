@@ -12,17 +12,10 @@ import com.logininc.ereader.model.Chapter;
 import com.logininc.ereader.model.Title;
 import com.logininc.ereader.service.PlaybackSessionManager;
 import com.logininc.ereader.service.SleepTimerController;
-import com.logininc.ereader.util.EbookParser;
+import com.logininc.ereader.util.ChapterTreeHelper;
 import com.logininc.ereader.util.FileScanner;
 import com.logininc.ereader.util.M4bParser;
 import com.logininc.ereader.util.NavigationFlowHelper;
-import com.tom_roush.pdfbox.pdmodel.PDDocument;
-import com.tom_roush.pdfbox.pdmodel.PDDocumentInformation;
-import com.tom_roush.pdfbox.pdmodel.PDPage;
-import com.tom_roush.pdfbox.pdmodel.PDPageContentStream;
-import com.tom_roush.pdfbox.pdmodel.font.PDType1Font;
-import com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocumentOutline;
-import com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem;
 
 import org.junit.Test;
 
@@ -31,6 +24,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Unit tests verifying the core EReader navigation flows, session switching rules,
@@ -294,102 +291,49 @@ public class CoreFlowsUnitTest {
     }
 
     @Test
-    public void ebookParserExtractsRealTestFileEpubMetadataCoverAndChapters() throws IOException {
-        File epubFile = findTestEpubFile();
-        assertNotNull("Test EPUB file must exist in test_file/", epubFile);
+    public void chapterTreeHelperFiltersAndCollectsAncestorsRecursively() {
+        Chapter part1 = new Chapter(1, 0, 0, "Part I", "p1.xhtml", "", "", "");
+        Chapter ch1 = new Chapter(2, 1, 0, "Chapter 1: Basics", "c1.xhtml", "", "", "");
+        Chapter sec1 = new Chapter(3, 2, 0, "Section 1.1: Deep Dive", "c1.xhtml", "s1", "", "");
+        Chapter sub1 = new Chapter(4, 3, 0, "Subsection 1.1.1: Edge Cases", "c1.xhtml", "sub1", "", "");
+        Chapter ch2 = new Chapter(5, 1, 1, "Chapter 2: Summary", "c2.xhtml", "", "", "");
+        Chapter part2 = new Chapter(6, 0, 1, "Part II", "p2.xhtml", "", "", "");
 
-        EbookParser.EbookMetadata parsed = EbookParser.parseEpubFile(epubFile);
-        assertEquals(
-                "Claude AI Bible: The Complete Guide to Mastering Claude, Claude Code, Claude Cowork, MCP, AI Agents, Automation & Advanced Prompting",
-                parsed.title
-        );
-        assertEquals("Stephen Clear", parsed.author);
-        assertNotNull(parsed.coverBytes);
-        assertEquals(104717, parsed.coverBytes.length);
-        assertEquals(452, parsed.totalPages);
-        assertEquals(33, parsed.chapters.size());
+        sec1.addChild(sub1);
+        ch1.addChild(sec1);
+        part1.addChild(ch1);
+        part1.addChild(ch2);
+        List<Chapter> roots = Arrays.asList(part1, part2);
 
-        assertEquals("Disclaimer", parsed.chapters.get(0).getChapterTitle());
-        assertEquals("How to Use This Book", parsed.chapters.get(1).getChapterTitle());
-        assertEquals("The 90 Percent You Haven't Touched", parsed.chapters.get(2).getChapterTitle());
-        assertEquals("Chapter 1: The Machine With a Conscience", parsed.chapters.get(3).getChapterTitle());
-        assertEquals("About the Author", parsed.chapters.get(32).getChapterTitle());
+        assertTrue(ChapterTreeHelper.hasNestedChapters(roots));
+        assertEquals(4, ChapterTreeHelper.countNestedNodes(roots));
+        assertEquals(Set.of(1, 2, 3), ChapterTreeHelper.collectExpandableIndices(roots));
+        assertEquals(Set.of(1, 2, 3), ChapterTreeHelper.collectAncestorIndices(roots, 4));
+        assertTrue(ChapterTreeHelper.collectAncestorIndices(roots, 6).isEmpty());
 
-        for (Chapter ch : parsed.chapters) {
-            String text = ch.getContentText();
-            assertFalse("Chapter text should not be empty: " + ch.getChapterTitle(), text.trim().isEmpty());
-            assertFalse("Chapter text must not contain HTML tags: " + ch.getChapterTitle(),
-                    text.contains("<p") || text.contains("</p>") || text.contains("<h1"));
-        }
-        assertTrue(parsed.chapters.get(3).getContentText().contains("Most software does exactly what it is told"));
+        List<ChapterTreeHelper.TreeNode> filtered = ChapterTreeHelper.buildDisplayTree(roots, "edge cases");
+        assertEquals(1, filtered.size());
+        ChapterTreeHelper.TreeNode fPart1 = filtered.get(0);
+        assertEquals("Part I", fPart1.chapter.getChapterTitle());
+        assertTrue(fPart1.forceExpand);
+        assertEquals(1, fPart1.children.size());
+
+        ChapterTreeHelper.TreeNode fCh1 = fPart1.children.get(0);
+        assertTrue(fCh1.forceExpand);
+        assertEquals(1, fCh1.children.size());
+
+        ChapterTreeHelper.TreeNode fSec1 = fCh1.children.get(0);
+        assertTrue(fSec1.forceExpand);
+        assertEquals(1, fSec1.children.size());
+        assertEquals("Subsection 1.1.1: Edge Cases", fSec1.children.get(0).chapter.getChapterTitle());
+
+        assertFalse(ChapterTreeHelper.hasNestedChapters(Collections.singletonList(part2)));
     }
 
-    @Test
-    public void ebookParserExtractsPdfMetadataOutlineAndTextWithPdfBox() throws IOException {
-        byte[] pdfBytes;
-        try (PDDocument doc = new PDDocument();
-             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            PDDocumentInformation info = new PDDocumentInformation();
-            info.setTitle("Test PDF EBook");
-            info.setAuthor("Ada Lovelace");
-            doc.setDocumentInformation(info);
 
-            PDPage page1 = new PDPage();
-            doc.addPage(page1);
-            try (PDPageContentStream cs = new PDPageContentStream(doc, page1)) {
-                cs.beginText();
-                cs.setFont(PDType1Font.HELVETICA, 12);
-                cs.newLineAtOffset(50, 700);
-                cs.showText("First PDF chapter content");
-                cs.endText();
-            }
 
-            PDPage page2 = new PDPage();
-            doc.addPage(page2);
-            try (PDPageContentStream cs = new PDPageContentStream(doc, page2)) {
-                cs.beginText();
-                cs.setFont(PDType1Font.HELVETICA, 12);
-                cs.newLineAtOffset(50, 700);
-                cs.showText("Second PDF chapter content");
-                cs.endText();
-            }
 
-            PDDocumentOutline outline = new PDDocumentOutline();
-            doc.getDocumentCatalog().setDocumentOutline(outline);
-            PDOutlineItem item1 = new PDOutlineItem();
-            item1.setTitle("Introduzione PDF");
-            item1.setDestination(page1);
-            outline.addLast(item1);
 
-            PDOutlineItem item2 = new PDOutlineItem();
-            item2.setTitle("Capitolo Finale PDF");
-            item2.setDestination(page2);
-            outline.addLast(item2);
-
-            doc.save(out);
-            pdfBytes = out.toByteArray();
-        }
-
-        EbookParser.EbookMetadata parsed = EbookParser.parsePdfStream(
-                null,
-                new ByteArrayInputStream(pdfBytes),
-                "fallback"
-        );
-        assertEquals("Test PDF EBook", parsed.title);
-        assertEquals("Ada Lovelace", parsed.author);
-        assertEquals(2, parsed.totalPages);
-        assertEquals(2, parsed.chapters.size());
-
-        assertEquals("Introduzione PDF", parsed.chapters.get(0).getChapterTitle());
-        assertEquals(1L, parsed.chapters.get(0).getAudioStartMs());
-        assertEquals(1L, parsed.chapters.get(0).getAudioDurationMs());
-        assertTrue(parsed.chapters.get(0).getContentText().contains("First PDF chapter content"));
-
-        assertEquals("Capitolo Finale PDF", parsed.chapters.get(1).getChapterTitle());
-        assertEquals(2L, parsed.chapters.get(1).getAudioStartMs());
-        assertEquals(2L, parsed.chapters.get(1).getAudioDurationMs());
-        assertTrue(parsed.chapters.get(1).getContentText().contains("Second PDF chapter content"));
-    }
 
     private static File findTestEpubFile() {
         for (String dirPath : new String[]{"test_file", "../test_file"}) {

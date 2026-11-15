@@ -18,6 +18,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.logininc.ereader.R;
 import com.logininc.ereader.model.AudioBook;
@@ -29,6 +30,7 @@ import com.logininc.ereader.persistence.ChapterDao;
 import com.logininc.ereader.persistence.SettingsDao;
 import com.logininc.ereader.persistence.TitleDao;
 import com.logininc.ereader.service.PlaybackSessionManager;
+import com.logininc.ereader.util.ChapterTreeHelper;
 import com.logininc.ereader.util.FileScanner;
 import com.logininc.ereader.util.NavigationFlowHelper;
 import com.logininc.ereader.util.ThemeHelper;
@@ -37,8 +39,10 @@ import com.logininc.ereader.util.UiSessionHelper;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public class AudioChaptersActivity extends AppCompatActivity {
 
@@ -72,8 +76,14 @@ public class AudioChaptersActivity extends AppCompatActivity {
     private ImageButton btnActivePlayPause;
     private LinearProgressIndicator progressActive;
 
+    private View layoutTreeControls;
+    private TextView tvTreeSummary;
+    private MaterialButton btnToggleExpandAll;
     private TextView tvEmpty;
     private LinearLayout containerItems;
+
+    private List<Chapter> rootChapters = new ArrayList<>();
+    private final Set<Integer> expandedChapterIndices = new HashSet<>();
 
     private PlaybackSessionManager.SessionListener miniPlayerListener;
 
@@ -133,6 +143,9 @@ public class AudioChaptersActivity extends AppCompatActivity {
         btnActivePlayPause = findViewById(R.id.btnActiveChapterPause);
         progressActive = findViewById(R.id.progressAudioActiveChapter);
 
+        layoutTreeControls = findViewById(R.id.layoutAudioTreeControls);
+        tvTreeSummary = findViewById(R.id.tvAudioTreeSummary);
+        btnToggleExpandAll = findViewById(R.id.btnAudioToggleExpandAll);
         tvEmpty = findViewById(R.id.tvAudioChaptersEmpty);
         containerItems = findViewById(R.id.containerAudioChapters);
 
@@ -203,6 +216,13 @@ public class AudioChaptersActivity extends AppCompatActivity {
         progressOverall.setProgress(audioBook.getProgressPercent());
 
         List<Chapter> allChapters = chapterDao.getChaptersForTitle(audioBook.getId());
+        rootChapters = chapterDao.getChapterTreeForTitle(audioBook.getId());
+        if (Title.STATUS_IN_PROGRESS.equals(audioBook.getStatus())) {
+            expandedChapterIndices.addAll(
+                    ChapterTreeHelper.collectAncestorIndices(rootChapters, resolveTargetChapterIndex())
+            );
+        }
+
         int bmCount = bookmarkNoteDao.countByTitleAndType(audioBook.getId(), BookmarkNote.TYPE_BOOKMARK);
         int noteCount = bookmarkNoteDao.countByTitleAndType(audioBook.getId(), BookmarkNote.TYPE_NOTE);
 
@@ -215,11 +235,16 @@ public class AudioChaptersActivity extends AppCompatActivity {
         renderActiveTab();
     }
 
-    private void bindActiveChapterCard(@NonNull List<Chapter> allChapters) {
+    private int resolveTargetChapterIndex() {
         int targetChapterIndex = audioBook.getCurrentChapter();
         if (audioBook.isCurrentChapterCompleted() && targetChapterIndex < audioBook.getLenChapters()) {
             targetChapterIndex = targetChapterIndex + 1;
         }
+        return targetChapterIndex;
+    }
+
+    private void bindActiveChapterCard(@NonNull List<Chapter> allChapters) {
+        int targetChapterIndex = resolveTargetChapterIndex();
         Chapter currentCh = null;
         for (Chapter ch : allChapters) {
             if (ch.getChapterIndex() == targetChapterIndex) {
@@ -260,55 +285,24 @@ public class AudioChaptersActivity extends AppCompatActivity {
         LayoutInflater inflater = LayoutInflater.from(this);
 
         if (selectedTab == TAB_CHAPTERS) {
-            List<Chapter> chapters = query.isEmpty()
-                    ? chapterDao.getChaptersForTitle(audioBook.getId())
-                    : chapterDao.searchChapters(audioBook.getId(), query);
-            tvEmpty.setVisibility(chapters.isEmpty() ? View.VISIBLE : View.GONE);
-
-            for (Chapter ch : chapters) {
-                View row = inflater.inflate(R.layout.item_chapter_audio, containerItems, false);
-                ImageView ivIcon = row.findViewById(R.id.ivAudioChapterIcon);
-                TextView tvNum = row.findViewById(R.id.tvAudioChapterNum);
-                TextView tvRowTitle = row.findViewById(R.id.tvAudioChapterTitle);
-                TextView tvMeta = row.findViewById(R.id.tvAudioChapterMeta);
-                ImageButton btnAction = row.findViewById(R.id.btnAudioChapterAction);
-
-                tvRowTitle.setText(ch.getChapterTitle());
-                String durLabel = !ch.getPageOrDurationLabel().isEmpty()
-                        ? ch.getPageOrDurationLabel()
-                        : FileScanner.formatDuration(ch.getAudioDurationMs());
-
-                boolean isActiveChapter = ch.getChapterIndex() == audioBook.getCurrentChapter()
-                        && Title.STATUS_IN_PROGRESS.equals(audioBook.getStatus());
-
-                if (ch.isCompleted()) {
-                    ivIcon.setVisibility(View.VISIBLE);
-                    tvNum.setVisibility(View.GONE);
-                    ivIcon.setImageResource(R.drawable.ic_check_circle);
-                    tvMeta.setText(durLabel + " • " + getString(R.string.chapter_status_completed));
-                } else if (isActiveChapter) {
-                    ivIcon.setVisibility(View.VISIBLE);
-                    tvNum.setVisibility(View.GONE);
-                    ivIcon.setImageResource(R.drawable.ic_equalizer);
-                    tvMeta.setText(durLabel + " • " + getString(R.string.format_percent, ch.getProgressPercent()));
-                } else {
-                    ivIcon.setVisibility(View.GONE);
-                    tvNum.setVisibility(View.VISIBLE);
-                    tvNum.setText(String.format(Locale.ROOT, "%02d", ch.getChapterIndex()));
-                    tvMeta.setText(durLabel + " • " + getString(R.string.chapter_status_to_start));
-                }
-
-                boolean isPlayingThis = isCurrentlyPlayingChapter(ch.getChapterIndex());
-                btnAction.setImageResource(isPlayingThis ? R.drawable.ic_pause : R.drawable.ic_play_circle);
-
-                View.OnClickListener playListener = v -> openChapterInPlayer(ch.getChapterIndex());
-                row.setOnClickListener(playListener);
-                btnAction.setOnClickListener(playListener);
-                containerItems.addView(row);
-            }
+            boolean filtering = !query.isEmpty();
+            UiSessionHelper.bindChapterTreeControls(
+                    this,
+                    rootChapters,
+                    !filtering,
+                    layoutTreeControls,
+                    tvTreeSummary,
+                    btnToggleExpandAll,
+                    expandedChapterIndices,
+                    this::renderActiveTab
+            );
+            List<ChapterTreeHelper.TreeNode> displayTree = ChapterTreeHelper.buildDisplayTree(rootChapters, query);
+            tvEmpty.setVisibility(displayTree.isEmpty() ? View.VISIBLE : View.GONE);
+            renderAudioChapterTreeNodes(displayTree, containerItems, 0, filtering, inflater);
             return;
         }
 
+        layoutTreeControls.setVisibility(View.GONE);
         String entryType = selectedTab == TAB_BOOKMARKS
                 ? BookmarkNote.TYPE_BOOKMARK
                 : BookmarkNote.TYPE_NOTE;
@@ -326,6 +320,7 @@ public class AudioChaptersActivity extends AppCompatActivity {
 
         for (BookmarkNote item : filtered) {
             View row = inflater.inflate(R.layout.item_chapter_audio, containerItems, false);
+            MaterialCardView cardRow = row.findViewById(R.id.cardAudioChapterRow);
             ImageView ivIcon = row.findViewById(R.id.ivAudioChapterIcon);
             TextView tvNum = row.findViewById(R.id.tvAudioChapterNum);
             TextView tvRowTitle = row.findViewById(R.id.tvAudioChapterTitle);
@@ -345,13 +340,106 @@ public class AudioChaptersActivity extends AppCompatActivity {
             tvMeta.setText(meta);
 
             View.OnClickListener openListener = v -> openChapterInPlayer(item.getChapterIndex());
-            row.setOnClickListener(openListener);
+            cardRow.setOnClickListener(openListener);
             btnAction.setOnClickListener(openListener);
-            row.setOnLongClickListener(v -> {
+            cardRow.setOnLongClickListener(v -> {
                 confirmDeleteEntry(item);
                 return true;
             });
             containerItems.addView(row);
+        }
+    }
+
+    private void renderAudioChapterTreeNodes(
+            @NonNull List<ChapterTreeHelper.TreeNode> nodes,
+            @NonNull LinearLayout container,
+            int depth,
+            boolean filtering,
+            @NonNull LayoutInflater inflater
+    ) {
+        Set<Integer> allExpandable = ChapterTreeHelper.collectExpandableIndices(rootChapters);
+        float density = getResources().getDisplayMetrics().density;
+
+        for (ChapterTreeHelper.TreeNode node : nodes) {
+            Chapter ch = node.chapter;
+            View row = inflater.inflate(R.layout.item_chapter_audio, container, false);
+
+            MaterialCardView cardRow = row.findViewById(R.id.cardAudioChapterRow);
+            ImageView ivIcon = row.findViewById(R.id.ivAudioChapterIcon);
+            TextView tvNum = row.findViewById(R.id.tvAudioChapterNum);
+            TextView tvRowTitle = row.findViewById(R.id.tvAudioChapterTitle);
+            TextView tvMeta = row.findViewById(R.id.tvAudioChapterMeta);
+            ImageButton btnExpand = row.findViewById(R.id.btnAudioChapterExpand);
+            ImageButton btnAction = row.findViewById(R.id.btnAudioChapterAction);
+            View layoutChildrenWrapper = row.findViewById(R.id.layoutAudioChapterChildrenWrapper);
+            View viewTreeGuide = row.findViewById(R.id.viewAudioChapterTreeGuide);
+            LinearLayout containerChildren = row.findViewById(R.id.containerAudioChapterChildren);
+
+            if (depth > 0) {
+                tvRowTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f);
+            }
+            tvRowTitle.setText(ch.getChapterTitle());
+
+            String durLabel = !ch.getPageOrDurationLabel().isEmpty()
+                    ? ch.getPageOrDurationLabel()
+                    : FileScanner.formatDuration(ch.getAudioDurationMs());
+
+            boolean isActiveChapter = ch.getChapterIndex() == audioBook.getCurrentChapter()
+                    && Title.STATUS_IN_PROGRESS.equals(audioBook.getStatus());
+
+            String statusPart;
+            if (ch.isCompleted()) {
+                ivIcon.setVisibility(View.VISIBLE);
+                tvNum.setVisibility(View.GONE);
+                ivIcon.setImageResource(R.drawable.ic_check_circle);
+                statusPart = getString(R.string.chapter_status_completed);
+            } else if (isActiveChapter) {
+                ivIcon.setVisibility(View.VISIBLE);
+                tvNum.setVisibility(View.GONE);
+                ivIcon.setImageResource(R.drawable.ic_equalizer);
+                cardRow.setStrokeColor(getColor(R.color.border_active));
+                cardRow.setStrokeWidth(Math.round(1.5f * density));
+                statusPart = getString(R.string.format_percent, ch.getProgressPercent());
+            } else {
+                ivIcon.setVisibility(View.GONE);
+                tvNum.setVisibility(View.VISIBLE);
+                tvNum.setText(String.format(Locale.ROOT, "%02d", ch.getChapterIndex()));
+                statusPart = getString(R.string.chapter_status_to_start);
+            }
+
+            if (ch.hasChildren()) {
+                int childCount = ch.getChildren().size();
+                String sectionsLabel = getResources().getQuantityString(
+                        R.plurals.chapter_sections_count, childCount, childCount);
+                tvMeta.setText(durLabel + " • " + sectionsLabel + " • " + statusPart);
+            } else {
+                tvMeta.setText(durLabel + " • " + statusPart);
+            }
+
+            boolean isPlayingThis = isCurrentlyPlayingChapter(ch.getChapterIndex());
+            btnAction.setImageResource(isPlayingThis ? R.drawable.ic_pause : R.drawable.ic_play_circle);
+
+            View.OnClickListener playListener = v -> openChapterInPlayer(ch.getChapterIndex());
+            cardRow.setOnClickListener(playListener);
+            btnAction.setOnClickListener(playListener);
+
+            UiSessionHelper.bindRecursiveChapterChildren(
+                    node,
+                    depth,
+                    filtering,
+                    expandedChapterIndices,
+                    btnExpand,
+                    null,
+                    layoutChildrenWrapper,
+                    viewTreeGuide,
+                    containerChildren,
+                    () -> UiSessionHelper.updateExpandAllButtonLabel(
+                            btnToggleExpandAll, allExpandable, expandedChapterIndices),
+                    (children, childContainer, nextDepth) ->
+                            renderAudioChapterTreeNodes(children, childContainer, nextDepth, filtering, inflater)
+            );
+
+            container.addView(row);
         }
     }
 

@@ -104,7 +104,7 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/cd_stop_session"
                 android:padding="12dp"
-                android:src="@drawable/ic_lock"
+                android:src="@drawable/ic_close"
                 app:tint="@color/error" />
         </LinearLayout>
 
@@ -136,7 +136,9 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:visibility="invisible"
+                        >
 
                         <View
                             android:layout_width="24dp"
@@ -150,6 +152,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginHorizontal="@dimen/space_sm"
                             android:letterSpacing="0.22"
+
                             android:textColor="?attr/ereaderTextAccent" />
 
                         <View

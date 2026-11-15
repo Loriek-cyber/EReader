@@ -63,16 +63,30 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
+}
+
+val pdfboxTestResourcesJar = tasks.register<Jar>("pdfboxTestResourcesJar") {
+    dependsOn("mergeDebugAssets")
+    from(layout.buildDirectory.dir("intermediates/assets/debug/mergeDebugAssets"))
+    archiveFileName.set("pdfbox-test-resources.jar")
 }
 
 dependencies {
     implementation(libs.activity.ktx)
     implementation(libs.appcompat)
     implementation(libs.constraintlayout)
+    implementation(libs.ext.junit)
     implementation(libs.material)
     testImplementation(libs.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.ext.junit)
-    implementation("io.documentnode:epub4j-core:4.2.1") { exclude(group = "xmlpull", module = "xmlpull") }
-    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+    implementation("androidx.documentfile:documentfile:1.0.1")
+    implementation("io.documentnode:epub4j-core:4.2.1") {
+        exclude(group = "xmlpull", module = "xmlpull")
+        exclude(group = "net.sf.kxml", module = "kxml2")
+    }
+    implementation("org.jsoup:jsoup:1.18.3")
 }

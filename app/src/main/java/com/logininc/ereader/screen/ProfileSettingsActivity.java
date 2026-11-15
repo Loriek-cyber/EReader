@@ -270,61 +270,11 @@ public class ProfileSettingsActivity extends AppCompatActivity {
     }
 
     private void onFolderPicked(@NonNull Uri treeUri, boolean isAudio) {
-        PermissionHelper.takePersistableReadPermission(this, treeUri);
-        if (isAudio) {
-            settingsDao.setAudioFolderUri(treeUri.toString());
-        } else {
-            settingsDao.setEbookFolderUri(treeUri.toString());
-        }
-        renderAllSettings();
-        btnScanFolders.setEnabled(false);
-        ioExecutor.execute(() -> {
-            FileScanner.ScanResult res = FileScanner.scanTree(getApplicationContext(), treeUri, isAudio);
-            runOnUiThread(() -> {
-                btnScanFolders.setEnabled(true);
-                Toast.makeText(
-                        this,
-                        getString(R.string.settings_scan_result, res.importedCount, res.existingCount),
-                        Toast.LENGTH_SHORT
-                ).show();
-                renderAllSettings();
-            });
-        });
+        //TODO
     }
 
     private void scanConfiguredFolders() {
-        String ebookStr = settingsDao.getEbookFolderUri();
-        String audioStr = settingsDao.getAudioFolderUri();
-        if (ebookStr.isEmpty() && audioStr.isEmpty()) {
-            Toast.makeText(this, R.string.settings_scan_no_folders, Toast.LENGTH_LONG).show();
-            return;
-        }
-        btnScanFolders.setEnabled(false);
-        ioExecutor.execute(() -> {
-            int imported = 0;
-            int existing = 0;
-            if (!ebookStr.isEmpty()) {
-                FileScanner.ScanResult r = FileScanner.scanTree(getApplicationContext(), Uri.parse(ebookStr), false);
-                imported += r.importedCount;
-                existing += r.existingCount;
-            }
-            if (!audioStr.isEmpty()) {
-                FileScanner.ScanResult r = FileScanner.scanTree(getApplicationContext(), Uri.parse(audioStr), true);
-                imported += r.importedCount;
-                existing += r.existingCount;
-            }
-            final int totalImported = imported;
-            final int totalExisting = existing;
-            runOnUiThread(() -> {
-                btnScanFolders.setEnabled(true);
-                Toast.makeText(
-                        this,
-                        getString(R.string.settings_scan_result, totalImported, totalExisting),
-                        Toast.LENGTH_SHORT
-                ).show();
-                renderAllSettings();
-            });
-        });
+        //TODO
     }
 
     private void showEditProfileDialog() {

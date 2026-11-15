@@ -99,6 +99,6 @@
         android:contentDescription="@string/cd_stop_session"
         android:padding="13dp"
         android:scaleType="centerInside"
-        android:src="@drawable/ic_lock"
+        android:src="@drawable/ic_close"
         app:tint="@color/error" />
 </LinearLayout>

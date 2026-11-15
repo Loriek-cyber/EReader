@@ -11,6 +11,7 @@ import androidx.annotation.Nullable;
 
 import com.logininc.ereader.model.AudioBook;
 import com.logininc.ereader.model.Book;
+import com.logininc.ereader.model.Chapter;
 import com.logininc.ereader.model.Title;
 import com.logininc.ereader.persistence.DatabaseContract.TitleEntry;
 
@@ -23,6 +24,7 @@ import java.util.List;
 public class TitleDao {
 
     private final EReaderDbHelper dbHelper;
+    private final ChapterDao chapterDao;
 
     public TitleDao(@NonNull Context context) {
         this(EReaderDbHelper.getInstance(context));
@@ -30,6 +32,7 @@ public class TitleDao {
 
     public TitleDao(@NonNull EReaderDbHelper dbHelper) {
         this.dbHelper = dbHelper;
+        this.chapterDao = new ChapterDao(dbHelper);
     }
 
     /**
@@ -45,6 +48,80 @@ public class TitleDao {
             title.setId((int) rowId);
         }
         return rowId;
+    }
+
+    /**
+     * Atomically inserts or updates a {@link Book} together with its entire hierarchical
+     * {@link Book#getChapters()} tree (chapters, sections, subsections) inside a single transaction.
+     *
+     * @return the persisted book row ID, or {@code -1} if saving failed.
+     */
+    public long saveBookWithChapters(@NonNull Book book) {
+        List<Chapter> flattened = book.getFlattenedChapters();
+        if (!flattened.isEmpty()) {
+            book.setLenChapters(flattened.size());
+        }
+
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        db.beginTransaction();
+        try {
+            if (book.getId() > 0) {
+                int updated = db.update(
+                        TitleEntry.TABLE_NAME,
+                        toContentValues(book),
+                        TitleEntry._ID + " = ?",
+                        new String[]{String.valueOf(book.getId())}
+                );
+                if (updated == 0) {
+                    long rowId = db.insert(TitleEntry.TABLE_NAME, null, toContentValues(book));
+                    if (rowId == -1) {
+                        return -1;
+                    }
+                    book.setId((int) rowId);
+                }
+            } else {
+                long rowId = db.insert(TitleEntry.TABLE_NAME, null, toContentValues(book));
+                if (rowId == -1) {
+                    return -1;
+                }
+                book.setId((int) rowId);
+            }
+
+            chapterDao.replaceChapterTree(db, book.getId(), book.getChapters());
+            db.setTransactionSuccessful();
+            return book.getId();
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    /**
+     * Loads a {@link Book} by ID together with its reconstructed hierarchical chapter/section tree.
+     */
+    @Nullable
+    public Book getBookWithChapters(int bookId) {
+        Title loaded = getById(bookId);
+        if (!(loaded instanceof Book)) {
+            return null;
+        }
+        Book book = (Book) loaded;
+        book.setChapters(chapterDao.getChapterTreeForTitle(book.getId()));
+        return book;
+    }
+
+    /**
+     * Loads a {@link Book} by its persisted document URI together with its reconstructed
+     * hierarchical chapter/section tree.
+     */
+    @Nullable
+    public Book findBookWithChaptersByContentUri(@NonNull Uri uri) {
+        Title loaded = findByContentUri(uri);
+        if (!(loaded instanceof Book)) {
+            return null;
+        }
+        Book book = (Book) loaded;
+        book.setChapters(chapterDao.getChapterTreeForTitle(book.getId()));
+        return book;
     }
 
     /**

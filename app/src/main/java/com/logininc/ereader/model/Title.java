@@ -2,6 +2,9 @@ package com.logininc.ereader.model;
 
 import android.net.Uri;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Base model representing a readable or playable library item (Book or AudioBook).
  */
@@ -22,6 +25,7 @@ public abstract class Title {
     private Uri coverUri;
     private String status;
     private long lastOpenedAt;
+    private final List<Chapter> chapters;
 
     public Title(int id, String title, int lenChapters, Uri contentUri) {
         this.id = id;
@@ -35,6 +39,7 @@ public abstract class Title {
         this.coverUri = null;
         this.status = STATUS_TO_START;
         this.lastOpenedAt = 0L;
+        this.chapters = new ArrayList<>();
     }
 
     public int getId() {
@@ -123,6 +128,37 @@ public abstract class Title {
 
     public void setLastOpenedAt(long lastOpenedAt) {
         this.lastOpenedAt = lastOpenedAt;
+    }
+
+    /**
+     * Returns the top-level chapters (each potentially containing nested sections/subsections).
+     */
+    public List<Chapter> getChapters() {
+        return chapters;
+    }
+
+    public void setChapters(List<Chapter> chapters) {
+        this.chapters.clear();
+        if (chapters != null) {
+            for (Chapter chapter : chapters) {
+                if (chapter != null) {
+                    this.chapters.add(chapter);
+                }
+            }
+        }
+    }
+
+    public void addChapter(Chapter chapter) {
+        if (chapter != null) {
+            this.chapters.add(chapter);
+        }
+    }
+
+    /**
+     * Returns all chapters and nested sections/subsections flattened in pre-order reading order.
+     */
+    public List<Chapter> getFlattenedChapters() {
+        return Chapter.flattenTree(this.chapters);
     }
 
     /**

@@ -51,21 +51,47 @@ public class EReaderDbHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(TitleEntry.SQL_CREATE_TABLE);
         db.execSQL(ChapterEntry.SQL_CREATE_TABLE);
+        db.execSQL(ChapterEntry.SQL_CREATE_INDEX);
         db.execSQL(BookmarkNoteEntry.SQL_CREATE_TABLE);
         db.execSQL(SettingsEntry.SQL_CREATE_TABLE);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        if (oldVersion == 2 && newVersion >= 3) {
+            upgradeFromV2ToV3(db);
+            return;
+        }
+        recreateSchema(db);
+    }
+
+    @Override
+    public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        recreateSchema(db);
+    }
+
+    private void upgradeFromV2ToV3(@NonNull SQLiteDatabase db) {
+        db.execSQL("ALTER TABLE " + ChapterEntry.TABLE_NAME + " ADD COLUMN "
+                + ChapterEntry.COLUMN_PARENT_CHAPTER_ID + " INTEGER DEFAULT NULL REFERENCES "
+                + ChapterEntry.TABLE_NAME + "(" + ChapterEntry._ID + ") ON DELETE CASCADE;");
+        db.execSQL("ALTER TABLE " + ChapterEntry.TABLE_NAME + " ADD COLUMN "
+                + ChapterEntry.COLUMN_LEVEL + " INTEGER NOT NULL DEFAULT 0;");
+        db.execSQL("ALTER TABLE " + ChapterEntry.TABLE_NAME + " ADD COLUMN "
+                + ChapterEntry.COLUMN_SORT_ORDER + " INTEGER NOT NULL DEFAULT 0;");
+        db.execSQL("ALTER TABLE " + ChapterEntry.TABLE_NAME + " ADD COLUMN "
+                + ChapterEntry.COLUMN_HREF + " TEXT NOT NULL DEFAULT '';");
+        db.execSQL("ALTER TABLE " + ChapterEntry.TABLE_NAME + " ADD COLUMN "
+                + ChapterEntry.COLUMN_FRAGMENT_ID + " TEXT NOT NULL DEFAULT '';");
+        db.execSQL("ALTER TABLE " + ChapterEntry.TABLE_NAME + " ADD COLUMN "
+                + ChapterEntry.COLUMN_RAW_HTML + " TEXT NOT NULL DEFAULT '';");
+        db.execSQL(ChapterEntry.SQL_CREATE_INDEX);
+    }
+
+    private void recreateSchema(@NonNull SQLiteDatabase db) {
         db.execSQL(BookmarkNoteEntry.SQL_DROP_TABLE);
         db.execSQL(ChapterEntry.SQL_DROP_TABLE);
         db.execSQL(TitleEntry.SQL_DROP_TABLE);
         db.execSQL(SettingsEntry.SQL_DROP_TABLE);
         onCreate(db);
-    }
-
-    @Override
-    public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        onUpgrade(db, oldVersion, newVersion);
     }
 }

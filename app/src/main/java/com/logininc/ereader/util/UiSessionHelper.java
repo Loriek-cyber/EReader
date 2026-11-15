@@ -4,16 +4,20 @@ import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.button.MaterialButton;
 import com.logininc.ereader.R;
 import com.logininc.ereader.model.AudioBook;
+import com.logininc.ereader.model.Chapter;
 import com.logininc.ereader.model.Title;
 import com.logininc.ereader.persistence.TitleDao;
 import com.logininc.ereader.screen.AudioChaptersActivity;
@@ -24,6 +28,8 @@ import com.logininc.ereader.screen.ProfileSettingsActivity;
 import com.logininc.ereader.service.PlaybackSessionManager;
 
 import java.io.File;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Shared UI binding helpers for the floating Mini-Player bar, bottom navigation, and cover images.
@@ -209,5 +215,133 @@ public final class UiSessionHelper {
         }
         imageView.setTag(R.id.ivMiniCover, null);
         imageView.setImageDrawable(null);
+    }
+
+    public interface SubtreeInflater {
+        void inflateChildren(
+                @NonNull List<ChapterTreeHelper.TreeNode> children,
+                @NonNull LinearLayout container,
+                int nextDepth
+        );
+    }
+
+    /**
+     * Binds the hierarchical index summary and Expand/Collapse All toggle button.
+     */
+    public static void bindChapterTreeControls(
+            @NonNull Activity activity,
+            @NonNull List<Chapter> roots,
+            boolean showControls,
+            @NonNull View layoutControls,
+            @NonNull TextView tvSummary,
+            @NonNull MaterialButton btnToggleExpandAll,
+            @NonNull Set<Integer> expandedIndices,
+            @NonNull Runnable onToggled
+    ) {
+        if (!showControls || !ChapterTreeHelper.hasNestedChapters(roots)) {
+            layoutControls.setVisibility(View.GONE);
+            return;
+        }
+        layoutControls.setVisibility(View.VISIBLE);
+        int nestedCount = ChapterTreeHelper.countNestedNodes(roots);
+        tvSummary.setText(activity.getString(R.string.chapters_tree_summary_fmt, roots.size(), nestedCount));
+
+        Set<Integer> expandable = ChapterTreeHelper.collectExpandableIndices(roots);
+        updateExpandAllButtonLabel(btnToggleExpandAll, expandable, expandedIndices);
+        btnToggleExpandAll.setOnClickListener(v -> {
+            boolean allExpanded = !expandable.isEmpty() && expandedIndices.containsAll(expandable);
+            if (allExpanded) {
+                expandedIndices.clear();
+            } else {
+                expandedIndices.addAll(expandable);
+            }
+            updateExpandAllButtonLabel(btnToggleExpandAll, expandable, expandedIndices);
+            onToggled.run();
+        });
+    }
+
+    public static void updateExpandAllButtonLabel(
+            @NonNull MaterialButton btnToggleExpandAll,
+            @NonNull Set<Integer> expandableIndices,
+            @NonNull Set<Integer> expandedIndices
+    ) {
+        boolean allExpanded = !expandableIndices.isEmpty() && expandedIndices.containsAll(expandableIndices);
+        btnToggleExpandAll.setText(allExpanded ? R.string.chapters_collapse_all : R.string.chapters_expand_all);
+    }
+
+    /**
+     * Binds expand/collapse controls and recursive subtree inflation for a chapter/section row.
+     */
+    public static void bindRecursiveChapterChildren(
+            @NonNull ChapterTreeHelper.TreeNode node,
+            int depth,
+            boolean filtering,
+            @NonNull Set<Integer> expandedIndices,
+            @NonNull ImageButton btnExpand,
+            @Nullable View trailingLeafView,
+            @NonNull View layoutChildrenWrapper,
+            @NonNull View viewTreeGuide,
+            @NonNull LinearLayout containerChildren,
+            @Nullable Runnable onExpansionChanged,
+            @NonNull SubtreeInflater subtreeInflater
+    ) {
+        if (node.children.isEmpty()) {
+            btnExpand.setVisibility(View.GONE);
+            if (trailingLeafView != null) {
+                trailingLeafView.setVisibility(View.VISIBLE);
+            }
+            layoutChildrenWrapper.setVisibility(View.GONE);
+            return;
+        }
+
+        if (trailingLeafView != null) {
+            trailingLeafView.setVisibility(View.GONE);
+        }
+        btnExpand.setVisibility(View.VISIBLE);
+
+        if (depth >= 4) {
+            int compactMargin = Math.round(4f * viewTreeGuide.getResources().getDisplayMetrics().density);
+            setMarginStart(viewTreeGuide, compactMargin);
+            setMarginStart(containerChildren, compactMargin);
+        }
+
+        int key = node.chapter.getChapterIndex();
+        boolean expanded = filtering ? node.forceExpand : expandedIndices.contains(key);
+        btnExpand.setRotation(expanded ? 0f : -90f);
+
+        if (expanded) {
+            layoutChildrenWrapper.setVisibility(View.VISIBLE);
+            subtreeInflater.inflateChildren(node.children, containerChildren, depth + 1);
+        } else {
+            layoutChildrenWrapper.setVisibility(View.GONE);
+        }
+
+        btnExpand.setOnClickListener(v -> {
+            boolean nowExpanded = layoutChildrenWrapper.getVisibility() != View.VISIBLE;
+            if (!filtering) {
+                if (nowExpanded) {
+                    expandedIndices.add(key);
+                } else {
+                    expandedIndices.remove(key);
+                }
+                if (onExpansionChanged != null) {
+                    onExpansionChanged.run();
+                }
+            }
+            if (nowExpanded && containerChildren.getChildCount() == 0) {
+                subtreeInflater.inflateChildren(node.children, containerChildren, depth + 1);
+            }
+            layoutChildrenWrapper.setVisibility(nowExpanded ? View.VISIBLE : View.GONE);
+            btnExpand.animate().rotation(nowExpanded ? 0f : -90f).setDuration(150).start();
+        });
+    }
+
+    private static void setMarginStart(@NonNull View view, int marginPx) {
+        ViewGroup.LayoutParams raw = view.getLayoutParams();
+        if (raw instanceof ViewGroup.MarginLayoutParams) {
+            ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) raw;
+            lp.setMarginStart(marginPx);
+            view.setLayoutParams(lp);
+        }
     }
 }

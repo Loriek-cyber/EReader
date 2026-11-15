@@ -67,7 +67,7 @@ public final class FileScanner {
     }
 
     @NonNull
-    public static ScanResult scanTree(@NonNull Context context, @NonNull Uri treeUri, boolean expectAudio) {
+    public static ScanResult scanTree(@NonNull Context context, @NonNull Uri treeUri, boolean expectAudio) throws Exception {
         PermissionHelper.takePersistableReadPermission(context, treeUri);
         List<ScannedDoc> docs = new ArrayList<>();
         String rootDocId = DocumentsContract.getTreeDocumentId(treeUri);
@@ -89,7 +89,7 @@ public final class FileScanner {
             }
             Title created = expectAudio
                     ? importAudioDocument(context, doc.uri, doc.displayName, titleDao, chapterDao)
-                    : importEbookDocument(context, doc.uri, doc.displayName, titleDao, chapterDao);
+                    : importEbookDocument(context, doc.uri, doc.displayName, titleDao);
             if (created != null) {
                 imported++;
             }
@@ -110,10 +110,15 @@ public final class FileScanner {
         String mimeType = context.getContentResolver().getType(uri);
         boolean isAudio = isAudioFile(displayName) || M4bParser.isM4bOrAudioMime(mimeType);
 
-        ChapterDao chapterDao = new ChapterDao(context);
-        return isAudio
-                ? importAudioDocument(context, uri, displayName, titleDao, chapterDao)
-                : importEbookDocument(context, uri, displayName, titleDao, chapterDao);
+        if (isAudio) {
+            ChapterDao chapterDao = new ChapterDao(context);
+            return importAudioDocument(context, uri, displayName, titleDao, chapterDao);
+        }
+        try {
+            return importEbookDocument(context, uri, displayName, titleDao);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private static void collectTreeDocs(
@@ -169,23 +174,13 @@ public final class FileScanner {
             @NonNull Context context,
             @NonNull Uri uri,
             @NonNull String displayName,
-            @NonNull TitleDao titleDao,
-            @NonNull ChapterDao chapterDao
-    ) {
-        EbookParser.EbookMetadata parsed = EbookParser.parse(context, uri, displayName);
-
-        Book book = new Book(0, parsed.title, parsed.chapters.size(), uri);
-        book.setAuthor(parsed.author);
-        book.setCoverUri(parsed.coverUri);
-        book.setTotalPages(Math.max(1, parsed.totalPages));
-        book.setCurrentPage(1);
-        book.setStatus(Title.STATUS_TO_START);
-
-        long id = titleDao.insert(book);
+            @NonNull TitleDao titleDao
+    ) throws Exception {
+        Book book = EbookParserV2.parseToBook(context, uri, stripExtension(displayName));
+        long id = EbookParserV2.saveBook(context, book, titleDao);
         if (id == -1) {
             return null;
         }
-        chapterDao.replaceChapters(book.getId(), parsed.chapters);
         return book;
     }
 

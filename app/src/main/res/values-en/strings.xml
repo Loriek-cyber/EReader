@@ -18,6 +18,7 @@
     <string name="cd_audio_progress">Audio playback progress</string>
     <string name="cd_font_decrease">Decrease font size</string>
     <string name="cd_font_increase">Increase font size</string>
+    <string name="cd_expand_section">Expand or collapse section</string>
     <string name="cd_edit_profile">Edit profile</string>
     <string name="cd_pick_ebook_folder">Select eBook folder</string>
     <string name="cd_pick_audio_folder">Select audiobook folder</string>
@@ -125,6 +126,13 @@
     <string name="chapters_empty_items">No saved items in this section.</string>
     <string name="chapter_status_completed">Completed</string>
     <string name="chapter_status_to_start">Not started</string>
+    <string name="chapters_expand_all">Expand all</string>
+    <string name="chapters_collapse_all">Collapse all</string>
+    <string name="chapters_tree_summary_fmt">%1$d chapters • %2$d sections</string>
+    <plurals name="chapter_sections_count">
+        <item quantity="one">%1$d section</item>
+        <item quantity="other">%1$d sections</item>
+    </plurals>
 
     <!-- Audio Player -->
     <string name="player_now_playing">NOW PLAYING</string>

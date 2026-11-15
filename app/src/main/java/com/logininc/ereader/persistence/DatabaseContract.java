@@ -8,7 +8,7 @@ import android.provider.BaseColumns;
 public final class DatabaseContract {
 
     public static final String DATABASE_NAME = "ereader.db";
-    public static final int DATABASE_VERSION = 2;
+    public static final int DATABASE_VERSION = 3;
 
     private DatabaseContract() {
     }
@@ -67,37 +67,60 @@ public final class DatabaseContract {
     }
 
     /**
-     * Schema definition for the {@code chapters} table linked via foreign key to {@code titles}.
+     * Schema definition for the {@code chapters} table linked via foreign key to {@code titles}
+     * and self-referencing {@code parent_chapter_id} for hierarchical sections/subsections.
      */
     public static final class ChapterEntry implements BaseColumns {
         public static final String TABLE_NAME = "chapters";
         public static final String COLUMN_TITLE_ID = "title_id";
+        public static final String COLUMN_PARENT_CHAPTER_ID = "parent_chapter_id";
         public static final String COLUMN_CHAPTER_INDEX = "chapter_index";
+        public static final String COLUMN_LEVEL = "level";
+        public static final String COLUMN_SORT_ORDER = "sort_order";
         public static final String COLUMN_CHAPTER_TITLE = "chapter_title";
         public static final String COLUMN_SUBTITLE = "subtitle";
+        public static final String COLUMN_HREF = "href";
+        public static final String COLUMN_FRAGMENT_ID = "fragment_id";
         public static final String COLUMN_PAGE_OR_DURATION = "page_or_duration";
         public static final String COLUMN_CONTENT_TEXT = "content_text";
+        public static final String COLUMN_RAW_HTML = "raw_html";
         public static final String COLUMN_AUDIO_START_MS = "audio_start_ms";
         public static final String COLUMN_AUDIO_DURATION_MS = "audio_duration_ms";
         public static final String COLUMN_PROGRESS_PERCENT = "progress_percent";
         public static final String COLUMN_IS_COMPLETED = "is_completed";
 
+        public static final String INDEX_TITLE_PARENT = "idx_chapters_title_parent";
+
         public static final String SQL_CREATE_TABLE =
                 "CREATE TABLE " + TABLE_NAME + " ("
                         + _ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                         + COLUMN_TITLE_ID + " INTEGER NOT NULL, "
+                        + COLUMN_PARENT_CHAPTER_ID + " INTEGER DEFAULT NULL, "
                         + COLUMN_CHAPTER_INDEX + " INTEGER NOT NULL, "
+                        + COLUMN_LEVEL + " INTEGER NOT NULL DEFAULT 0, "
+                        + COLUMN_SORT_ORDER + " INTEGER NOT NULL DEFAULT 0, "
                         + COLUMN_CHAPTER_TITLE + " TEXT NOT NULL, "
                         + COLUMN_SUBTITLE + " TEXT NOT NULL DEFAULT '', "
+                        + COLUMN_HREF + " TEXT NOT NULL DEFAULT '', "
+                        + COLUMN_FRAGMENT_ID + " TEXT NOT NULL DEFAULT '', "
                         + COLUMN_PAGE_OR_DURATION + " TEXT NOT NULL DEFAULT '', "
                         + COLUMN_CONTENT_TEXT + " TEXT NOT NULL DEFAULT '', "
+                        + COLUMN_RAW_HTML + " TEXT NOT NULL DEFAULT '', "
                         + COLUMN_AUDIO_START_MS + " INTEGER NOT NULL DEFAULT 0, "
                         + COLUMN_AUDIO_DURATION_MS + " INTEGER NOT NULL DEFAULT 0, "
                         + COLUMN_PROGRESS_PERCENT + " INTEGER NOT NULL DEFAULT 0, "
                         + COLUMN_IS_COMPLETED + " INTEGER NOT NULL DEFAULT 0, "
                         + "FOREIGN KEY(" + COLUMN_TITLE_ID + ") REFERENCES "
-                        + TitleEntry.TABLE_NAME + "(" + TitleEntry._ID + ") ON DELETE CASCADE"
+                        + TitleEntry.TABLE_NAME + "(" + TitleEntry._ID + ") ON DELETE CASCADE, "
+                        + "FOREIGN KEY(" + COLUMN_PARENT_CHAPTER_ID + ") REFERENCES "
+                        + TABLE_NAME + "(" + _ID + ") ON DELETE CASCADE"
                         + ");";
+
+        public static final String SQL_CREATE_INDEX =
+                "CREATE INDEX IF NOT EXISTS " + INDEX_TITLE_PARENT + " ON "
+                        + TABLE_NAME + " (" + COLUMN_TITLE_ID + ", "
+                        + COLUMN_PARENT_CHAPTER_ID + ", "
+                        + COLUMN_SORT_ORDER + ");";
 
         public static final String SQL_DROP_TABLE =
                 "DROP TABLE IF EXISTS " + TABLE_NAME + ";";
