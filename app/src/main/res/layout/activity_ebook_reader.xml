@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/canvas_base"
+    android:background="?attr/ereaderCanvasBg"
     android:fitsSystemWindows="true">
 
     <!-- Subtle Ambient Nocturnal Glow -->
@@ -26,7 +26,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="@dimen/top_bar_height"
-            android:background="@color/surface_nav_translucent"
+            android:background="?attr/ereaderNavTranslucentBg"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingHorizontal="@dimen/space_md">
@@ -39,7 +39,7 @@
                 android:contentDescription="@string/cd_back"
                 android:padding="12dp"
                 android:src="@drawable/ic_arrow_back"
-                app:tint="@color/on_surface_variant" />
+                app:tint="?attr/ereaderTextPrimary" />
 
             <FrameLayout
                 android:layout_width="0dp"
@@ -76,8 +76,7 @@
                         android:layout_marginHorizontal="@dimen/space_sm"
                         android:ellipsize="end"
                         android:maxLines="1"
-                        android:text="@string/reader_chapter_pill"
-                        android:textColor="@color/text_lavender"
+                        android:textColor="?attr/ereaderTextAccent"
                         app:layout_constrainedWidth="true"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/ivChapterPillChevron"
@@ -94,9 +93,19 @@
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
-                        app:tint="@color/text_muted" />
+                        app:tint="?attr/ereaderTextMuted" />
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </FrameLayout>
+
+            <ImageButton
+                android:id="@+id/btnReaderStop"
+                android:layout_width="@dimen/touch_target_min"
+                android:layout_height="@dimen/touch_target_min"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/cd_stop_session"
+                android:padding="12dp"
+                android:src="@drawable/ic_lock"
+                app:tint="@color/error" />
         </LinearLayout>
 
         <!-- Primary Reading Sanctuary Canvas -->
@@ -135,13 +144,13 @@
                             android:background="@color/border_active" />
 
                         <TextView
+                            android:id="@+id/tvReaderChapterLabel"
                             style="@style/TextAppearance.EReader.LabelBadge"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginHorizontal="@dimen/space_sm"
                             android:letterSpacing="0.22"
-                            android:text="@string/reader_chapter_label"
-                            android:textColor="@color/text_lavender" />
+                            android:textColor="?attr/ereaderTextAccent" />
 
                         <View
                             android:layout_width="24dp"
@@ -157,127 +166,104 @@
                         android:layout_marginTop="@dimen/space_xs"
                         android:fontFamily="serif"
                         android:gravity="center"
-                        android:text="@string/reader_chapter_title"
                         android:textStyle="italic|bold" />
 
                     <View
                         android:layout_width="40dp"
                         android:layout_height="2dp"
                         android:layout_marginTop="@dimen/space_sm"
-                        android:background="@color/primary_container" />
+                        android:background="?attr/colorPrimaryContainer" />
                 </LinearLayout>
 
-                <!-- Paragraph 1 with Drop Cap -->
+                <!-- Dynamic Text Content (EPUB / TXT) -->
+                <TextView
+                    android:id="@+id/tvReaderProseBody"
+                    style="@style/TextAppearance.EReader.ReaderProse"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <!-- Dynamic PDF Page Renderer Section -->
                 <LinearLayout
+                    android:id="@+id/layoutPdfContainer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:baselineAligned="false"
-                    android:gravity="top"
-                    android:orientation="horizontal">
+                    android:orientation="vertical"
+                    android:visibility="gone">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <ImageView
+                        android:id="@+id/ivPdfPage"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="@dimen/space_sm"
-                        android:fontFamily="sans-serif-medium"
-                        android:includeFontPadding="false"
-                        android:text="@string/reader_prose_dropcap"
-                        android:textColor="@color/primary"
-                        android:textSize="44sp" />
-
-                    <TextView
-                        android:id="@+id/tvReaderProse1"
-                        style="@style/TextAppearance.EReader.ReaderProse"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/reader_prose_p1" />
-                </LinearLayout>
-
-                <!-- Atmospheric Separator -->
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:alpha="0.4"
-                    android:orientation="horizontal"
-                    android:paddingVertical="@dimen/space_base">
-
-                    <View
-                        android:layout_width="6dp"
-                        android:layout_height="6dp"
-                        android:background="@drawable/bg_dot_primary" />
-
-                    <View
-                        android:layout_width="6dp"
-                        android:layout_height="6dp"
-                        android:layout_marginHorizontal="@dimen/space_xs"
-                        android:background="@drawable/bg_dot_primary" />
-
-                    <View
-                        android:layout_width="6dp"
-                        android:layout_height="6dp"
-                        android:background="@drawable/bg_dot_primary" />
-                </LinearLayout>
-
-                <TextView
-                    style="@style/TextAppearance.EReader.ReaderProse"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/reader_prose_p2" />
-
-                <TextView
-                    style="@style/TextAppearance.EReader.ReaderProse"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_lg"
-                    android:text="@string/reader_prose_p3" />
-
-                <TextView
-                    style="@style/TextAppearance.EReader.ReaderProse"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_lg"
-                    android:text="@string/reader_prose_p4" />
-
-                <!-- Mini Vignette Card -->
-                <com.google.android.material.card.MaterialCardView
-                    style="@style/Widget.EReader.Card"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginVertical="@dimen/space_lg">
+                        android:adjustViewBounds="true"
+                        android:background="@color/white"
+                        android:contentDescription="@null" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingHorizontal="@dimen/space_base"
-                        android:paddingVertical="@dimen/space_md">
+                        android:layout_marginTop="@dimen/space_md"
+                        android:gravity="center"
+                        android:orientation="horizontal">
 
-                        <TextView
-                            style="@style/TextAppearance.EReader.Caption"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/reader_vignette_caption"
-                            android:textColor="@color/text_muted"
-                            android:textStyle="italic" />
-
-                        <TextView
-                            style="@style/TextAppearance.EReader.LabelBadge"
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnPdfPrevPage"
+                            style="@style/Widget.EReader.Button.Secondary"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/reader_vignette_badge"
-                            android:textColor="@color/text_lavender" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
+                            android:minHeight="@dimen/touch_target_min"
+                            android:text="@string/reader_prev_page" />
 
-                <TextView
-                    style="@style/TextAppearance.EReader.ReaderProse"
+                        <TextView
+                            android:id="@+id/tvPdfPageIndicator"
+                            style="@style/TextAppearance.EReader.Caption"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:paddingHorizontal="@dimen/space_base" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnPdfNextPage"
+                            style="@style/Widget.EReader.Button.Secondary"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:minHeight="@dimen/touch_target_min"
+                            android:text="@string/reader_next_page" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Chapter Navigation & Completion Action -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/reader_prose_p5" />
+                    android:layout_marginTop="@dimen/space_2xl"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPrevChapterReader"
+                        style="@style/Widget.EReader.Button.Secondary"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minHeight="@dimen/touch_target_min"
+                        android:text="@string/reader_prev_chapter" />
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCompleteChapterReader"
+                        style="@style/Widget.EReader.Button.Primary"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minHeight="@dimen/touch_target_min"
+                        android:paddingHorizontal="@dimen/space_base"
+                        android:text="@string/reader_complete_chapter"
+                        app:icon="@drawable/ic_check"
+                        app:iconGravity="textEnd"
+                        app:iconSize="16dp"
+                        app:iconTint="@color/white" />
+                </LinearLayout>
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
     </LinearLayout>
@@ -317,7 +303,7 @@
                     android:layout_marginEnd="@dimen/space_sm"
                     android:layout_weight="1"
                     android:text="@string/reader_font_size_label"
-                    android:textColor="@color/text_muted" />
+                    android:textColor="?attr/ereaderTextMuted" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnFontDecrease"
@@ -337,8 +323,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingHorizontal="@dimen/space_sm"
-                    android:text="@string/reader_font_size_sample"
-                    android:textColor="@color/text_lavender" />
+                    android:textColor="?attr/ereaderTextAccent" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnFontIncrease"
@@ -434,8 +419,7 @@
                     android:layout_weight="1"
                     android:ellipsize="end"
                     android:maxLines="1"
-                    android:text="@string/reader_page_counter"
-                    android:textColor="@color/text_lavender"
+                    android:textColor="?attr/ereaderTextAccent"
                     android:textStyle="bold" />
 
                 <TextView
@@ -444,8 +428,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:maxLines="1"
-                    android:text="@string/sample_progress_68_percent"
-                    android:textColor="@color/primary" />
+                    android:textColor="?attr/colorPrimary" />
             </LinearLayout>
 
             <com.google.android.material.progressindicator.LinearProgressIndicator
@@ -454,8 +437,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="@dimen/space_sm"
-                android:layout_marginTop="6dp"
-                android:progress="68" />
+                android:layout_marginTop="6dp" />
 
             <!-- Quick Reader Action Tray -->
             <LinearLayout
@@ -515,7 +497,7 @@
                         android:layout_height="18dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_brightness"
-                        app:tint="@color/on_surface" />
+                        app:tint="?attr/ereaderTextPrimary" />
 
                     <TextView
                         style="@style/TextAppearance.EReader.Caption"
@@ -546,7 +528,7 @@
                         android:layout_height="18dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_book_open"
-                        app:tint="@color/on_surface" />
+                        app:tint="?attr/ereaderTextPrimary" />
 
                     <TextView
                         style="@style/TextAppearance.EReader.Caption"
@@ -577,7 +559,7 @@
                         android:layout_height="18dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_bookmark_filled"
-                        app:tint="@color/primary" />
+                        app:tint="?attr/colorPrimary" />
 
                     <TextView
                         style="@style/TextAppearance.EReader.Caption"
@@ -587,7 +569,7 @@
                         android:ellipsize="end"
                         android:maxLines="1"
                         android:text="@string/reader_hud_save"
-                        android:textColor="@color/primary" />
+                        android:textColor="?attr/colorPrimary" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>

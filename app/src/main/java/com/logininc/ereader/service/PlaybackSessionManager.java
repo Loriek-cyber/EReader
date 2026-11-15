@@ -6,6 +6,7 @@ import android.media.PlaybackParams;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.ParcelFileDescriptor;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -191,7 +192,17 @@ public class PlaybackSessionManager {
         releaseMediaPlayer();
         mediaPlayer = new MediaPlayer();
         try {
-            mediaPlayer.setDataSource(context, audioBook.getContentUri());
+            boolean dataSourceSet = false;
+            try (ParcelFileDescriptor pfd = context.getContentResolver().openFileDescriptor(audioBook.getContentUri(), "r")) {
+                if (pfd != null) {
+                    mediaPlayer.setDataSource(pfd.getFileDescriptor());
+                    dataSourceSet = true;
+                }
+            } catch (IOException | IllegalStateException | SecurityException ignored) {
+            }
+            if (!dataSourceSet) {
+                mediaPlayer.setDataSource(context, audioBook.getContentUri());
+            }
             mediaPlayer.prepare();
             long durationMs = mediaPlayer.getDuration();
             if (durationMs > 0) {
@@ -267,25 +278,55 @@ public class PlaybackSessionManager {
         if (chapters.isEmpty()) {
             return;
         }
-        Chapter current = null;
-        for (Chapter ch : chapters) {
-            long start = ch.getAudioStartMs();
-            long end = start + ch.getAudioDurationMs();
-            if (currentMs >= start && (ch.getAudioDurationMs() <= 0 || currentMs < end)) {
-                current = ch;
-                break;
+        int activeIdx = audioBook.getCurrentChapter();
+        Chapter activeCh = chapterDao.getChapter(audioBook.getId(), activeIdx);
+        if (activeCh != null && activeCh.getAudioDurationMs() > 0) {
+            long chEnd = activeCh.getAudioStartMs() + activeCh.getAudioDurationMs();
+            if (currentMs >= chEnd && activeIdx < chapters.size()) {
+                chapterDao.updateChapterProgress(audioBook.getId(), activeIdx, 100, true);
+                audioBook.setCurrentChapterCompleted(true);
+                if (audioBook.getTotalDurationMs() > 0) {
+                    audioBook.setProgressPercent((int) ((chEnd * 100L) / audioBook.getTotalDurationMs()));
+                }
+                audioBook.setCurrentPositionMs(chEnd);
+                new TitleDao(appContext).update(audioBook);
+
+                playing = false;
+                if (mediaPlayer != null) {
+                    try {
+                        if (mediaPlayer.isPlaying()) {
+                            mediaPlayer.pause();
+                        }
+                        mediaPlayer.seekTo((int) chEnd);
+                    } catch (IllegalStateException ignored) {
+                    }
+                }
+                new SettingsDao(appContext).setActiveSessionPlaying(false);
+                AudioPlaybackService.stop(appContext);
+                SleepTimerController.getInstance().onSessionPaused();
+                notifyListeners();
+                for (SessionListener listener : listeners) {
+                    listener.onChapterCompleted(audioBook, activeIdx);
+                }
+                return;
+            }
+        }
+
+        Chapter current = activeCh;
+        if (current == null) {
+            for (Chapter ch : chapters) {
+                long start = ch.getAudioStartMs();
+                long end = start + ch.getAudioDurationMs();
+                if (currentMs >= start && (ch.getAudioDurationMs() <= 0 || currentMs < end)) {
+                    current = ch;
+                    break;
+                }
             }
         }
         if (current != null) {
-            int previousChapter = audioBook.getCurrentChapter();
-            if (current.getChapterIndex() > previousChapter) {
-                chapterDao.updateChapterProgress(audioBook.getId(), previousChapter, 100, true);
-                audioBook.setCurrentChapter(current.getChapterIndex());
-                audioBook.setCurrentChapterCompleted(false);
-            }
             long relMs = Math.max(0L, currentMs - current.getAudioStartMs());
             int chPct = current.getAudioDurationMs() > 0
-                    ? (int) ((relMs * 100L) / current.getAudioDurationMs())
+                    ? (int) Math.min(100L, (relMs * 100L) / current.getAudioDurationMs())
                     : audioBook.getProgressPercent();
             chapterDao.updateChapterProgress(audioBook.getId(), current.getChapterIndex(), chPct, false);
         }
@@ -398,8 +439,27 @@ public class PlaybackSessionManager {
         if (audioBook.getTotalDurationMs() > 0) {
             audioBook.setProgressPercent((int) ((clamped * 100L) / audioBook.getTotalDurationMs()));
         }
+        syncCurrentChapterOnSeek(audioBook, clamped);
         persistCurrentState();
         notifyListeners();
+    }
+
+    private void syncCurrentChapterOnSeek(@NonNull AudioBook audioBook, long positionMs) {
+        if (appContext == null) {
+            return;
+        }
+        List<Chapter> chapters = new ChapterDao(appContext).getChaptersForTitle(audioBook.getId());
+        for (Chapter ch : chapters) {
+            long start = ch.getAudioStartMs();
+            long end = start + ch.getAudioDurationMs();
+            if (positionMs >= start && (ch.getAudioDurationMs() <= 0 || positionMs < end)) {
+                if (ch.getChapterIndex() != audioBook.getCurrentChapter()) {
+                    audioBook.setCurrentChapter(ch.getChapterIndex());
+                    audioBook.setCurrentChapterCompleted(false);
+                }
+                break;
+            }
+        }
     }
 
     public void jumpToChapter(@NonNull Context context, int chapterIndex) {

@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/surface"
+    android:background="?attr/ereaderSurfaceBg"
     android:fitsSystemWindows="true">
 
     <LinearLayout
@@ -16,7 +15,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="@dimen/top_bar_height"
-            android:background="@color/surface_nav_translucent"
+            android:background="?attr/ereaderNavTranslucentBg"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingHorizontal="@dimen/space_sm">
@@ -30,17 +29,17 @@
                 android:padding="13dp"
                 android:scaleType="centerInside"
                 android:src="@drawable/ic_arrow_back"
-                app:tint="@color/on_surface" />
+                app:tint="?attr/ereaderTextPrimary" />
 
             <TextView
+                android:id="@+id/tvAudioChaptersTitle"
                 style="@style/TextAppearance.EReader.HeadlineSm"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="@dimen/space_xs"
                 android:layout_weight="1"
                 android:ellipsize="end"
-                android:maxLines="1"
-                android:text="@string/sample_book_1984_header" />
+                android:maxLines="1" />
         </LinearLayout>
 
         <androidx.core.widget.NestedScrollView
@@ -79,12 +78,11 @@
                             android:insetBottom="6dp"
                             android:minHeight="@dimen/touch_target_min"
                             android:paddingHorizontal="@dimen/space_base"
-                            android:text="@string/tab_chapters"
                             android:textSize="13sp"
                             app:cornerRadius="@dimen/radius_pill"
                             app:icon="@drawable/ic_book_open"
                             app:iconSize="16dp"
-                            app:iconTint="@color/on_primary_container" />
+                            app:iconTint="@color/white" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/chipAudioBookmarks"
@@ -96,14 +94,13 @@
                             android:insetBottom="6dp"
                             android:minHeight="@dimen/touch_target_min"
                             android:paddingHorizontal="@dimen/space_base"
-                            android:text="@string/tab_bookmarks_audio"
-                            android:textColor="@color/text_muted"
+                            android:textColor="?attr/ereaderTextMuted"
                             android:textSize="13sp"
-                            app:backgroundTint="@color/surface_chip"
+                            app:backgroundTint="?attr/ereaderChipBg"
                             app:cornerRadius="@dimen/radius_pill"
                             app:icon="@drawable/ic_bookmark"
                             app:iconSize="16dp"
-                            app:iconTint="@color/text_muted" />
+                            app:iconTint="?attr/ereaderTextMuted" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/chipAudioNotes"
@@ -114,14 +111,13 @@
                             android:insetBottom="6dp"
                             android:minHeight="@dimen/touch_target_min"
                             android:paddingHorizontal="@dimen/space_base"
-                            android:text="@string/tab_notes_audio"
-                            android:textColor="@color/text_muted"
+                            android:textColor="?attr/ereaderTextMuted"
                             android:textSize="13sp"
-                            app:backgroundTint="@color/surface_chip"
+                            app:backgroundTint="?attr/ereaderChipBg"
                             app:cornerRadius="@dimen/radius_pill"
                             app:icon="@drawable/ic_note"
                             app:iconSize="16dp"
-                            app:iconTint="@color/text_muted" />
+                            app:iconTint="?attr/ereaderTextMuted" />
                     </LinearLayout>
                 </HorizontalScrollView>
 
@@ -141,7 +137,7 @@
                         android:layout_height="18dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_search"
-                        app:tint="@color/text_placeholder" />
+                        app:tint="?attr/ereaderTextMuted" />
 
                     <EditText
                         android:id="@+id/etAudioChapterSearch"
@@ -157,8 +153,8 @@
                         android:inputType="text"
                         android:maxLines="1"
                         android:minHeight="@dimen/search_bar_height"
-                        android:textColor="@color/text_primary"
-                        android:textColorHint="@color/text_placeholder" />
+                        android:textColor="?attr/ereaderTextPrimary"
+                        android:textColorHint="?attr/ereaderTextMuted" />
                 </LinearLayout>
 
                 <!-- Overall Listening Progress Card -->
@@ -188,65 +184,38 @@
                                 android:ellipsize="end"
                                 android:maxLines="1"
                                 android:text="@string/chapters_audio_listening_progress"
-                                android:textColor="@color/text_muted" />
+                                android:textColor="?attr/ereaderTextMuted" />
 
                             <TextView
+                                android:id="@+id/tvAudioOverallPercent"
                                 style="@style/TextAppearance.EReader.BodySm"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:maxLines="1"
-                                android:text="@string/chapters_audio_progress_percent_sample"
-                                android:textColor="@color/primary"
+                                android:textColor="?attr/colorPrimary"
                                 android:textStyle="bold" />
                         </LinearLayout>
 
                         <com.google.android.material.progressindicator.LinearProgressIndicator
+                            android:id="@+id/progressAudioOverall"
                             style="@style/Widget.EReader.ProgressBar"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/space_sm"
-                            android:progress="28" />
+                            android:layout_marginTop="@dimen/space_sm" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Parte Prima -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_lg"
-                    android:layout_marginBottom="@dimen/space_sm"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <View
-                        android:layout_width="4dp"
-                        android:layout_height="14dp"
-                        android:background="@color/primary_container" />
-
-                    <TextView
-                        style="@style/TextAppearance.EReader.HeadlineSm"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="@dimen/space_sm"
-                        android:text="@string/part_one" />
-                </LinearLayout>
-
-                <include
-                    android:id="@+id/itemAudioChapter1"
-                    layout="@layout/item_chapter_audio" />
-                <include
-                    android:id="@+id/itemAudioChapter2"
-                    layout="@layout/item_chapter_audio" />
-
-                <!-- Active Audio Chapter Card (Cap. 5) -->
+                <!-- Active Audio Chapter Card -->
                 <LinearLayout
                     android:id="@+id/cardActiveAudioChapter"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginVertical="@dimen/space_xs"
+                    android:layout_marginTop="@dimen/space_base"
+                    android:layout_marginBottom="@dimen/space_xs"
                     android:background="@drawable/bg_card_active_chapter"
                     android:orientation="vertical"
-                    android:padding="@dimen/space_base">
+                    android:padding="@dimen/space_base"
+                    android:visibility="gone">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -302,8 +271,7 @@
                                     android:layout_height="wrap_content"
                                     android:layout_marginStart="6dp"
                                     android:maxLines="1"
-                                    android:text="@string/chapters_audio_active_time_sample"
-                                    android:textColor="@color/primary_fixed"
+                                    android:textColor="?attr/colorPrimary"
                                     app:layout_constraintBottom_toBottomOf="parent"
                                     app:layout_constraintEnd_toEndOf="parent"
                                     app:layout_constraintStart_toEndOf="@id/tvActiveChapterBadge"
@@ -311,13 +279,13 @@
                             </androidx.constraintlayout.widget.ConstraintLayout>
 
                             <TextView
+                                android:id="@+id/tvAudioActiveChapterTitle"
                                 style="@style/TextAppearance.EReader.HeadlineSm"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
                                 android:ellipsize="end"
-                                android:maxLines="1"
-                                android:text="@string/chapters_audio_active_title_sample" />
+                                android:maxLines="1" />
                         </LinearLayout>
 
                         <ImageButton
@@ -328,161 +296,46 @@
                             android:contentDescription="@string/cd_play_pause"
                             android:padding="14dp"
                             android:scaleType="centerInside"
-                            android:src="@drawable/ic_pause"
+                            android:src="@drawable/ic_play"
                             app:tint="@color/on_primary_container" />
                     </LinearLayout>
 
                     <com.google.android.material.progressindicator.LinearProgressIndicator
+                        android:id="@+id/progressAudioActiveChapter"
                         style="@style/Widget.EReader.ProgressBar"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_md"
-                        android:progress="34" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_xs"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            style="@style/TextAppearance.EReader.Caption"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="@dimen/space_xs"
-                            android:layout_weight="1"
-                            android:ellipsize="end"
-                            android:maxLines="1"
-                            android:text="@string/chapters_audio_active_progress_sample"
-                            android:textColor="@color/text_muted" />
-
-                        <TextView
-                            style="@style/TextAppearance.EReader.Caption"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:maxLines="1"
-                            android:text="@string/chapters_audio_active_remaining_sample"
-                            android:textColor="@color/text_muted" />
-                    </LinearLayout>
+                        android:layout_marginTop="@dimen/space_md" />
                 </LinearLayout>
 
-                <include
-                    android:id="@+id/itemAudioChapter3"
-                    layout="@layout/item_chapter_audio" />
-
-                <!-- Parte Seconda -->
-                <LinearLayout
+                <TextView
+                    android:id="@+id/tvAudioChaptersEmpty"
+                    style="@style/TextAppearance.EReader.Caption"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_lg"
-                    android:layout_marginBottom="@dimen/space_sm"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:gravity="center"
+                    android:padding="@dimen/space_base"
+                    android:text="@string/chapters_empty_items"
+                    android:visibility="gone" />
 
-                    <View
-                        android:layout_width="4dp"
-                        android:layout_height="14dp"
-                        android:background="@color/surface_container_highest" />
-
-                    <TextView
-                        style="@style/TextAppearance.EReader.HeadlineSm"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="@dimen/space_sm"
-                        android:layout_marginEnd="@dimen/space_xs"
-                        android:layout_weight="1"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="@string/part_two" />
-
-                    <TextView
-                        style="@style/TextAppearance.EReader.Caption"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:maxLines="1"
-                        android:text="@string/chapters_audio_part_two_meta_sample"
-                        android:textColor="@color/text_muted" />
-                </LinearLayout>
-
-                <include
-                    android:id="@+id/itemAudioChapter4"
-                    layout="@layout/item_chapter_audio" />
+                <LinearLayout
+                    android:id="@+id/containerAudioChapters"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_md"
+                    android:orientation="vertical" />
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
     </LinearLayout>
 
-    <!-- Floating Bottom Mini-Player -->
-    <LinearLayout
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:layout_marginHorizontal="@dimen/margin_screen"
-        android:layout_marginBottom="@dimen/space_base"
-        android:background="@drawable/bg_floating_hud"
-        android:elevation="12dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="@dimen/space_md"
-        android:paddingVertical="@dimen/space_sm">
+        android:layout_marginBottom="@dimen/space_base">
 
-        <ImageView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="@drawable/bg_rounded_container"
-            android:contentDescription="@null"
-            android:padding="9dp"
-            android:src="@drawable/ic_equalizer"
-            app:tint="@color/secondary" />
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/space_md"
-            android:layout_marginEnd="@dimen/space_xs"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                style="@style/TextAppearance.EReader.LabelBadge"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="@string/chapters_audio_mini_eyebrow"
-                android:textColor="@color/primary_fixed" />
-
-            <TextView
-                style="@style/TextAppearance.EReader.BodySm"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="@string/chapters_audio_mini_title_sample"
-                android:textColor="@color/text_primary"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <ImageButton
-            android:id="@+id/btnChaptersMiniRewind"
-            android:layout_width="@dimen/touch_target_min"
-            android:layout_height="@dimen/touch_target_min"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/cd_rewind_15"
-            android:padding="13dp"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_replay_15"
-            app:tint="@color/text_lavender" />
-
-        <ImageButton
-            android:id="@+id/btnChaptersMiniPlay"
-            android:layout_width="@dimen/touch_target_min"
-            android:layout_height="@dimen/touch_target_min"
-            android:layout_marginStart="@dimen/space_xxs"
-            android:background="@drawable/bg_circle_primary"
-            android:contentDescription="@string/cd_play_pause"
-            android:padding="14dp"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_play"
-            app:tint="@color/on_primary_container" />
-    </LinearLayout>
+        <include layout="@layout/layout_mini_player" />
+    </FrameLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

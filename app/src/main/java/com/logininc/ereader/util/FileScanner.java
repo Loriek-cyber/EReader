@@ -120,8 +120,7 @@ public final class FileScanner {
 
         String displayName = queryDisplayName(context, uri);
         String mimeType = context.getContentResolver().getType(uri);
-        boolean isAudio = isAudioFile(displayName)
-                || (mimeType != null && mimeType.startsWith("audio/"));
+        boolean isAudio = isAudioFile(displayName) || M4bParser.isM4bOrAudioMime(mimeType);
 
         ChapterDao chapterDao = new ChapterDao(context);
         return isAudio
@@ -165,7 +164,7 @@ public final class FileScanner {
                     collectTreeDocs(context, treeUri, docId, depth + 1, expectAudio, out);
                 } else {
                     boolean match = expectAudio
-                            ? (isAudioFile(name) || (mime != null && mime.startsWith("audio/")))
+                            ? (isAudioFile(name) || M4bParser.isM4bOrAudioMime(mime))
                             : isEbookFile(name);
                     if (match) {
                         Uri docUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, docId);
@@ -237,42 +236,43 @@ public final class FileScanner {
             @NonNull TitleDao titleDao,
             @NonNull ChapterDao chapterDao
     ) {
-        String titleName = stripExtension(displayName);
-        String author = "";
-        String narrator = "";
+        M4bParser.M4bMetadata m4bMeta = M4bParser.parse(context, uri);
+
+        String fallbackTitle = stripExtension(displayName);
+        String metaTitle = "";
+        String metaAlbum = "";
+        String metaArtist = "";
+        String metaComposer = "";
         long durationMs = 0L;
-        Uri coverUri = null;
+        byte[] coverBytes = null;
 
         MediaMetadataRetriever retriever = new MediaMetadataRetriever();
         try {
-            retriever.setDataSource(context, uri);
-            String metaTitle = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
-            String metaAlbum = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM);
-            String metaArtist = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
-            String metaComposer = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_COMPOSER);
+            boolean dataSourceSet = false;
+            try (ParcelFileDescriptor pfd = context.getContentResolver().openFileDescriptor(uri, "r")) {
+                if (pfd != null) {
+                    retriever.setDataSource(pfd.getFileDescriptor());
+                    dataSourceSet = true;
+                }
+            } catch (IOException | RuntimeException ignored) {
+            }
+            if (!dataSourceSet) {
+                retriever.setDataSource(context, uri);
+            }
+
+            metaTitle = safeTrim(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE));
+            metaAlbum = safeTrim(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM));
+            metaArtist = safeTrim(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST));
+            metaComposer = safeTrim(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_COMPOSER));
             String metaDuration = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
 
-            if (metaAlbum != null && !metaAlbum.trim().isEmpty()) {
-                titleName = metaAlbum.trim();
-            } else if (metaTitle != null && !metaTitle.trim().isEmpty()) {
-                titleName = metaTitle.trim();
-            }
-            if (metaArtist != null) {
-                author = metaArtist.trim();
-            }
-            if (metaComposer != null) {
-                narrator = metaComposer.trim();
-            }
             if (metaDuration != null) {
                 try {
                     durationMs = Long.parseLong(metaDuration.trim());
                 } catch (NumberFormatException ignored) {
                 }
             }
-            byte[] picture = retriever.getEmbeddedPicture();
-            if (picture != null && picture.length > 0) {
-                coverUri = saveCoverBytes(context, uri.toString().hashCode(), picture);
-            }
+            coverBytes = retriever.getEmbeddedPicture();
         } catch (RuntimeException ignored) {
         } finally {
             try {
@@ -281,7 +281,20 @@ public final class FileScanner {
             }
         }
 
-        List<Chapter> chapters = buildAudioChapters(titleName, durationMs);
+        String titleName = firstNonEmpty(m4bMeta.album, metaAlbum, m4bMeta.title, metaTitle, fallbackTitle);
+        String author = firstNonEmpty(metaArtist, m4bMeta.author);
+        String narrator = firstNonEmpty(m4bMeta.narrator, metaComposer);
+        if (durationMs <= 0L) {
+            durationMs = m4bMeta.durationMs;
+        }
+        if ((coverBytes == null || coverBytes.length == 0) && m4bMeta.coverBytes != null) {
+            coverBytes = m4bMeta.coverBytes;
+        }
+        Uri coverUri = (coverBytes != null && coverBytes.length > 0)
+                ? saveCoverBytes(context, uri.toString().hashCode(), coverBytes)
+                : null;
+
+        List<Chapter> chapters = buildChaptersFromM4bOrFallback(titleName, durationMs, m4bMeta.chapters);
 
         AudioBook audioBook = new AudioBook(0, titleName, chapters.size(), uri);
         audioBook.setAuthor(author);
@@ -297,6 +310,59 @@ public final class FileScanner {
         }
         chapterDao.replaceChapters(audioBook.getId(), chapters);
         return audioBook;
+    }
+
+    @NonNull
+    private static List<Chapter> buildChaptersFromM4bOrFallback(
+            @NonNull String titleName,
+            long totalDurationMs,
+            @NonNull List<M4bParser.M4bChapter> m4bChapters
+    ) {
+        if (m4bChapters.isEmpty()) {
+            return buildAudioChapters(titleName, totalDurationMs);
+        }
+        List<Chapter> chapters = new ArrayList<>(m4bChapters.size());
+        for (int i = 0; i < m4bChapters.size(); i++) {
+            M4bParser.M4bChapter src = m4bChapters.get(i);
+            long dur = src.durationMs;
+            if (dur <= 0L) {
+                if (i + 1 < m4bChapters.size()) {
+                    dur = Math.max(0L, m4bChapters.get(i + 1).startMs - src.startMs);
+                } else if (totalDurationMs > src.startMs) {
+                    dur = totalDurationMs - src.startMs;
+                }
+            }
+            String durLabel = formatDuration(dur);
+            chapters.add(new Chapter(
+                    0,
+                    0,
+                    i + 1,
+                    src.title,
+                    durLabel,
+                    durLabel,
+                    "",
+                    src.startMs,
+                    dur,
+                    0,
+                    false
+            ));
+        }
+        return chapters;
+    }
+
+    @NonNull
+    private static String safeTrim(@Nullable String value) {
+        return value != null ? value.trim() : "";
+    }
+
+    @NonNull
+    private static String firstNonEmpty(@NonNull String... values) {
+        for (String v : values) {
+            if (v != null && !v.isEmpty()) {
+                return v;
+            }
+        }
+        return "";
     }
 
     @NonNull

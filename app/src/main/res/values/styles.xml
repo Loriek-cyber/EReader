@@ -3,7 +3,7 @@
     <!-- Typography Hierarchy (Inter / Sans) -->
     <style name="TextAppearance.EReader.DisplayLg" parent="TextAppearance.Material3.DisplaySmall">
         <item name="android:textSize">24sp</item>
-        <item name="android:lineHeight">32sp</item>
+        <item name="lineHeight">32sp</item>
         <item name="android:textColor">?attr/ereaderTextPrimary</item>
         <item name="android:textStyle">bold</item>
         <item name="android:letterSpacing">-0.02</item>
@@ -11,7 +11,7 @@
 
     <style name="TextAppearance.EReader.HeadlineLg" parent="TextAppearance.Material3.HeadlineSmall">
         <item name="android:textSize">18sp</item>
-        <item name="android:lineHeight">24sp</item>
+        <item name="lineHeight">24sp</item>
         <item name="android:textColor">?attr/ereaderTextPrimary</item>
         <item name="android:textStyle">bold</item>
         <item name="android:letterSpacing">-0.015</item>
@@ -19,7 +19,7 @@
 
     <style name="TextAppearance.EReader.HeadlineSm" parent="TextAppearance.Material3.TitleMedium">
         <item name="android:textSize">16sp</item>
-        <item name="android:lineHeight">22sp</item>
+        <item name="lineHeight">22sp</item>
         <item name="android:textColor">?attr/ereaderTextPrimary</item>
         <item name="android:textStyle">bold</item>
         <item name="android:letterSpacing">-0.01</item>
@@ -27,39 +27,39 @@
 
     <style name="TextAppearance.EReader.BodyLg" parent="TextAppearance.Material3.BodyLarge">
         <item name="android:textSize">15sp</item>
-        <item name="android:lineHeight">22sp</item>
+        <item name="lineHeight">22sp</item>
         <item name="android:textColor">?attr/ereaderTextPrimary</item>
     </style>
 
     <style name="TextAppearance.EReader.BodyMd" parent="TextAppearance.Material3.BodyMedium">
         <item name="android:textSize">14sp</item>
-        <item name="android:lineHeight">20sp</item>
+        <item name="lineHeight">20sp</item>
         <item name="android:textColor">?attr/ereaderTextPrimary</item>
     </style>
 
     <style name="TextAppearance.EReader.BodySm" parent="TextAppearance.Material3.BodySmall">
         <item name="android:textSize">13sp</item>
-        <item name="android:lineHeight">18sp</item>
+        <item name="lineHeight">18sp</item>
         <item name="android:textColor">?attr/ereaderTextSecondary</item>
     </style>
 
     <style name="TextAppearance.EReader.Caption" parent="TextAppearance.Material3.BodySmall">
         <item name="android:textSize">12sp</item>
-        <item name="android:lineHeight">16sp</item>
+        <item name="lineHeight">16sp</item>
         <item name="android:textColor">?attr/ereaderTextSecondary</item>
         <item name="android:letterSpacing">0.01</item>
     </style>
 
     <style name="TextAppearance.EReader.LabelMd" parent="TextAppearance.Material3.LabelMedium">
         <item name="android:textSize">11sp</item>
-        <item name="android:lineHeight">14sp</item>
+        <item name="lineHeight">14sp</item>
         <item name="android:textColor">?attr/ereaderTextMuted</item>
         <item name="android:letterSpacing">0.02</item>
     </style>
 
     <style name="TextAppearance.EReader.LabelBadge" parent="TextAppearance.Material3.LabelSmall">
         <item name="android:textSize">10sp</item>
-        <item name="android:lineHeight">12sp</item>
+        <item name="lineHeight">12sp</item>
         <item name="android:textColor">?attr/colorSecondary</item>
         <item name="android:textStyle">bold</item>
         <item name="android:letterSpacing">0.06</item>

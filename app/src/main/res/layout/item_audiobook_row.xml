@@ -28,8 +28,7 @@
                 android:background="@color/artwork_plum"
                 android:contentDescription="@null"
                 android:scaleType="centerCrop"
-                app:shapeAppearanceOverlay="@style/ShapeAppearance.EReader.Thumb"
-                tools:src="@drawable/cover_1984" />
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.EReader.Thumb" />
 
             <View
                 android:layout_width="match_parent"

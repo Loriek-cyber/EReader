@@ -1,0 +1,11 @@
+{
+  "apps": [
+    {
+      "id": "com.logininc.ereader",
+      "url": "https://github.com/Loriek-cyber/EReader",
+      "author": "Loriek-cyber",
+      "name": "EReader",
+      "additionalSettings": "{\"includePrereleases\":false,\"apkFilterRegEx\":\"EReader-v.*\\\\.apk$\",\"invertAPKFilter\":false,\"autoApkFilterByArch\":false,\"versionDetection\":true}"
+    }
+  ]
+}

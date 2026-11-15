@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/surface"
+    android:background="?attr/ereaderSurfaceBg"
     android:fitsSystemWindows="true">
 
     <androidx.core.widget.NestedScrollView
@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingBottom="96dp">
+        android:paddingBottom="168dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -20,7 +20,7 @@
             android:paddingHorizontal="@dimen/margin_screen"
             android:paddingTop="@dimen/space_base">
 
-            <!-- 1. Profile Summary Card -->
+            <!-- 1. Profile Summary Card (Local Only — Google Sync removed) -->
             <com.google.android.material.card.MaterialCardView
                 style="@style/Widget.EReader.Card.Low"
                 android:layout_width="match_parent"
@@ -41,6 +41,7 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
                         android:orientation="horizontal"
                         android:padding="@dimen/space_base">
 
@@ -50,11 +51,12 @@
                             android:background="@drawable/bg_avatar_gradient">
 
                             <TextView
+                                android:id="@+id/tvProfileInitials"
                                 style="@style/TextAppearance.EReader.HeadlineLg"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_gravity="center"
-                                android:text="@string/sample_profile_initials" />
+                                android:textColor="@color/white" />
                         </FrameLayout>
 
                         <LinearLayout
@@ -78,8 +80,7 @@
                                     android:layout_marginEnd="@dimen/space_xs"
                                     android:layout_weight="1"
                                     android:ellipsize="end"
-                                    android:maxLines="1"
-                                    android:text="@string/sample_profile_name" />
+                                    android:maxLines="1" />
 
                                 <ImageButton
                                     android:id="@+id/btnEditProfile"
@@ -90,7 +91,7 @@
                                     android:padding="13dp"
                                     android:scaleType="centerInside"
                                     android:src="@drawable/ic_edit"
-                                    app:tint="@color/text_muted" />
+                                    app:tint="?attr/ereaderTextMuted" />
                             </LinearLayout>
 
                             <TextView
@@ -99,32 +100,6 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
                                 android:text="@string/settings_account_local_subtitle" />
-
-                            <LinearLayout
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="@dimen/space_sm"
-                                android:background="@drawable/bg_chip_default"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal"
-                                android:paddingHorizontal="10dp"
-                                android:paddingVertical="4dp">
-
-                                <View
-                                    android:layout_width="6dp"
-                                    android:layout_height="6dp"
-                                    android:background="@drawable/bg_dot_primary" />
-
-                                <TextView
-                                    style="@style/TextAppearance.EReader.LabelMd"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginStart="6dp"
-                                    android:ellipsize="end"
-                                    android:maxLines="1"
-                                    android:text="@string/sample_drive_connected_chip"
-                                    android:textColor="@color/text_lavender" />
-                            </LinearLayout>
                         </LinearLayout>
                     </LinearLayout>
                 </FrameLayout>
@@ -171,7 +146,7 @@
                             android:contentDescription="@null"
                             android:padding="8dp"
                             android:src="@drawable/ic_book_open"
-                            app:tint="@color/primary" />
+                            app:tint="?attr/colorPrimary" />
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -185,18 +160,17 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:text="@string/settings_ebook_folder"
-                                android:textColor="@color/text_primary"
                                 android:textStyle="bold" />
 
                             <TextView
+                                android:id="@+id/tvEbookFolderPath"
                                 style="@style/TextAppearance.EReader.Caption"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:ellipsize="end"
                                 android:fontFamily="monospace"
                                 android:maxLines="1"
-                                android:text="@string/sample_ebook_folder_path"
-                                android:textColor="@color/text_muted" />
+                                android:textColor="?attr/ereaderTextMuted" />
                         </LinearLayout>
 
                         <ImageButton
@@ -208,7 +182,7 @@
                             android:padding="13dp"
                             android:scaleType="centerInside"
                             android:src="@drawable/ic_folder"
-                            app:tint="@color/text_lavender" />
+                            app:tint="?attr/ereaderTextAccent" />
                     </LinearLayout>
 
                     <androidx.constraintlayout.widget.ConstraintLayout
@@ -227,8 +201,7 @@
                             android:maxLines="1"
                             android:paddingHorizontal="10dp"
                             android:paddingVertical="3dp"
-                            android:text="@string/sample_ebook_folder_stats"
-                            android:textColor="@color/text_lavender"
+                            android:textColor="?attr/ereaderTextAccent"
                             app:layout_constrainedWidth="true"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toStartOf="@id/tvEbookFormats"
@@ -245,7 +218,7 @@
                             android:ellipsize="end"
                             android:maxLines="1"
                             android:text="@string/settings_ebook_formats"
-                            android:textColor="@color/text_muted"
+                            android:textColor="?attr/ereaderTextMuted"
                             app:layout_constrainedWidth="true"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
@@ -281,7 +254,7 @@
                             android:contentDescription="@null"
                             android:padding="8dp"
                             android:src="@drawable/ic_volume"
-                            app:tint="@color/primary" />
+                            app:tint="?attr/colorPrimary" />
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -295,18 +268,17 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:text="@string/settings_audiobook_folder"
-                                android:textColor="@color/text_primary"
                                 android:textStyle="bold" />
 
                             <TextView
+                                android:id="@+id/tvAudioFolderPath"
                                 style="@style/TextAppearance.EReader.Caption"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:ellipsize="end"
                                 android:fontFamily="monospace"
                                 android:maxLines="1"
-                                android:text="@string/sample_audio_folder_path"
-                                android:textColor="@color/text_muted" />
+                                android:textColor="?attr/ereaderTextMuted" />
                         </LinearLayout>
 
                         <ImageButton
@@ -318,7 +290,7 @@
                             android:padding="13dp"
                             android:scaleType="centerInside"
                             android:src="@drawable/ic_folder"
-                            app:tint="@color/text_lavender" />
+                            app:tint="?attr/ereaderTextAccent" />
                     </LinearLayout>
 
                     <androidx.constraintlayout.widget.ConstraintLayout
@@ -337,8 +309,7 @@
                             android:maxLines="1"
                             android:paddingHorizontal="10dp"
                             android:paddingVertical="3dp"
-                            android:text="@string/sample_audio_folder_stats"
-                            android:textColor="@color/text_lavender"
+                            android:textColor="?attr/ereaderTextAccent"
                             app:layout_constrainedWidth="true"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toStartOf="@id/tvAudioFormats"
@@ -355,7 +326,7 @@
                             android:ellipsize="end"
                             android:maxLines="1"
                             android:text="@string/settings_audio_formats"
-                            android:textColor="@color/text_muted"
+                            android:textColor="?attr/ereaderTextMuted"
                             app:layout_constrainedWidth="true"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
@@ -376,258 +347,9 @@
                 app:icon="@drawable/ic_refresh"
                 app:iconGravity="textStart"
                 app:iconSize="18dp"
-                app:iconTint="@color/primary" />
+                app:iconTint="?attr/colorPrimary" />
 
-            <!-- 3. Section: Cloud & Sincronizzazione -->
-            <TextView
-                style="@style/TextAppearance.EReader.HeadlineSm"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_xl"
-                android:text="@string/settings_cloud_title" />
-
-            <TextView
-                style="@style/TextAppearance.EReader.Caption"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="@string/settings_cloud_desc" />
-
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.EReader.Card.Low"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_sm">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="@dimen/space_base">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="36dp"
-                            android:layout_height="36dp"
-                            android:background="@drawable/bg_rounded_container"
-                            android:contentDescription="@null"
-                            android:padding="8dp"
-                            android:src="@drawable/ic_cloud_upload"
-                            app:tint="@color/primary" />
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginHorizontal="@dimen/space_sm"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <androidx.constraintlayout.widget.ConstraintLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content">
-
-                                <TextView
-                                    android:id="@+id/tvCloudProviderName"
-                                    style="@style/TextAppearance.EReader.BodyMd"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:ellipsize="end"
-                                    android:maxLines="1"
-                                    android:text="@string/settings_cloud_provider_drive"
-                                    android:textColor="@color/text_primary"
-                                    android:textStyle="bold"
-                                    app:layout_constrainedWidth="true"
-                                    app:layout_constraintBottom_toBottomOf="parent"
-                                    app:layout_constraintEnd_toStartOf="@id/tvCloudStatusBadge"
-                                    app:layout_constraintHorizontal_bias="0.0"
-                                    app:layout_constraintHorizontal_chainStyle="packed"
-                                    app:layout_constraintStart_toStartOf="parent"
-                                    app:layout_constraintTop_toTopOf="parent" />
-
-                                <TextView
-                                    android:id="@+id/tvCloudStatusBadge"
-                                    style="@style/TextAppearance.EReader.LabelMd"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginStart="@dimen/space_sm"
-                                    android:background="@drawable/bg_chip_default"
-                                    android:maxLines="1"
-                                    android:paddingHorizontal="8dp"
-                                    android:paddingVertical="2dp"
-                                    android:text="@string/settings_status_active"
-                                    android:textColor="@color/text_lavender"
-                                    app:layout_constraintBottom_toBottomOf="parent"
-                                    app:layout_constraintEnd_toEndOf="parent"
-                                    app:layout_constraintStart_toEndOf="@id/tvCloudProviderName"
-                                    app:layout_constraintTop_toTopOf="parent" />
-                            </androidx.constraintlayout.widget.ConstraintLayout>
-
-                            <TextView
-                                style="@style/TextAppearance.EReader.Caption"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:ellipsize="end"
-                                android:maxLines="1"
-                                android:text="@string/sample_drive_email" />
-                        </LinearLayout>
-
-                        <ImageButton
-                            android:id="@+id/btnManageDrive"
-                            android:layout_width="@dimen/touch_target_min"
-                            android:layout_height="@dimen/touch_target_min"
-                            android:background="@drawable/bg_rounded_container"
-                            android:contentDescription="@string/cd_manage_drive"
-                            android:padding="13dp"
-                            android:scaleType="centerInside"
-                            android:src="@drawable/ic_edit"
-                            app:tint="@color/text_lavender" />
-                    </LinearLayout>
-
-                    <!-- Last backup pill -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_base"
-                        android:background="@drawable/bg_rounded_container"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:padding="@dimen/space_md">
-
-                        <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:contentDescription="@null"
-                            android:src="@drawable/ic_check_circle"
-                            app:tint="@color/text_lavender" />
-
-                        <TextView
-                            style="@style/TextAppearance.EReader.Caption"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="@dimen/space_sm"
-                            android:layout_marginEnd="@dimen/space_sm"
-                            android:layout_weight="1"
-                            android:ellipsize="end"
-                            android:maxLines="1"
-                            android:text="@string/settings_last_backup_label" />
-
-                        <TextView
-                            style="@style/TextAppearance.EReader.LabelMd"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:ellipsize="end"
-                            android:maxLines="1"
-                            android:text="@string/sample_last_backup_time"
-                            android:textColor="@color/text_primary"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-
-                    <!-- Auto sync switch -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_base"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="@dimen/space_sm"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <TextView
-                                style="@style/TextAppearance.EReader.BodyMd"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/settings_auto_cloud_sync_title"
-                                android:textColor="@color/text_primary"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                style="@style/TextAppearance.EReader.Caption"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/settings_auto_cloud_sync_desc"
-                                android:textColor="@color/text_muted" />
-                        </LinearLayout>
-
-                        <com.google.android.material.materialswitch.MaterialSwitch
-                            android:id="@+id/switchAutoCloudSync"
-                            style="@style/Widget.EReader.Switch"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:checked="true"
-                            android:contentDescription="@string/settings_auto_cloud_sync_title" />
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginVertical="@dimen/space_md"
-                        android:background="@color/border_subtle" />
-
-                    <!-- Wi-Fi only switch -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="@dimen/space_sm"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <TextView
-                                style="@style/TextAppearance.EReader.BodySm"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/settings_wifi_only_title"
-                                android:textColor="@color/text_primary"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                style="@style/TextAppearance.EReader.Caption"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/settings_wifi_only_desc"
-                                android:textColor="@color/text_muted" />
-                        </LinearLayout>
-
-                        <com.google.android.material.materialswitch.MaterialSwitch
-                            android:id="@+id/switchWifiOnly"
-                            style="@style/Widget.EReader.Switch"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:checked="true"
-                            android:contentDescription="@string/settings_wifi_only_title" />
-                    </LinearLayout>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnSyncNow"
-                        style="@style/Widget.EReader.Button.Secondary"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_base"
-                        android:minHeight="@dimen/button_height_secondary"
-                        android:text="@string/settings_sync_now"
-                        app:icon="@drawable/ic_refresh"
-                        app:iconGravity="textStart"
-                        app:iconSize="18dp"
-                        app:iconTint="@color/primary" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- 4. Section: Protezione Notturna Anti-Sonno -->
+            <!-- 3. Section: Protezione Notturna Anti-Sonno -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -642,7 +364,7 @@
                     android:contentDescription="@null"
                     android:padding="6dp"
                     android:src="@drawable/ic_moon"
-                    app:tint="@color/primary" />
+                    app:tint="?attr/colorPrimary" />
 
                 <TextView
                     style="@style/TextAppearance.EReader.HeadlineSm"
@@ -664,7 +386,6 @@
                     android:orientation="vertical"
                     android:padding="@dimen/space_base">
 
-                    <!-- Explanatory Banner -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -678,7 +399,7 @@
                             android:layout_marginTop="2dp"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_info"
-                            app:tint="@color/primary" />
+                            app:tint="?attr/colorPrimary" />
 
                         <TextView
                             style="@style/TextAppearance.EReader.Caption"
@@ -689,7 +410,6 @@
                             android:text="@string/settings_sleep_banner" />
                     </LinearLayout>
 
-                    <!-- Master Switch -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -709,7 +429,6 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="@string/settings_sleep_enable"
-                                android:textColor="@color/text_primary"
                                 android:textStyle="bold" />
 
                             <TextView
@@ -717,7 +436,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="@string/settings_sleep_enable_desc"
-                                android:textColor="@color/text_muted" />
+                                android:textColor="?attr/ereaderTextMuted" />
                         </LinearLayout>
 
                         <com.google.android.material.materialswitch.MaterialSwitch
@@ -725,7 +444,6 @@
                             style="@style/Widget.EReader.Switch"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:checked="true"
                             android:contentDescription="@string/settings_sleep_enable" />
                     </LinearLayout>
 
@@ -745,7 +463,7 @@
                             android:layout_height="16dp"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_clock"
-                            app:tint="@color/text_muted" />
+                            app:tint="?attr/ereaderTextMuted" />
 
                         <TextView
                             style="@style/TextAppearance.EReader.BodySm"
@@ -770,11 +488,10 @@
                             android:gravity="center_vertical|end"
                             android:minWidth="@dimen/touch_target_min"
                             android:minHeight="@dimen/touch_target_min"
-                            android:text="@string/sample_sleep_window_range"
-                            android:textColor="@color/text_primary"
+                            android:textColor="?attr/ereaderTextPrimary"
                             android:textStyle="bold"
                             app:drawableEndCompat="@drawable/ic_chevron_right"
-                            app:drawableTint="@color/text_muted" />
+                            app:drawableTint="?attr/ereaderTextMuted" />
                     </LinearLayout>
 
                     <!-- Intervallo di controllo -->
@@ -794,7 +511,7 @@
                             android:ellipsize="end"
                             android:maxLines="1"
                             android:text="@string/settings_sleep_interval"
-                            android:textColor="@color/text_primary"
+                            android:textColor="?attr/ereaderTextPrimary"
                             android:textStyle="bold" />
 
                         <TextView
@@ -802,10 +519,9 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/settings_sleep_auto_pause"
-                            android:textColor="@color/text_lavender" />
+                            android:textColor="?attr/ereaderTextAccent" />
                     </LinearLayout>
 
-                    <!-- 4-Segment Interval Selector -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -825,10 +541,8 @@
                             android:minHeight="@dimen/touch_target_min"
                             android:paddingHorizontal="4dp"
                             android:paddingVertical="0dp"
-                            android:text="@string/player_timer_sample"
-                            android:textColor="@color/text_muted"
+                            android:text="@string/settings_interval_15m"
                             android:textSize="12sp"
-                            app:backgroundTint="@android:color/transparent"
                             app:cornerRadius="@dimen/radius_sm"
                             app:strokeWidth="0dp" />
 
@@ -859,9 +573,7 @@
                             android:paddingHorizontal="4dp"
                             android:paddingVertical="0dp"
                             android:text="@string/settings_interval_45m"
-                            android:textColor="@color/text_muted"
                             android:textSize="12sp"
-                            app:backgroundTint="@android:color/transparent"
                             app:cornerRadius="@dimen/radius_sm"
                             app:strokeWidth="0dp" />
 
@@ -877,14 +589,11 @@
                             android:paddingHorizontal="4dp"
                             android:paddingVertical="0dp"
                             android:text="@string/settings_interval_60m"
-                            android:textColor="@color/text_muted"
                             android:textSize="12sp"
-                            app:backgroundTint="@android:color/transparent"
                             app:cornerRadius="@dimen/radius_sm"
                             app:strokeWidth="0dp" />
                     </LinearLayout>
 
-                    <!-- Wake verification -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -898,7 +607,7 @@
                             android:contentDescription="@null"
                             android:padding="4dp"
                             android:src="@drawable/ic_phone"
-                            app:tint="@color/primary" />
+                            app:tint="?attr/colorPrimary" />
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -912,7 +621,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="@string/settings_sleep_verify_title"
-                                android:textColor="@color/text_primary"
+                                android:textColor="?attr/ereaderTextPrimary"
                                 android:textStyle="bold" />
 
                             <TextView
@@ -938,7 +647,7 @@
                             android:layout_height="16dp"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_clock"
-                            app:tint="@color/text_placeholder" />
+                            app:tint="?attr/ereaderTextMuted" />
 
                         <TextView
                             style="@style/TextAppearance.EReader.Caption"
@@ -947,12 +656,12 @@
                             android:layout_marginStart="@dimen/space_sm"
                             android:layout_weight="1"
                             android:text="@string/settings_sleep_timeout_note"
-                            android:textColor="@color/text_muted" />
+                            android:textColor="?attr/ereaderTextMuted" />
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- 5. Section: Preferenze Lettore & Audio -->
+            <!-- 4. Section: Preferenze Lettore, Temi & Lingua -->
             <TextView
                 style="@style/TextAppearance.EReader.HeadlineSm"
                 android:layout_width="wrap_content"
@@ -972,7 +681,70 @@
                     android:orientation="vertical"
                     android:padding="@dimen/space_base">
 
-                    <!-- OLED Dark Mode -->
+                    <!-- App Theme Selector -->
+                    <LinearLayout
+                        android:id="@+id/rowThemeSelector"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:minHeight="@dimen/touch_target_min"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:background="@drawable/bg_rounded_container"
+                            android:contentDescription="@null"
+                            android:padding="7dp"
+                            android:src="@drawable/ic_brightness"
+                            app:tint="?attr/ereaderTextAccent" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="@dimen/space_sm"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.BodyMd"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_theme_title" />
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.Caption"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_theme_desc"
+                                android:textColor="?attr/ereaderTextMuted" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvCurrentTheme"
+                            style="@style/TextAppearance.EReader.BodySm"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_rounded_container"
+                            android:drawablePadding="4dp"
+                            android:gravity="center"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="8dp"
+                            android:textColor="?attr/ereaderTextPrimary"
+                            app:drawableEndCompat="@drawable/ic_chevron_right"
+                            app:drawableTint="?attr/ereaderTextMuted" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="@dimen/space_md"
+                        android:background="?attr/ereaderBorderSubtle" />
+
+                    <!-- OLED Quick Toggle -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -986,7 +758,7 @@
                             android:contentDescription="@null"
                             android:padding="7dp"
                             android:src="@drawable/ic_moon"
-                            app:tint="@color/text_lavender" />
+                            app:tint="?attr/ereaderTextAccent" />
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -999,15 +771,14 @@
                                 style="@style/TextAppearance.EReader.BodyMd"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="@string/settings_oled_title"
-                                android:textColor="@color/text_primary" />
+                                android:text="@string/settings_oled_title" />
 
                             <TextView
                                 style="@style/TextAppearance.EReader.Caption"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="@string/settings_oled_desc"
-                                android:textColor="@color/text_muted" />
+                                android:textColor="?attr/ereaderTextMuted" />
                         </LinearLayout>
 
                         <com.google.android.material.materialswitch.MaterialSwitch
@@ -1015,7 +786,6 @@
                             style="@style/Widget.EReader.Switch"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:checked="true"
                             android:contentDescription="@string/settings_oled_title" />
                     </LinearLayout>
 
@@ -1023,7 +793,70 @@
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
                         android:layout_marginVertical="@dimen/space_md"
-                        android:background="@color/border_subtle" />
+                        android:background="?attr/ereaderBorderSubtle" />
+
+                    <!-- Language Selector -->
+                    <LinearLayout
+                        android:id="@+id/rowLanguageSelector"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:minHeight="@dimen/touch_target_min"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:background="@drawable/bg_rounded_container"
+                            android:contentDescription="@null"
+                            android:padding="7dp"
+                            android:src="@drawable/ic_info"
+                            app:tint="?attr/ereaderTextAccent" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="@dimen/space_sm"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.BodyMd"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_language_title" />
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.Caption"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_language_desc"
+                                android:textColor="?attr/ereaderTextMuted" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvCurrentLanguage"
+                            style="@style/TextAppearance.EReader.BodySm"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_rounded_container"
+                            android:drawablePadding="4dp"
+                            android:gravity="center"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="8dp"
+                            android:textColor="?attr/ereaderTextPrimary"
+                            app:drawableEndCompat="@drawable/ic_chevron_right"
+                            app:drawableTint="?attr/ereaderTextMuted" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="@dimen/space_md"
+                        android:background="?attr/ereaderBorderSubtle" />
 
                     <!-- Default Speed -->
                     <LinearLayout
@@ -1039,7 +872,7 @@
                             android:contentDescription="@null"
                             android:padding="7dp"
                             android:src="@drawable/ic_play"
-                            app:tint="@color/text_lavender" />
+                            app:tint="?attr/ereaderTextAccent" />
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -1052,15 +885,14 @@
                                 style="@style/TextAppearance.EReader.BodyMd"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="@string/settings_default_speed"
-                                android:textColor="@color/text_primary" />
+                                android:text="@string/settings_default_speed" />
 
                             <TextView
                                 style="@style/TextAppearance.EReader.Caption"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="@string/settings_default_speed_desc"
-                                android:textColor="@color/text_muted" />
+                                android:textColor="?attr/ereaderTextMuted" />
                         </LinearLayout>
 
                         <TextView
@@ -1077,17 +909,16 @@
                             android:minHeight="@dimen/touch_target_min"
                             android:paddingHorizontal="12dp"
                             android:paddingVertical="10dp"
-                            android:text="@string/sample_default_speed_value"
-                            android:textColor="@color/text_primary"
+                            android:textColor="?attr/ereaderTextPrimary"
                             app:drawableEndCompat="@drawable/ic_chevron_right"
-                            app:drawableTint="@color/text_muted" />
+                            app:drawableTint="?attr/ereaderTextMuted" />
                     </LinearLayout>
 
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
                         android:layout_marginVertical="@dimen/space_md"
-                        android:background="@color/border_subtle" />
+                        android:background="?attr/ereaderBorderSubtle" />
 
                     <!-- Auto Bookmark -->
                     <LinearLayout
@@ -1103,7 +934,7 @@
                             android:contentDescription="@null"
                             android:padding="7dp"
                             android:src="@drawable/ic_bookmark"
-                            app:tint="@color/text_lavender" />
+                            app:tint="?attr/ereaderTextAccent" />
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -1116,15 +947,14 @@
                                 style="@style/TextAppearance.EReader.BodyMd"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="@string/settings_auto_bookmark"
-                                android:textColor="@color/text_primary" />
+                                android:text="@string/settings_auto_bookmark" />
 
                             <TextView
                                 style="@style/TextAppearance.EReader.Caption"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="@string/settings_auto_bookmark_desc"
-                                android:textColor="@color/text_muted" />
+                                android:textColor="?attr/ereaderTextMuted" />
                         </LinearLayout>
 
                         <com.google.android.material.materialswitch.MaterialSwitch
@@ -1132,13 +962,12 @@
                             style="@style/Widget.EReader.Switch"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:checked="true"
                             android:contentDescription="@string/settings_auto_bookmark" />
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- 6. System Info & Maintenance Footer -->
+            <!-- 5. System Info & Maintenance Footer -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -1148,20 +977,11 @@
                 android:paddingBottom="@dimen/space_base">
 
                 <TextView
+                    android:id="@+id/tvSettingsFooter"
                     style="@style/TextAppearance.EReader.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:text="@string/settings_footer_version" />
-
-                <com.google.android.material.progressindicator.LinearProgressIndicator
-                    style="@style/Widget.EReader.ProgressBar"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="@dimen/space_2xl"
-                    android:layout_marginTop="6dp"
-                    android:progress="13"
-                    app:trackThickness="@dimen/progress_track_height_sm" />
+                    android:gravity="center" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnClearCache"
@@ -1171,21 +991,34 @@
                     android:layout_marginTop="@dimen/space_md"
                     android:minHeight="@dimen/touch_target_min"
                     android:paddingHorizontal="@dimen/space_base"
-                    android:text="@string/settings_clear_cache"
-                    android:textColor="@color/text_muted"
+                    android:textColor="?attr/ereaderTextMuted"
                     android:textSize="12sp"
                     app:icon="@drawable/ic_delete"
                     app:iconSize="15dp"
-                    app:iconTint="@color/text_muted" />
+                    app:iconTint="?attr/ereaderTextMuted" />
             </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Bottom Navigation Dock -->
-    <include
-        android:id="@+id/includeBottomNav"
-        layout="@layout/layout_bottom_nav"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom" />
+        android:layout_gravity="bottom"
+        android:orientation="vertical">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/margin_screen"
+            android:layout_marginBottom="@dimen/space_sm">
+
+            <include layout="@layout/layout_mini_player" />
+        </FrameLayout>
+
+        <include
+            android:id="@+id/includeBottomNav"
+            layout="@layout/layout_bottom_nav"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -26,11 +26,17 @@ android {
         create("release") {
             val keystorePath = System.getenv("KEYSTORE_FILE") ?: project.findProperty("KEYSTORE_FILE")?.toString()
             val envKeystore = keystorePath?.let { file(it) }
+            val repoKeystore = rootProject.file("keystore/ereader-release.jks")
             if (envKeystore != null && envKeystore.exists()) {
                 storeFile = envKeystore
                 storePassword = System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD")?.toString()
                 keyAlias = System.getenv("KEY_ALIAS") ?: project.findProperty("KEY_ALIAS")?.toString()
                 keyPassword = System.getenv("KEY_PASSWORD") ?: project.findProperty("KEY_PASSWORD")?.toString()
+            } else if (repoKeystore.exists()) {
+                storeFile = repoKeystore
+                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "ereaderandroid"
+                keyAlias = System.getenv("KEY_ALIAS") ?: "ereader"
+                keyPassword = System.getenv("KEY_PASSWORD") ?: "ereaderandroid"
             } else {
                 // Fallback to debug keystore so release builds without custom keystore produce an installable APK
                 val debugConfig = getByName("debug")
