@@ -24,12 +24,14 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.logininc.ereader.R;
+import com.logininc.ereader.model.Book;
 import com.logininc.ereader.model.Title;
 import com.logininc.ereader.persistence.DatabaseContract.TitleEntry;
 import com.logininc.ereader.persistence.SettingsDao;
 import com.logininc.ereader.persistence.TitleDao;
 import com.logininc.ereader.service.PlaybackSessionManager;
 import com.logininc.ereader.util.FileScanner;
+import com.logininc.ereader.util.M4BParser;
 import com.logininc.ereader.util.NavigationFlowHelper;
 import com.logininc.ereader.util.PermissionHelper;
 import com.logininc.ereader.util.ThemeHelper;
@@ -186,7 +188,7 @@ public class LibraryActivity extends AppCompatActivity {
         }
         String name = FileScanner.queryDisplayName(this, uri);
         String mime = getContentResolver().getType(uri);
-        if (!FileScanner.isEbookFile(name) && !FileScanner.isAudioFile(name) && !M4bParser.isM4bOrAudioMime(mime)) {
+        if (!FileScanner.isEbookFile(name) && !FileScanner.isAudioFile(name) && !M4BParser.isM4bOrAudioMime(mime)) {
             Toast.makeText(this, R.string.settings_ebook_formats, Toast.LENGTH_SHORT).show();
             return;
         }

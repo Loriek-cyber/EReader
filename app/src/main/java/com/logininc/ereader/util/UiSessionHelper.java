@@ -17,6 +17,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.logininc.ereader.R;
 import com.logininc.ereader.model.AudioBook;
+import com.logininc.ereader.model.Chapter;
 import com.logininc.ereader.model.Title;
 import com.logininc.ereader.persistence.TitleDao;
 import com.logininc.ereader.screen.AudioChaptersActivity;

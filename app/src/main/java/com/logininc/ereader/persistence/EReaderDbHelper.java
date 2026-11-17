@@ -58,11 +58,15 @@ public class EReaderDbHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        if (oldVersion == 2 && newVersion >= 3) {
+        if (oldVersion < 3 && newVersion >= 3) {
             upgradeFromV2ToV3(db);
-            return;
         }
-        recreateSchema(db);
+        if (oldVersion < 4 && newVersion >= 4) {
+            upgradeFromV3ToV4(db);
+        }
+        if (oldVersion >= newVersion) {
+            recreateSchema(db);
+        }
     }
 
     @Override
@@ -85,6 +89,21 @@ public class EReaderDbHelper extends SQLiteOpenHelper {
         db.execSQL("ALTER TABLE " + ChapterEntry.TABLE_NAME + " ADD COLUMN "
                 + ChapterEntry.COLUMN_RAW_HTML + " TEXT NOT NULL DEFAULT '';");
         db.execSQL(ChapterEntry.SQL_CREATE_INDEX);
+    }
+
+    private void upgradeFromV3ToV4(@NonNull SQLiteDatabase db) {
+        db.execSQL("ALTER TABLE " + TitleEntry.TABLE_NAME + " ADD COLUMN "
+                + TitleEntry.COLUMN_SCROLL_Y + " INTEGER NOT NULL DEFAULT 0;");
+        db.execSQL("ALTER TABLE " + TitleEntry.TABLE_NAME + " ADD COLUMN "
+                + TitleEntry.COLUMN_SCROLL_MAX_HEIGHT + " INTEGER NOT NULL DEFAULT 0;");
+        db.execSQL("ALTER TABLE " + TitleEntry.TABLE_NAME + " ADD COLUMN "
+                + TitleEntry.COLUMN_VIEWPORT_HEIGHT + " INTEGER NOT NULL DEFAULT 0;");
+        db.execSQL("ALTER TABLE " + TitleEntry.TABLE_NAME + " ADD COLUMN "
+                + TitleEntry.COLUMN_TEXT_SIZE_SP + " INTEGER NOT NULL DEFAULT 18;");
+        db.execSQL("ALTER TABLE " + TitleEntry.TABLE_NAME + " ADD COLUMN "
+                + TitleEntry.COLUMN_CHAR_OFFSET + " INTEGER NOT NULL DEFAULT 0;");
+        db.execSQL("ALTER TABLE " + TitleEntry.TABLE_NAME + " ADD COLUMN "
+                + TitleEntry.COLUMN_SCROLL_PERMILLE + " INTEGER NOT NULL DEFAULT 0;");
     }
 
     private void recreateSchema(@NonNull SQLiteDatabase db) {

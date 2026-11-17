@@ -8,7 +8,7 @@ import android.provider.BaseColumns;
 public final class DatabaseContract {
 
     public static final String DATABASE_NAME = "ereader.db";
-    public static final int DATABASE_VERSION = 3;
+    public static final int DATABASE_VERSION = 4;
 
     private DatabaseContract() {
     }
@@ -34,6 +34,12 @@ public final class DatabaseContract {
         public static final String COLUMN_TYPE = "type";
         public static final String COLUMN_STATUS = "status";
         public static final String COLUMN_LAST_OPENED_AT = "last_opened_at";
+        public static final String COLUMN_SCROLL_Y = "scroll_y";
+        public static final String COLUMN_SCROLL_MAX_HEIGHT = "scroll_max_height";
+        public static final String COLUMN_VIEWPORT_HEIGHT = "viewport_height";
+        public static final String COLUMN_TEXT_SIZE_SP = "text_size_sp";
+        public static final String COLUMN_CHAR_OFFSET = "char_offset";
+        public static final String COLUMN_SCROLL_PERMILLE = "scroll_permille";
 
         public static final String TYPE_BOOK = "BOOK";
         public static final String TYPE_AUDIOBOOK = "AUDIOBOOK";
@@ -56,7 +62,13 @@ public final class DatabaseContract {
                         + COLUMN_COVER_URI + " TEXT NOT NULL DEFAULT '', "
                         + COLUMN_TYPE + " TEXT NOT NULL, "
                         + COLUMN_STATUS + " TEXT NOT NULL DEFAULT 'TO_START', "
-                        + COLUMN_LAST_OPENED_AT + " INTEGER NOT NULL DEFAULT 0"
+                        + COLUMN_LAST_OPENED_AT + " INTEGER NOT NULL DEFAULT 0, "
+                        + COLUMN_SCROLL_Y + " INTEGER NOT NULL DEFAULT 0, "
+                        + COLUMN_SCROLL_MAX_HEIGHT + " INTEGER NOT NULL DEFAULT 0, "
+                        + COLUMN_VIEWPORT_HEIGHT + " INTEGER NOT NULL DEFAULT 0, "
+                        + COLUMN_TEXT_SIZE_SP + " INTEGER NOT NULL DEFAULT 18, "
+                        + COLUMN_CHAR_OFFSET + " INTEGER NOT NULL DEFAULT 0, "
+                        + COLUMN_SCROLL_PERMILLE + " INTEGER NOT NULL DEFAULT 0"
                         + ");";
 
         public static final String SQL_DROP_TABLE =

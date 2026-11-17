@@ -2,27 +2,28 @@ package com.logininc.ereader.model;
 
 import android.net.Uri;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 /**
- * Represents an AudioBook entry persisted in SQLite and backed by a local audio URI.
+ * Persistence/UI record for an audiobook (M4B/audio) in the library.
  */
 public class AudioBook extends Title {
 
-    private String narrator;
-    private long currentPositionMs;
-    private long totalDurationMs;
+    private String narrator = "";
+    private long currentPositionMs = 0L;
+    private long totalDurationMs = 0L;
 
-    public AudioBook(int id, String title, int lenChapters, Uri contentUri) {
+    public AudioBook(int id, @NonNull String title, int lenChapters, @NonNull Uri contentUri) {
         super(id, title, lenChapters, contentUri);
-        this.narrator = "";
-        this.currentPositionMs = 0L;
-        this.totalDurationMs = 0L;
     }
 
+    @NonNull
     public String getNarrator() {
-        return narrator;
+        return narrator != null ? narrator : "";
     }
 
-    public void setNarrator(String narrator) {
+    public void setNarrator(@Nullable String narrator) {
         this.narrator = narrator != null ? narrator : "";
     }
 

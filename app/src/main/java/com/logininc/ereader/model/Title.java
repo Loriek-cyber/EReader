@@ -2,11 +2,11 @@ package com.logininc.ereader.model;
 
 import android.net.Uri;
 
-import java.util.ArrayList;
-import java.util.List;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 /**
- * Base model representing a readable or playable library item (Book or AudioBook).
+ * Base persistence/UI record for a library item (ebook or audiobook).
  */
 public abstract class Title {
 
@@ -16,30 +16,22 @@ public abstract class Title {
 
     private int id;
     private String title;
-    private String author;
+    private String author = "";
     private int lenChapters;
-    private int currentChapter;
-    private boolean currentChapterCompleted;
-    private int progressPercent;
+    private int currentChapter = 1;
+    private boolean currentChapterCompleted = false;
+    private int progressPercent = 0;
     private Uri contentUri;
+    @Nullable
     private Uri coverUri;
-    private String status;
-    private long lastOpenedAt;
-    private final List<Chapter> chapters;
+    private String status = STATUS_TO_START;
+    private long lastOpenedAt = 0L;
 
-    public Title(int id, String title, int lenChapters, Uri contentUri) {
+    protected Title(int id, @NonNull String title, int lenChapters, @NonNull Uri contentUri) {
         this.id = id;
         this.title = title;
-        this.author = "";
         this.lenChapters = Math.max(1, lenChapters);
-        this.currentChapter = 1;
-        this.currentChapterCompleted = false;
-        this.progressPercent = 0;
         this.contentUri = contentUri;
-        this.coverUri = null;
-        this.status = STATUS_TO_START;
-        this.lastOpenedAt = 0L;
-        this.chapters = new ArrayList<>();
     }
 
     public int getId() {
@@ -50,19 +42,21 @@ public abstract class Title {
         this.id = id;
     }
 
+    @NonNull
     public String getTitle() {
-        return title;
+        return title != null ? title : "";
     }
 
-    public void setTitle(String title) {
+    public void setTitle(@NonNull String title) {
         this.title = title;
     }
 
+    @NonNull
     public String getAuthor() {
-        return author;
+        return author != null ? author : "";
     }
 
-    public void setAuthor(String author) {
+    public void setAuthor(@Nullable String author) {
         this.author = author != null ? author : "";
     }
 
@@ -98,28 +92,31 @@ public abstract class Title {
         this.progressPercent = Math.max(0, Math.min(100, progressPercent));
     }
 
+    @NonNull
     public Uri getContentUri() {
-        return contentUri;
+        return contentUri != null ? contentUri : Uri.EMPTY;
     }
 
-    public void setContentUri(Uri contentUri) {
+    public void setContentUri(@NonNull Uri contentUri) {
         this.contentUri = contentUri;
     }
 
+    @Nullable
     public Uri getCoverUri() {
         return coverUri;
     }
 
-    public void setCoverUri(Uri coverUri) {
+    public void setCoverUri(@Nullable Uri coverUri) {
         this.coverUri = coverUri;
     }
 
+    @NonNull
     public String getStatus() {
-        return status;
+        return status != null ? status : STATUS_TO_START;
     }
 
-    public void setStatus(String status) {
-        this.status = status != null ? status : STATUS_TO_START;
+    public void setStatus(@Nullable String status) {
+        this.status = status != null && !status.isEmpty() ? status : STATUS_TO_START;
     }
 
     public long getLastOpenedAt() {
@@ -130,46 +127,7 @@ public abstract class Title {
         this.lastOpenedAt = lastOpenedAt;
     }
 
-    /**
-     * Returns the top-level chapters (each potentially containing nested sections/subsections).
-     */
-    public List<Chapter> getChapters() {
-        return chapters;
-    }
-
-    public void setChapters(List<Chapter> chapters) {
-        this.chapters.clear();
-        if (chapters != null) {
-            for (Chapter chapter : chapters) {
-                if (chapter != null) {
-                    this.chapters.add(chapter);
-                }
-            }
-        }
-    }
-
-    public void addChapter(Chapter chapter) {
-        if (chapter != null) {
-            this.chapters.add(chapter);
-        }
-    }
-
-    /**
-     * Returns all chapters and nested sections/subsections flattened in pre-order reading order.
-     */
-    public List<Chapter> getFlattenedChapters() {
-        return Chapter.flattenTree(this.chapters);
-    }
-
-    /**
-     * Returns true when opening this title should go to the chapter selector first:
-     * - New title (TO_START or progress == 0)
-     * - Current chapter concluded or full title completed
-     */
     public boolean requiresChapterSelector() {
-        return progressPercent <= 0
-                || STATUS_TO_START.equals(status)
-                || currentChapterCompleted
-                || STATUS_COMPLETED.equals(status);
+        return lenChapters > 1;
     }
 }

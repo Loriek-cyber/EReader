@@ -6,11 +6,6 @@ import java.io.InputStream;
 import io.documentnode.epub4j.domain.Book;
 import io.documentnode.epub4j.epub.EpubReader;
 
-/**
- * Parses EPUB documents via epub4j and converts them into the project's
- * {@link com.logininc.ereader.model.Book} and hierarchical
- * {@link com.logininc.ereader.model.Chapter} models, with SQLite persistence helpers.
- */
 public class EbookParser {
 
     public static Book parse(InputStream is) throws RuntimeException {

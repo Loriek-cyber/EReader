@@ -1,7 +1,10 @@
 package com.logininc.ereader.model;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 /**
- * Represents a saved bookmark or textual note linked to a {@link Title} and chapter.
+ * Persistence/UI record for a bookmark or note attached to a title and chapter.
  */
 public class BookmarkNote {
 
@@ -20,15 +23,15 @@ public class BookmarkNote {
             int id,
             int titleId,
             int chapterIndex,
-            String entryType,
-            String positionLabel,
-            String noteText,
+            @NonNull String entryType,
+            @Nullable String positionLabel,
+            @Nullable String noteText,
             long createdAt
     ) {
         this.id = id;
         this.titleId = titleId;
-        this.chapterIndex = Math.max(1, chapterIndex);
-        this.entryType = entryType != null ? entryType : TYPE_BOOKMARK;
+        this.chapterIndex = chapterIndex;
+        this.entryType = entryType;
         this.positionLabel = positionLabel != null ? positionLabel : "";
         this.noteText = noteText != null ? noteText : "";
         this.createdAt = createdAt;
@@ -46,47 +49,26 @@ public class BookmarkNote {
         return titleId;
     }
 
-    public void setTitleId(int titleId) {
-        this.titleId = titleId;
-    }
-
     public int getChapterIndex() {
         return chapterIndex;
     }
 
-    public void setChapterIndex(int chapterIndex) {
-        this.chapterIndex = Math.max(1, chapterIndex);
-    }
-
+    @NonNull
     public String getEntryType() {
         return entryType;
     }
 
-    public void setEntryType(String entryType) {
-        this.entryType = entryType != null ? entryType : TYPE_BOOKMARK;
-    }
-
+    @NonNull
     public String getPositionLabel() {
         return positionLabel;
     }
 
-    public void setPositionLabel(String positionLabel) {
-        this.positionLabel = positionLabel != null ? positionLabel : "";
-    }
-
+    @NonNull
     public String getNoteText() {
         return noteText;
     }
 
-    public void setNoteText(String noteText) {
-        this.noteText = noteText != null ? noteText : "";
-    }
-
     public long getCreatedAt() {
         return createdAt;
-    }
-
-    public void setCreatedAt(long createdAt) {
-        this.createdAt = createdAt;
     }
 }

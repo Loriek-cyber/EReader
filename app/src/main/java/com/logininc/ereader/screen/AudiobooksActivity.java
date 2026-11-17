@@ -32,6 +32,7 @@ import com.logininc.ereader.persistence.SettingsDao;
 import com.logininc.ereader.persistence.TitleDao;
 import com.logininc.ereader.service.PlaybackSessionManager;
 import com.logininc.ereader.util.FileScanner;
+import com.logininc.ereader.util.M4BParser;
 import com.logininc.ereader.util.NavigationFlowHelper;
 import com.logininc.ereader.util.ThemeHelper;
 import com.logininc.ereader.util.UiSessionHelper;
@@ -194,7 +195,7 @@ public class AudiobooksActivity extends AppCompatActivity {
         }
         String name = FileScanner.queryDisplayName(this, uri);
         String mime = getContentResolver().getType(uri);
-        if (!FileScanner.isAudioFile(name) && !M4bParser.isM4bOrAudioMime(mime)) {
+        if (!FileScanner.isAudioFile(name) && !M4BParser.isM4bOrAudioMime(mime)) {
             Toast.makeText(this, R.string.settings_audio_formats, Toast.LENGTH_SHORT).show();
             return;
         }
