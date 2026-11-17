@@ -32,7 +32,6 @@ import com.logininc.ereader.persistence.SettingsDao;
 import com.logininc.ereader.persistence.TitleDao;
 import com.logininc.ereader.service.PlaybackSessionManager;
 import com.logininc.ereader.util.FileScanner;
-import com.logininc.ereader.util.M4bParser;
 import com.logininc.ereader.util.NavigationFlowHelper;
 import com.logininc.ereader.util.ThemeHelper;
 import com.logininc.ereader.util.UiSessionHelper;

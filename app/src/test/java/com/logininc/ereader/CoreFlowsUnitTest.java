@@ -7,19 +7,14 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import com.logininc.ereader.model.AudioBook;
-import com.logininc.ereader.model.Book;
-import com.logininc.ereader.model.Chapter;
 import com.logininc.ereader.model.Title;
 import com.logininc.ereader.service.PlaybackSessionManager;
 import com.logininc.ereader.service.SleepTimerController;
-import com.logininc.ereader.util.ChapterTreeHelper;
 import com.logininc.ereader.util.FileScanner;
-import com.logininc.ereader.util.M4bParser;
 import com.logininc.ereader.util.NavigationFlowHelper;
 
 import org.junit.Test;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;

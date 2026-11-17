@@ -12,7 +12,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.logininc.ereader.model.AudioBook;
-import com.logininc.ereader.model.Chapter;
 import com.logininc.ereader.model.Title;
 import com.logininc.ereader.persistence.ChapterDao;
 import com.logininc.ereader.persistence.SettingsDao;

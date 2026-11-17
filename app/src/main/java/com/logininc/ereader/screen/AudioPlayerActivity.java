@@ -18,7 +18,6 @@ import com.google.android.material.slider.Slider;
 import com.logininc.ereader.R;
 import com.logininc.ereader.model.AudioBook;
 import com.logininc.ereader.model.BookmarkNote;
-import com.logininc.ereader.model.Chapter;
 import com.logininc.ereader.model.Title;
 import com.logininc.ereader.persistence.BookmarkNoteDao;
 import com.logininc.ereader.persistence.ChapterDao;

@@ -6,7 +6,6 @@ import android.content.Intent;
 import androidx.annotation.NonNull;
 
 import com.logininc.ereader.model.AudioBook;
-import com.logininc.ereader.model.Book;
 import com.logininc.ereader.model.Title;
 import com.logininc.ereader.screen.AudioChaptersActivity;
 import com.logininc.ereader.screen.AudioPlayerActivity;

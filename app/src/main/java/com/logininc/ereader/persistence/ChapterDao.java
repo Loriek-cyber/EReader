@@ -8,7 +8,6 @@ import android.database.sqlite.SQLiteDatabase;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.logininc.ereader.model.Chapter;
 import com.logininc.ereader.persistence.DatabaseContract.ChapterEntry;
 
 import java.util.ArrayList;
