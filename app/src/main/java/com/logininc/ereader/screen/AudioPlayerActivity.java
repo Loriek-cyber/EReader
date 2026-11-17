@@ -206,9 +206,9 @@ public class AudioPlayerActivity extends AppCompatActivity {
             @Override
             public void onStopTrackingTouch(@NonNull Slider slider) {
                 isUserScrubbing = false;
-                long totalMs = PlaybackSessionManager.getInstance().getTotalDurationMs();
-                if (totalMs > 0) {
-                    long targetMs = (long) ((slider.getValue() / 100.0f) * totalMs);
+                long[] window = resolveChapterWindow(PlaybackSessionManager.getInstance().getTotalDurationMs());
+                if (window[1] > 0) {
+                    long targetMs = window[0] + (long) ((slider.getValue() / 100.0f) * window[1]);
                     PlaybackSessionManager.getInstance().seekToMs(targetMs);
                 }
             }
@@ -217,11 +217,11 @@ public class AudioPlayerActivity extends AppCompatActivity {
         sliderProgress.clearOnChangeListeners();
         sliderProgress.addOnChangeListener((slider, value, fromUser) -> {
             if (fromUser) {
-                long totalMs = PlaybackSessionManager.getInstance().getTotalDurationMs();
-                if (totalMs > 0) {
-                    long previewMs = (long) ((value / 100.0f) * totalMs);
-                    tvElapsed.setText(FileScanner.formatDuration(previewMs));
-                    tvRemaining.setText("-" + FileScanner.formatDuration(Math.max(0L, totalMs - previewMs)));
+                long[] window = resolveChapterWindow(PlaybackSessionManager.getInstance().getTotalDurationMs());
+                if (window[1] > 0) {
+                    long previewRelMs = (long) ((value / 100.0f) * window[1]);
+                    tvElapsed.setText(FileScanner.formatDuration(previewRelMs));
+                    tvRemaining.setText("-" + FileScanner.formatDuration(Math.max(0L, window[1] - previewRelMs)));
                 }
             }
         });
@@ -284,16 +284,29 @@ public class AudioPlayerActivity extends AppCompatActivity {
 
         long safeTotal = Math.max(durationMs, audioBook.getTotalDurationMs());
         long safePos = Math.max(0L, positionMs);
-        if (safeTotal > 0 && !isUserScrubbing) {
-            float percent = Math.min(100.0f, Math.max(0.0f, (safePos * 100.0f) / safeTotal));
+        long[] window = resolveChapterWindow(safeTotal);
+        long windowStart = window[0];
+        long windowDuration = window[1];
+        if (windowDuration > 0 && !isUserScrubbing) {
+            long relPos = Math.max(0L, Math.min(windowDuration, safePos - windowStart));
+            float percent = Math.min(100.0f, Math.max(0.0f, (relPos * 100.0f) / windowDuration));
             sliderProgress.setValue(percent);
-            tvElapsed.setText(FileScanner.formatDuration(safePos));
-            tvRemaining.setText("-" + FileScanner.formatDuration(Math.max(0L, safeTotal - safePos)));
-        } else if (safeTotal <= 0 && !isUserScrubbing) {
+            tvElapsed.setText(FileScanner.formatDuration(relPos));
+            tvRemaining.setText("-" + FileScanner.formatDuration(Math.max(0L, windowDuration - relPos)));
+        } else if (windowDuration <= 0 && !isUserScrubbing) {
             sliderProgress.setValue(0.0f);
-            tvElapsed.setText(FileScanner.formatDuration(safePos));
+            tvElapsed.setText(FileScanner.formatDuration(Math.max(0L, safePos - windowStart)));
             tvRemaining.setText(FileScanner.formatDuration(0L));
         }
+    }
+
+    @NonNull
+    private long[] resolveChapterWindow(long totalDurationMs) {
+        Chapter ch = chapterDao.getChapter(audioBook.getId(), audioBook.getCurrentChapter());
+        if (ch != null && ch.getAudioDurationMs() > 0) {
+            return new long[]{Math.max(0L, ch.getAudioStartMs()), ch.getAudioDurationMs()};
+        }
+        return new long[]{0L, Math.max(0L, totalDurationMs)};
     }
 
     private void shiftChapter(int delta) {
