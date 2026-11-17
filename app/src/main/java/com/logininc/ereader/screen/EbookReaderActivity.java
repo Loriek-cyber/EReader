@@ -197,20 +197,28 @@ public class EbookReaderActivity extends AppCompatActivity {
                 typographyHud.setVisibility(typographyHud.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE));
 
         findViewById(R.id.btnFontDecrease).setOnClickListener(v -> {
+            captureScrollStats(scrollContent);
             settingsDao.setReaderFontSizeSp(settingsDao.getReaderFontSizeSp() - 2);
             applyTypographyFromSettings();
+            restoreProsePositionAfterLayout(true);
         });
         findViewById(R.id.btnFontIncrease).setOnClickListener(v -> {
+            captureScrollStats(scrollContent);
             settingsDao.setReaderFontSizeSp(settingsDao.getReaderFontSizeSp() + 2);
             applyTypographyFromSettings();
+            restoreProsePositionAfterLayout(true);
         });
         btnFontSerif.setOnClickListener(v -> {
+            captureScrollStats(scrollContent);
             settingsDao.setReaderFontFamily("serif");
             applyTypographyFromSettings();
+            restoreProsePositionAfterLayout(true);
         });
         btnFontSans.setOnClickListener(v -> {
+            captureScrollStats(scrollContent);
             settingsDao.setReaderFontFamily("sans-serif");
             applyTypographyFromSettings();
+            restoreProsePositionAfterLayout(true);
         });
         btnThemeOled.setOnClickListener(v -> {
             String next = SettingsDao.THEME_OLED.equals(settingsDao.getThemeMode())
@@ -305,13 +313,24 @@ public class EbookReaderActivity extends AppCompatActivity {
             tvProseBody.setVisibility(View.VISIBLE);
             String body = currentChapter != null ? currentChapter.getContentText() : "";
             tvProseBody.setText(body.isEmpty() ? getString(R.string.reader_no_text) : body);
-            if (pendingRestoreScrollY > 0) {
+            if (pendingRestoreScrollY >= 0) {
                 final int restoreY = pendingRestoreScrollY;
                 pendingRestoreScrollY = -1;
-                scrollContent.post(() -> scrollContent.scrollTo(0, restoreY));
+                scrollContent.post(() -> {
+                    scrollContent.scrollTo(0, restoreY);
+                    updateScrollProgress(scrollContent);
+                });
+            } else if (sameChapterAsBook
+                    && (book.getScrollY() > 0 || book.getCharOffset() > 0 || book.getScrollPermille() > 0)) {
+                restoreProsePositionAfterLayout(true);
             } else {
-                pendingRestoreScrollY = -1;
-                scrollContent.post(() -> scrollContent.scrollTo(0, 0));
+                book.setScrollY(0);
+                book.setCharOffset(0);
+                book.setScrollPermille(0);
+                scrollContent.post(() -> {
+                    scrollContent.scrollTo(0, 0);
+                    updateScrollProgress(scrollContent);
+                });
             }
         }
         updateProgressFooter();
@@ -380,8 +399,12 @@ public class EbookReaderActivity extends AppCompatActivity {
         if (layoutPdfContainer.getVisibility() == View.VISIBLE || scrollView.getChildCount() == 0) {
             return;
         }
+        captureScrollStats(scrollView);
+
         View child = scrollView.getChildAt(0);
-        int maxScroll = Math.max(1, child.getHeight() - scrollView.getHeight());
+        int viewportH = Math.max(1, scrollView.getHeight());
+        int maxPageH = Math.max(viewportH, child.getHeight());
+        int maxScroll = Math.max(1, maxPageH - viewportH);
         int chPercent = Math.max(0, Math.min(100, (scrollView.getScrollY() * 100) / maxScroll));
 
         if (currentChapter != null) {
@@ -391,18 +414,84 @@ public class EbookReaderActivity extends AppCompatActivity {
         int totalChapters = Math.max(1, book.getLenChapters());
         int overallPct = ((currentChapterIndex - 1) * 100 + chPercent) / totalChapters;
         book.setProgressPercent(Math.max(book.getProgressPercent(), overallPct));
-        int estPage;
-        if (currentChapter != null
+
+        int virtualPagesInChapter = Math.max(1, (int) Math.ceil((double) maxPageH / viewportH));
+        int currentPageInChapter = Math.min(virtualPagesInChapter, 1 + (scrollView.getScrollY() / viewportH));
+        if (totalChapters == 1) {
+            book.setTotalPages(virtualPagesInChapter);
+            book.setCurrentPage(currentPageInChapter);
+        } else if (currentChapter != null
                 && currentChapter.getAudioStartMs() > 0
                 && currentChapter.getAudioDurationMs() >= currentChapter.getAudioStartMs()) {
             long startPage = currentChapter.getAudioStartMs();
             long endPage = currentChapter.getAudioDurationMs();
-            estPage = (int) (startPage + Math.round(((endPage - startPage) * chPercent) / 100.0));
+            book.setCurrentPage((int) (startPage + Math.round(((endPage - startPage) * chPercent) / 100.0)));
         } else {
-            estPage = Math.max(1, (int) Math.ceil((book.getProgressPercent() / 100.0) * book.getTotalPages()));
+            book.setCurrentPage(Math.max(1, (int) Math.ceil((book.getProgressPercent() / 100.0) * book.getTotalPages())));
         }
-        book.setCurrentPage(estPage);
         updateProgressFooter();
+    }
+
+    private void captureScrollStats(@Nullable NestedScrollView scrollView) {
+        if (book == null || scrollView == null || layoutPdfContainer.getVisibility() == View.VISIBLE
+                || scrollView.getChildCount() == 0) {
+            return;
+        }
+        View child = scrollView.getChildAt(0);
+        int scrollY = Math.max(0, scrollView.getScrollY());
+        int viewportH = Math.max(0, scrollView.getHeight());
+        int maxPageH = Math.max(0, child.getHeight());
+        int maxScroll = Math.max(1, maxPageH - viewportH);
+
+        book.setScrollY(scrollY);
+        if (maxPageH > 0) {
+            book.setScrollMaxHeight(maxPageH);
+        }
+        if (viewportH > 0) {
+            book.setViewportHeight(viewportH);
+        }
+        book.setTextSizeSp(settingsDao.getReaderFontSizeSp());
+        book.setScrollPermille((int) Math.min(10000L, (scrollY * 10000L) / maxScroll));
+
+        if (tvProseBody != null && tvProseBody.getLayout() != null) {
+            int localY = Math.max(0, scrollY - tvProseBody.getTop());
+            int line = tvProseBody.getLayout().getLineForVertical(localY);
+            book.setCharOffset(tvProseBody.getLayout().getLineStart(line));
+        }
+    }
+
+    private void restoreProsePositionAfterLayout(boolean useSavedBookPosition) {
+        if (scrollContent == null || book == null || !useSavedBookPosition) {
+            return;
+        }
+        scrollContent.post(() -> {
+            if (scrollContent.getChildCount() == 0) {
+                return;
+            }
+            View child = scrollContent.getChildAt(0);
+            int viewportH = Math.max(1, scrollContent.getHeight());
+            int maxPageH = Math.max(viewportH, child.getHeight());
+            int maxScroll = Math.max(0, maxPageH - viewportH);
+            int currentSizeSp = settingsDao.getReaderFontSizeSp();
+
+            int targetY;
+            if (currentSizeSp == book.getTextSizeSp()
+                    && book.getScrollMaxHeight() > 0
+                    && Math.abs(maxPageH - book.getScrollMaxHeight()) <= 4) {
+                targetY = Math.min(maxScroll, book.getScrollY());
+            } else if (book.getCharOffset() > 0
+                    && tvProseBody != null
+                    && tvProseBody.getLayout() != null
+                    && tvProseBody.getText() != null) {
+                int clampedOffset = Math.min(book.getCharOffset(), Math.max(0, tvProseBody.getText().length() - 1));
+                int line = tvProseBody.getLayout().getLineForOffset(clampedOffset);
+                targetY = Math.min(maxScroll, Math.max(0, tvProseBody.getTop() + tvProseBody.getLayout().getLineTop(line)));
+            } else {
+                targetY = Math.min(maxScroll, (int) ((book.getScrollPermille() * (long) maxScroll) / 10000L));
+            }
+            scrollContent.scrollTo(0, targetY);
+            updateScrollProgress(scrollContent);
+        });
     }
 
     private void updateProgressFooter() {
@@ -442,6 +531,7 @@ public class EbookReaderActivity extends AppCompatActivity {
         if (book == null) {
             return;
         }
+        captureScrollStats(scrollContent);
         if (currentChapter != null) {
             chapterDao.updateChapterProgress(
                     book.getId(),

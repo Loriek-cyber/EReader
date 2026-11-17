@@ -259,7 +259,7 @@ public class M4BParser {
                 TextInformationFrame tif = (TextInformationFrame) sub;
                 if ("TIT2".equals(tif.id) && !tif.values.isEmpty()) {
                     String text = tif.values.get(0);
-                    if (text != null && !text.trim().isEmpty()) {
+                    if (!text.trim().isEmpty()) {
                         return text.trim();
                     }
                 }

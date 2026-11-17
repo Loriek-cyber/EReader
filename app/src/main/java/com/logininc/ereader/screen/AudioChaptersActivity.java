@@ -35,6 +35,7 @@ import com.logininc.ereader.util.FileScanner;
 import com.logininc.ereader.util.NavigationFlowHelper;
 import com.logininc.ereader.util.ThemeHelper;
 import com.logininc.ereader.util.UiSessionHelper;
+import com.logininc.ereader.view.RecursiveAudioChapterTreeView;
 
 import java.text.DateFormat;
 import java.util.ArrayList;
@@ -298,7 +299,22 @@ public class AudioChaptersActivity extends AppCompatActivity {
             );
             List<ChapterTreeHelper.TreeNode> displayTree = ChapterTreeHelper.buildDisplayTree(rootChapters, query);
             tvEmpty.setVisibility(displayTree.isEmpty() ? View.VISIBLE : View.GONE);
-            renderAudioChapterTreeNodes(displayTree, containerItems, 0, filtering, inflater);
+            if (!displayTree.isEmpty()) {
+                Set<Integer> allExpandable = ChapterTreeHelper.collectExpandableIndices(rootChapters);
+                RecursiveAudioChapterTreeView treeView = new RecursiveAudioChapterTreeView(this);
+                treeView.renderTree(
+                        displayTree,
+                        audioBook,
+                        expandedChapterIndices,
+                        allExpandable,
+                        filtering,
+                        this::isCurrentlyPlayingChapter,
+                        () -> UiSessionHelper.updateExpandAllButtonLabel(
+                                btnToggleExpandAll, allExpandable, expandedChapterIndices),
+                        ch -> openChapterInPlayer(ch.getChapterIndex())
+                );
+                containerItems.addView(treeView);
+            }
             return;
         }
 
@@ -347,99 +363,6 @@ public class AudioChaptersActivity extends AppCompatActivity {
                 return true;
             });
             containerItems.addView(row);
-        }
-    }
-
-    private void renderAudioChapterTreeNodes(
-            @NonNull List<ChapterTreeHelper.TreeNode> nodes,
-            @NonNull LinearLayout container,
-            int depth,
-            boolean filtering,
-            @NonNull LayoutInflater inflater
-    ) {
-        Set<Integer> allExpandable = ChapterTreeHelper.collectExpandableIndices(rootChapters);
-        float density = getResources().getDisplayMetrics().density;
-
-        for (ChapterTreeHelper.TreeNode node : nodes) {
-            Chapter ch = node.chapter;
-            View row = inflater.inflate(R.layout.item_chapter_audio, container, false);
-
-            MaterialCardView cardRow = row.findViewById(R.id.cardAudioChapterRow);
-            ImageView ivIcon = row.findViewById(R.id.ivAudioChapterIcon);
-            TextView tvNum = row.findViewById(R.id.tvAudioChapterNum);
-            TextView tvRowTitle = row.findViewById(R.id.tvAudioChapterTitle);
-            TextView tvMeta = row.findViewById(R.id.tvAudioChapterMeta);
-            ImageButton btnExpand = row.findViewById(R.id.btnAudioChapterExpand);
-            ImageButton btnAction = row.findViewById(R.id.btnAudioChapterAction);
-            View layoutChildrenWrapper = row.findViewById(R.id.layoutAudioChapterChildrenWrapper);
-            View viewTreeGuide = row.findViewById(R.id.viewAudioChapterTreeGuide);
-            LinearLayout containerChildren = row.findViewById(R.id.containerAudioChapterChildren);
-
-            if (depth > 0) {
-                tvRowTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f);
-            }
-            tvRowTitle.setText(ch.getChapterTitle());
-
-            String durLabel = !ch.getPageOrDurationLabel().isEmpty()
-                    ? ch.getPageOrDurationLabel()
-                    : FileScanner.formatDuration(ch.getAudioDurationMs());
-
-            boolean isActiveChapter = ch.getChapterIndex() == audioBook.getCurrentChapter()
-                    && Title.STATUS_IN_PROGRESS.equals(audioBook.getStatus());
-
-            String statusPart;
-            if (ch.isCompleted()) {
-                ivIcon.setVisibility(View.VISIBLE);
-                tvNum.setVisibility(View.GONE);
-                ivIcon.setImageResource(R.drawable.ic_check_circle);
-                statusPart = getString(R.string.chapter_status_completed);
-            } else if (isActiveChapter) {
-                ivIcon.setVisibility(View.VISIBLE);
-                tvNum.setVisibility(View.GONE);
-                ivIcon.setImageResource(R.drawable.ic_equalizer);
-                cardRow.setStrokeColor(getColor(R.color.border_active));
-                cardRow.setStrokeWidth(Math.round(1.5f * density));
-                statusPart = getString(R.string.format_percent, ch.getProgressPercent());
-            } else {
-                ivIcon.setVisibility(View.GONE);
-                tvNum.setVisibility(View.VISIBLE);
-                tvNum.setText(String.format(Locale.ROOT, "%02d", ch.getChapterIndex()));
-                statusPart = getString(R.string.chapter_status_to_start);
-            }
-
-            if (ch.hasChildren()) {
-                int childCount = ch.getChildren().size();
-                String sectionsLabel = getResources().getQuantityString(
-                        R.plurals.chapter_sections_count, childCount, childCount);
-                tvMeta.setText(durLabel + " • " + sectionsLabel + " • " + statusPart);
-            } else {
-                tvMeta.setText(durLabel + " • " + statusPart);
-            }
-
-            boolean isPlayingThis = isCurrentlyPlayingChapter(ch.getChapterIndex());
-            btnAction.setImageResource(isPlayingThis ? R.drawable.ic_pause : R.drawable.ic_play_circle);
-
-            View.OnClickListener playListener = v -> openChapterInPlayer(ch.getChapterIndex());
-            cardRow.setOnClickListener(playListener);
-            btnAction.setOnClickListener(playListener);
-
-            UiSessionHelper.bindRecursiveChapterChildren(
-                    node,
-                    depth,
-                    filtering,
-                    expandedChapterIndices,
-                    btnExpand,
-                    null,
-                    layoutChildrenWrapper,
-                    viewTreeGuide,
-                    containerChildren,
-                    () -> UiSessionHelper.updateExpandAllButtonLabel(
-                            btnToggleExpandAll, allExpandable, expandedChapterIndices),
-                    (children, childContainer, nextDepth) ->
-                            renderAudioChapterTreeNodes(children, childContainer, nextDepth, filtering, inflater)
-            );
-
-            container.addView(row);
         }
     }
 

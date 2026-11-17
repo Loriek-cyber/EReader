@@ -275,15 +275,96 @@ public class ChapterDao {
 
     public void updateChapterProgress(int titleId, int chapterIndex, int progressPercent, boolean completed) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(ChapterEntry.COLUMN_PROGRESS_PERCENT, Math.max(0, Math.min(100, progressPercent)));
-        values.put(ChapterEntry.COLUMN_IS_COMPLETED, completed ? 1 : 0);
-        db.update(
+        db.beginTransaction();
+        try {
+            ContentValues values = new ContentValues();
+            values.put(ChapterEntry.COLUMN_PROGRESS_PERCENT, Math.max(0, Math.min(100, progressPercent)));
+            values.put(ChapterEntry.COLUMN_IS_COMPLETED, completed ? 1 : 0);
+            db.update(
+                    ChapterEntry.TABLE_NAME,
+                    values,
+                    ChapterEntry.COLUMN_TITLE_ID + " = ? AND " + ChapterEntry.COLUMN_CHAPTER_INDEX + " = ?",
+                    new String[]{String.valueOf(titleId), String.valueOf(chapterIndex)}
+            );
+
+            int parentId = queryParentChapterId(db, titleId, chapterIndex);
+            while (parentId > 0) {
+                parentId = rollupParentNode(db, parentId);
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    private int queryParentChapterId(@NonNull SQLiteDatabase db, int titleId, int chapterIndex) {
+        try (Cursor c = db.query(
                 ChapterEntry.TABLE_NAME,
-                values,
+                new String[]{ChapterEntry.COLUMN_PARENT_CHAPTER_ID},
                 ChapterEntry.COLUMN_TITLE_ID + " = ? AND " + ChapterEntry.COLUMN_CHAPTER_INDEX + " = ?",
-                new String[]{String.valueOf(titleId), String.valueOf(chapterIndex)}
-        );
+                new String[]{String.valueOf(titleId), String.valueOf(chapterIndex)},
+                null, null, null
+        )) {
+            if (c.moveToFirst() && !c.isNull(0)) {
+                return c.getInt(0);
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * Recomputes a parent chapter's progress and completion from its direct children,
+     * returning the grandparent ID (or 0 if root).
+     */
+    private int rollupParentNode(@NonNull SQLiteDatabase db, int parentId) {
+        int childCount = 0;
+        int completedCount = 0;
+        int sumProgress = 0;
+
+        try (Cursor c = db.query(
+                ChapterEntry.TABLE_NAME,
+                new String[]{ChapterEntry.COLUMN_PROGRESS_PERCENT, ChapterEntry.COLUMN_IS_COMPLETED},
+                ChapterEntry.COLUMN_PARENT_CHAPTER_ID + " = ?",
+                new String[]{String.valueOf(parentId)},
+                null, null, null
+        )) {
+            while (c.moveToNext()) {
+                childCount++;
+                int pct = c.getInt(0);
+                boolean done = c.getInt(1) == 1;
+                sumProgress += done ? 100 : pct;
+                if (done) {
+                    completedCount++;
+                }
+            }
+        }
+
+        if (childCount > 0) {
+            boolean allCompleted = completedCount == childCount;
+            int avgProgress = allCompleted ? 100 : (sumProgress / childCount);
+            ContentValues parentValues = new ContentValues();
+            parentValues.put(ChapterEntry.COLUMN_PROGRESS_PERCENT, Math.max(0, Math.min(100, avgProgress)));
+            parentValues.put(ChapterEntry.COLUMN_IS_COMPLETED, allCompleted ? 1 : 0);
+            db.update(
+                    ChapterEntry.TABLE_NAME,
+                    parentValues,
+                    ChapterEntry._ID + " = ?",
+                    new String[]{String.valueOf(parentId)}
+            );
+        }
+
+        try (Cursor c = db.query(
+                ChapterEntry.TABLE_NAME,
+                new String[]{ChapterEntry.COLUMN_PARENT_CHAPTER_ID},
+                ChapterEntry._ID + " = ?",
+                new String[]{String.valueOf(parentId)},
+                null, null, null
+        )) {
+            if (c.moveToFirst() && !c.isNull(0)) {
+                return c.getInt(0);
+            }
+        }
+        return 0;
     }
 
     @NonNull

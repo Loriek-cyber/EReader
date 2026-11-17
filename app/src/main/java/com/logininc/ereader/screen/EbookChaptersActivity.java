@@ -34,6 +34,7 @@ import com.logininc.ereader.util.ChapterTreeHelper;
 import com.logininc.ereader.util.NavigationFlowHelper;
 import com.logininc.ereader.util.ThemeHelper;
 import com.logininc.ereader.util.UiSessionHelper;
+import com.logininc.ereader.view.RecursiveChapterTreeView;
 
 import java.text.DateFormat;
 import java.util.ArrayList;
@@ -315,7 +316,21 @@ public class EbookChaptersActivity extends AppCompatActivity {
             );
             List<ChapterTreeHelper.TreeNode> displayTree = ChapterTreeHelper.buildDisplayTree(rootChapters, query);
             tvEmpty.setVisibility(displayTree.isEmpty() ? View.VISIBLE : View.GONE);
-            renderChapterTreeNodes(displayTree, containerItems, 0, filtering, inflater);
+            if (!displayTree.isEmpty()) {
+                Set<Integer> allExpandable = ChapterTreeHelper.collectExpandableIndices(rootChapters);
+                RecursiveChapterTreeView treeView = new RecursiveChapterTreeView(this);
+                treeView.renderTree(
+                        displayTree,
+                        book,
+                        expandedChapterIndices,
+                        allExpandable,
+                        filtering,
+                        () -> UiSessionHelper.updateExpandAllButtonLabel(
+                                btnToggleExpandAll, allExpandable, expandedChapterIndices),
+                        ch -> openChapterInReader(ch.getChapterIndex())
+                );
+                containerItems.addView(treeView);
+            }
             return;
         }
 
@@ -355,90 +370,6 @@ public class EbookChaptersActivity extends AppCompatActivity {
                 return true;
             });
             containerItems.addView(row);
-        }
-    }
-
-    private void renderChapterTreeNodes(
-            @NonNull List<ChapterTreeHelper.TreeNode> nodes,
-            @NonNull LinearLayout container,
-            int depth,
-            boolean filtering,
-            @NonNull LayoutInflater inflater
-    ) {
-        Set<Integer> allExpandable = ChapterTreeHelper.collectExpandableIndices(rootChapters);
-        float density = getResources().getDisplayMetrics().density;
-
-        for (ChapterTreeHelper.TreeNode node : nodes) {
-            Chapter ch = node.chapter;
-            View row = inflater.inflate(R.layout.item_chapter_ebook, container, false);
-
-            MaterialCardView cardRow = row.findViewById(R.id.cardChapterRow);
-            ImageView ivStatus = row.findViewById(R.id.ivChapterStatus);
-            TextView tvTitle = row.findViewById(R.id.tvChapterTitle);
-            TextView tvSubtitle = row.findViewById(R.id.tvChapterSubtitle);
-            TextView tvPage = row.findViewById(R.id.tvChapterPage);
-            ImageButton btnExpand = row.findViewById(R.id.btnChapterExpand);
-            ImageView ivChevron = row.findViewById(R.id.ivChapterChevron);
-            View layoutChildrenWrapper = row.findViewById(R.id.layoutChapterChildrenWrapper);
-            View viewTreeGuide = row.findViewById(R.id.viewChapterTreeGuide);
-            LinearLayout containerChildren = row.findViewById(R.id.containerChapterChildren);
-
-            if (depth > 0) {
-                tvTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f);
-                int iconSizePx = Math.round(24f * density);
-                ViewGroup.LayoutParams iconLp = ivStatus.getLayoutParams();
-                iconLp.width = iconSizePx;
-                iconLp.height = iconSizePx;
-                ivStatus.setLayoutParams(iconLp);
-            }
-
-            tvTitle.setText(ch.getChapterTitle());
-            String statusLabel = ch.isCompleted()
-                    ? getString(R.string.chapter_status_completed)
-                    : getString(R.string.chapter_status_to_start);
-            if (!ch.getSubtitle().isEmpty()) {
-                tvSubtitle.setText(ch.getSubtitle());
-            } else if (ch.hasChildren()) {
-                int childCount = ch.getChildren().size();
-                String sectionsLabel = getResources().getQuantityString(
-                        R.plurals.chapter_sections_count, childCount, childCount);
-                tvSubtitle.setText(sectionsLabel + " • " + statusLabel);
-            } else {
-                tvSubtitle.setText(statusLabel);
-            }
-            tvPage.setText(ch.getPageOrDurationLabel());
-
-            boolean isActiveChapter = ch.getChapterIndex() == book.getCurrentChapter()
-                    && Title.STATUS_IN_PROGRESS.equals(book.getStatus());
-            if (ch.isCompleted()) {
-                ivStatus.setImageResource(R.drawable.ic_check);
-            } else if (isActiveChapter) {
-                ivStatus.setImageResource(R.drawable.ic_play);
-                cardRow.setStrokeColor(getColor(R.color.border_active));
-                cardRow.setStrokeWidth(Math.round(1.5f * density));
-            } else {
-                ivStatus.setImageResource(R.drawable.ic_radio_unchecked);
-            }
-
-            cardRow.setOnClickListener(v -> openChapterInReader(ch.getChapterIndex()));
-
-            UiSessionHelper.bindRecursiveChapterChildren(
-                    node,
-                    depth,
-                    filtering,
-                    expandedChapterIndices,
-                    btnExpand,
-                    ivChevron,
-                    layoutChildrenWrapper,
-                    viewTreeGuide,
-                    containerChildren,
-                    () -> UiSessionHelper.updateExpandAllButtonLabel(
-                            btnToggleExpandAll, allExpandable, expandedChapterIndices),
-                    (children, childContainer, nextDepth) ->
-                            renderChapterTreeNodes(children, childContainer, nextDepth, filtering, inflater)
-            );
-
-            container.addView(row);
         }
     }
 

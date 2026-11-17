@@ -359,6 +359,12 @@ public class TitleDao {
             values.put(TitleEntry.COLUMN_TOTAL_PAGES, book.getTotalPages());
             values.put(TitleEntry.COLUMN_CURRENT_POSITION_MS, 0L);
             values.put(TitleEntry.COLUMN_TOTAL_DURATION_MS, 0L);
+            values.put(TitleEntry.COLUMN_SCROLL_Y, book.getScrollY());
+            values.put(TitleEntry.COLUMN_SCROLL_MAX_HEIGHT, book.getScrollMaxHeight());
+            values.put(TitleEntry.COLUMN_VIEWPORT_HEIGHT, book.getViewportHeight());
+            values.put(TitleEntry.COLUMN_TEXT_SIZE_SP, book.getTextSizeSp());
+            values.put(TitleEntry.COLUMN_CHAR_OFFSET, book.getCharOffset());
+            values.put(TitleEntry.COLUMN_SCROLL_PERMILLE, book.getScrollPermille());
         } else if (title instanceof AudioBook) {
             AudioBook audioBook = (AudioBook) title;
             values.put(TitleEntry.COLUMN_NARRATOR, audioBook.getNarrator());
@@ -366,6 +372,12 @@ public class TitleDao {
             values.put(TitleEntry.COLUMN_TOTAL_PAGES, 1);
             values.put(TitleEntry.COLUMN_CURRENT_POSITION_MS, audioBook.getCurrentPositionMs());
             values.put(TitleEntry.COLUMN_TOTAL_DURATION_MS, audioBook.getTotalDurationMs());
+            values.put(TitleEntry.COLUMN_SCROLL_Y, 0);
+            values.put(TitleEntry.COLUMN_SCROLL_MAX_HEIGHT, 0);
+            values.put(TitleEntry.COLUMN_VIEWPORT_HEIGHT, 0);
+            values.put(TitleEntry.COLUMN_TEXT_SIZE_SP, 18);
+            values.put(TitleEntry.COLUMN_CHAR_OFFSET, 0);
+            values.put(TitleEntry.COLUMN_SCROLL_PERMILLE, 0);
         }
         return values;
     }
@@ -415,6 +427,12 @@ public class TitleDao {
             Book book = new Book(id, titleText, lenChapters, contentUri);
             book.setCurrentPage(currentPage);
             book.setTotalPages(totalPages);
+            book.setScrollY(getOptionalInt(cursor, TitleEntry.COLUMN_SCROLL_Y, 0));
+            book.setScrollMaxHeight(getOptionalInt(cursor, TitleEntry.COLUMN_SCROLL_MAX_HEIGHT, 0));
+            book.setViewportHeight(getOptionalInt(cursor, TitleEntry.COLUMN_VIEWPORT_HEIGHT, 0));
+            book.setTextSizeSp(getOptionalInt(cursor, TitleEntry.COLUMN_TEXT_SIZE_SP, 18));
+            book.setCharOffset(getOptionalInt(cursor, TitleEntry.COLUMN_CHAR_OFFSET, 0));
+            book.setScrollPermille(getOptionalInt(cursor, TitleEntry.COLUMN_SCROLL_PERMILLE, 0));
             result = book;
         }
 
@@ -426,5 +444,10 @@ public class TitleDao {
         result.setStatus(status);
         result.setLastOpenedAt(lastOpenedAt);
         return result;
+    }
+
+    private int getOptionalInt(@NonNull Cursor cursor, @NonNull String columnName, int defaultValue) {
+        int idx = cursor.getColumnIndex(columnName);
+        return idx >= 0 && !cursor.isNull(idx) ? cursor.getInt(idx) : defaultValue;
     }
 }

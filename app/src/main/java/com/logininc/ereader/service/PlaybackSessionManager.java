@@ -345,11 +345,21 @@ public class PlaybackSessionManager {
             }
         }
         if (current != null) {
+            if (current.getChapterIndex() != audioBook.getCurrentChapter()) {
+                audioBook.setCurrentChapter(current.getChapterIndex());
+                audioBook.setCurrentChapterCompleted(current.isCompleted());
+            }
             long relMs = Math.max(0L, currentMs - current.getAudioStartMs());
             int chPct = current.getAudioDurationMs() > 0
                     ? (int) Math.min(100L, (relMs * 100L) / current.getAudioDurationMs())
                     : audioBook.getProgressPercent();
-            chapterDao.updateChapterProgress(audioBook.getId(), current.getChapterIndex(), chPct, false);
+            boolean keepCompleted = current.isCompleted();
+            chapterDao.updateChapterProgress(
+                    audioBook.getId(),
+                    current.getChapterIndex(),
+                    keepCompleted ? 100 : chPct,
+                    keepCompleted
+            );
         }
         new TitleDao(appContext).update(audioBook);
     }
@@ -494,7 +504,18 @@ public class PlaybackSessionManager {
         activeTitle.setStatus(Title.STATUS_IN_PROGRESS);
         Chapter ch = new ChapterDao(appContext).getChapter(activeTitle.getId(), clamped);
         if (activeTitle instanceof AudioBook && ch != null) {
-            seekToMs(ch.getAudioStartMs());
+            long startMs = Math.max(0L, ch.getAudioStartMs());
+            AudioBook audioBook = (AudioBook) activeTitle;
+            if (mediaPlayer != null) {
+                try {
+                    mediaPlayer.seekTo((int) startMs);
+                } catch (IllegalStateException ignored) {
+                }
+            }
+            audioBook.setCurrentPositionMs(startMs);
+            if (audioBook.getTotalDurationMs() > 0) {
+                audioBook.setProgressPercent((int) ((startMs * 100L) / audioBook.getTotalDurationMs()));
+            }
         }
         new TitleDao(appContext).update(activeTitle);
         notifyListeners();
