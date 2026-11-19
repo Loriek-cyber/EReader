@@ -10,10 +10,12 @@ import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -36,6 +38,7 @@ import com.logininc.ereader.persistence.ChapterDao;
 import com.logininc.ereader.persistence.SettingsDao;
 import com.logininc.ereader.persistence.TitleDao;
 import com.logininc.ereader.service.PlaybackSessionManager;
+import com.logininc.ereader.util.AudnexusClient;
 import com.logininc.ereader.util.ChapterTreeHelper;
 import com.logininc.ereader.util.FileScanner;
 import com.logininc.ereader.util.MetadataJsonParser;
@@ -145,8 +148,7 @@ public class AudioChaptersActivity extends AppCompatActivity {
 
     private void bindViews() {
         findViewById(R.id.btnAudioChaptersBack).setOnClickListener(v -> finish());
-        findViewById(R.id.btnImportAudioMetadataJson).setOnClickListener(v ->
-                openMetadataJsonLauncher.launch(new String[]{"application/json", "text/plain", "*/*"}));
+        findViewById(R.id.btnImportAudioMetadataJson).setOnClickListener(v -> showMetadataSourceDialog());
         tvTitle = findViewById(R.id.tvAudioChaptersTitle);
 
         chipChapters = findViewById(R.id.chipAudioChapters);
@@ -475,6 +477,133 @@ public class AudioChaptersActivity extends AppCompatActivity {
 
         NavigationFlowHelper.openReaderOrPlayer(this, audioBook, chapterIndex);
         finish();
+    }
+
+    private void showMetadataSourceDialog() {
+        String[] options = {
+                getString(R.string.metadata_source_audnexus),
+                getString(R.string.metadata_source_json)
+        };
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.metadata_source_title)
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        showAudnexusSearchDialog();
+                    } else {
+                        openMetadataJsonLauncher.launch(new String[]{"application/json", "text/plain", "*/*"});
+                    }
+                })
+                .setNegativeButton(R.string.action_cancel, null)
+                .show();
+    }
+
+    private void showAudnexusSearchDialog() {
+        if (audioBook == null) {
+            return;
+        }
+        int pad = Math.round(20f * getResources().getDisplayMetrics().density);
+        LinearLayout container = new LinearLayout(this);
+        container.setOrientation(LinearLayout.VERTICAL);
+        container.setPadding(pad, pad / 2, pad, 0);
+
+        EditText etQuery = new EditText(this);
+        etQuery.setHint(R.string.audnexus_query_hint);
+        etQuery.setSingleLine(true);
+        etQuery.setText(audioBook.getTitle());
+        if (etQuery.getText() != null) {
+            etQuery.setSelection(etQuery.getText().length());
+        }
+        container.addView(etQuery);
+
+        TextView tvRegion = new TextView(this);
+        tvRegion.setText(R.string.audnexus_region_label);
+        tvRegion.setPadding(0, pad / 2, 0, pad / 4);
+        container.addView(tvRegion);
+
+        Spinner spRegion = new Spinner(this);
+        String[] regionLabels = new String[AudnexusClient.SUPPORTED_REGIONS.length];
+        String defaultRegion = "en".equalsIgnoreCase(settingsDao.getLanguageTag()) ? "us" : "it";
+        int defaultPos = 0;
+        for (int i = 0; i < AudnexusClient.SUPPORTED_REGIONS.length; i++) {
+            String r = AudnexusClient.SUPPORTED_REGIONS[i];
+            regionLabels[i] = r.toUpperCase(Locale.ROOT);
+            if (r.equals(defaultRegion)) {
+                defaultPos = i;
+            }
+        }
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                this, android.R.layout.simple_spinner_dropdown_item, regionLabels);
+        spRegion.setAdapter(adapter);
+        spRegion.setSelection(defaultPos);
+        container.addView(spRegion);
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.audnexus_dialog_title)
+                .setView(container)
+                .setPositiveButton(R.string.audnexus_search_btn, (d, w) -> {
+                    String query = etQuery.getText() != null ? etQuery.getText().toString().trim() : "";
+                    String region = AudnexusClient.SUPPORTED_REGIONS[spRegion.getSelectedItemPosition()];
+                    if (!query.isEmpty()) {
+                        runAudnexusSearch(query, region);
+                    }
+                })
+                .setNegativeButton(R.string.action_cancel, null)
+                .show();
+    }
+
+    private void runAudnexusSearch(@NonNull String query, @NonNull String region) {
+        Toast.makeText(this, R.string.audnexus_searching, Toast.LENGTH_SHORT).show();
+        new Thread(() -> {
+            List<AudnexusClient.SearchCandidate> results = AudnexusClient.search(query, region);
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) {
+                    return;
+                }
+                if (results.isEmpty()) {
+                    Toast.makeText(this, R.string.audnexus_no_results, Toast.LENGTH_LONG).show();
+                    return;
+                }
+                if (results.size() == 1 && AudnexusClient.isAsin(query)) {
+                    applyAudnexusCandidate(results.get(0), region);
+                    return;
+                }
+                String[] labels = new String[results.size()];
+                for (int i = 0; i < results.size(); i++) {
+                    labels[i] = results.get(i).formatDisplayLabel();
+                }
+                new AlertDialog.Builder(this)
+                        .setTitle(R.string.audnexus_pick_result)
+                        .setItems(labels, (dialog, which) -> applyAudnexusCandidate(results.get(which), region))
+                        .setNegativeButton(R.string.action_cancel, null)
+                        .show();
+            });
+        }).start();
+    }
+
+    private void applyAudnexusCandidate(@NonNull AudnexusClient.SearchCandidate candidate, @NonNull String region) {
+        if (audioBook == null) {
+            return;
+        }
+        Toast.makeText(this, R.string.audnexus_applying, Toast.LENGTH_SHORT).show();
+        final AudioBook target = audioBook;
+        new Thread(() -> {
+            MetadataJsonParser.ApplyResult res =
+                    AudnexusClient.fetchAndApply(getApplicationContext(), target, candidate.asin, region);
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) {
+                    return;
+                }
+                if (res.success) {
+                    String msg = res.chapterCount > 0
+                            ? getString(R.string.audnexus_applied_fmt, res.chapterCount)
+                            : getString(R.string.audnexus_applied_no_chapters);
+                    Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+                    loadAndRender();
+                } else {
+                    Toast.makeText(this, R.string.audnexus_error, Toast.LENGTH_LONG).show();
+                }
+            });
+        }).start();
     }
 
     private void importMetadataJson(@NonNull Uri jsonUri) {

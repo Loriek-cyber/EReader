@@ -1,6 +1,7 @@
 package com.logininc.ereader.converter;
 
 import com.logininc.ereader.model.Chapter;
+import com.logininc.ereader.util.AudnexusClient;
 import com.logininc.ereader.util.ChapterTreeHelper;
 import com.logininc.ereader.util.FileScanner;
 import com.logininc.ereader.util.M4BParser;
@@ -153,5 +154,45 @@ public class AudiobookM4bTest {
         assertEquals(2, absRoots.get(0).getChildren().size());
         assertEquals("1.1 Introduzione", absRoots.get(0).getChildren().get(0).getChapterTitle());
         assertEquals(60_000L, absRoots.get(0).getChildren().get(0).getAudioDurationMs());
+    }
+
+    @Test
+    public void audnexusClientParsesAsinCatalogBookAndChapters() {
+        assertTrue(AudnexusClient.isAsin("B08G9PRS1K"));
+        assertTrue(AudnexusClient.isAsin("b08g9prs1k"));
+        assertEquals("it", AudnexusClient.normalizeRegion("IT"));
+        assertEquals("us", AudnexusClient.normalizeRegion("invalid"));
+
+        String catalogJson = "{ \"products\": ["
+                + "{ \"asin\": \"B08G9PRS1K\", \"title\": \"Project Hail Mary\", "
+                + "\"authors\": [{\"name\": \"Andy Weir\"}], \"narrators\": [{\"name\": \"Ray Porter\"}] }"
+                + "] }";
+        List<AudnexusClient.SearchCandidate> results = AudnexusClient.parseAudibleSearchResponse(catalogJson);
+        assertEquals(1, results.size());
+        assertEquals("B08G9PRS1K", results.get(0).asin);
+        assertEquals("Project Hail Mary", results.get(0).title);
+        assertEquals("Andy Weir", results.get(0).author);
+        assertEquals("Ray Porter", results.get(0).narrator);
+
+        String bookJson = "{ \"asin\": \"B08G9PRS1K\", \"title\": \"Project Hail Mary\", "
+                + "\"authors\": [{\"name\": \"Andy Weir\"}], \"narrators\": [{\"name\": \"Ray Porter\"}], "
+                + "\"image\": \"https://m.media-amazon.com/images/I/cover.jpg\", \"runtimeLengthMin\": 970 }";
+        AudnexusClient.AudnexusBookDetail detail = AudnexusClient.parseAudnexusBookResponse("B08G9PRS1K", bookJson);
+        assertEquals("Project Hail Mary", detail.title);
+        assertEquals("Andy Weir", detail.author);
+        assertEquals("Ray Porter", detail.narrator);
+        assertEquals("https://m.media-amazon.com/images/I/cover.jpg", detail.imageUrl);
+        assertEquals(970L * 60_000L, detail.runtimeLengthMs);
+
+        String chaptersJson = "{ \"runtimeLengthMs\": 180000, \"chapters\": ["
+                + "{ \"startOffsetMs\": 0, \"lengthMs\": 60000, \"title\": \"Opening Credits\" },"
+                + "{ \"startOffsetMs\": 60000, \"lengthMs\": 120000, \"title\": \"Chapter 1\" }"
+                + "] }";
+        AudnexusClient.AudnexusChaptersDetail chDetail = AudnexusClient.parseAudnexusChaptersResponse(chaptersJson);
+        assertEquals(180_000L, chDetail.runtimeLengthMs);
+        assertEquals(2, chDetail.chapters.size());
+        assertEquals("Opening Credits", chDetail.chapters.get(0).title);
+        assertEquals(60_000L, chDetail.chapters.get(1).startMs);
+        assertEquals(120_000L, chDetail.chapters.get(1).durationMs);
     }
 }

@@ -232,18 +232,26 @@ public final class MetadataJsonParser {
     }
 
     /**
+     * Parses a raw JSON string into a Map (for JSON objects).
+     */
+    @NonNull
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> parseJsonObject(@NonNull String rawJson) {
+        Object parsed = new SimpleJsonParser(rawJson).parseValue();
+        if (!(parsed instanceof Map)) {
+            throw new IllegalArgumentException("Root JSON element must be an object");
+        }
+        return (Map<String, Object>) parsed;
+    }
+
+    /**
      * Parses a JSON metadata string into a {@link ParsedMetadata} object.
      *
      * @throws IllegalArgumentException if the JSON is malformed or not a JSON object.
      */
     @NonNull
     public static ParsedMetadata parseJson(@NonNull String rawJson) {
-        Object parsed = new SimpleJsonParser(rawJson).parseValue();
-        if (!(parsed instanceof Map)) {
-            throw new IllegalArgumentException("Root JSON element must be an object");
-        }
-        @SuppressWarnings("unchecked")
-        Map<String, Object> root = (Map<String, Object>) parsed;
+        Map<String, Object> root = parseJsonObject(rawJson);
 
         String title = getString(root, "title", "name");
         String author = getString(root, "author");

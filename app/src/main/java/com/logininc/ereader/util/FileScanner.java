@@ -789,7 +789,7 @@ public final class FileScanner {
     }
 
     @Nullable
-    private static Uri saveCoverBytes(@NonNull Context context, @NonNull String key, @NonNull byte[] bytes) {
+    public static Uri saveCoverBytes(@NonNull Context context, @NonNull String key, @NonNull byte[] bytes) {
         File dir = new File(context.getFilesDir(), "covers");
         if (!dir.exists() && !dir.mkdirs()) {
             return null;

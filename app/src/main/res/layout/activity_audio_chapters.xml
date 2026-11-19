@@ -50,10 +50,10 @@
                 android:minHeight="36dp"
                 android:paddingHorizontal="@dimen/space_md"
                 android:paddingVertical="4dp"
-                android:text="@string/action_import_metadata_json"
+                android:text="@string/action_metadata"
                 android:textSize="12sp"
                 app:cornerRadius="@dimen/radius_pill"
-                app:icon="@drawable/ic_folder"
+                app:icon="@drawable/ic_search"
                 app:iconSize="14dp" />
         </LinearLayout>
 
