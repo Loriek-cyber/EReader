@@ -23,6 +23,7 @@ public final class NavigationFlowHelper {
     public static final String EXTRA_TITLE_ID = "extra_title_id";
     public static final String EXTRA_CHAPTER_INDEX = "extra_chapter_index";
     public static final String EXTRA_AUTO_PLAY = "extra_auto_play";
+    public static final String EXTRA_SKIP_RESUME_REWIND = "extra_skip_resume_rewind";
 
     private NavigationFlowHelper() {
     }

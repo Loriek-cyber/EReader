@@ -499,7 +499,11 @@ public class AudioChaptersActivity extends AppCompatActivity {
         audioBook.setLastOpenedAt(System.currentTimeMillis());
         titleDao.update(audioBook);
 
-        NavigationFlowHelper.openReaderOrPlayer(this, audioBook, chapterIndex);
+        android.content.Intent intent = new android.content.Intent(this, AudioPlayerActivity.class);
+        intent.putExtra(NavigationFlowHelper.EXTRA_TITLE_ID, audioBook.getId());
+        intent.putExtra(NavigationFlowHelper.EXTRA_CHAPTER_INDEX, Math.max(1, chapterIndex));
+        intent.putExtra(NavigationFlowHelper.EXTRA_SKIP_RESUME_REWIND, switchingChapter);
+        startActivity(intent);
         finish();
     }
 

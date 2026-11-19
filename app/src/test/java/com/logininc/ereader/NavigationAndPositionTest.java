@@ -255,9 +255,13 @@ public class NavigationAndPositionTest {
     }
 
     @Test
-    public void resumeRewindClampsToZeroAndSupportsOff() {
+    public void resumeRewindClampsToZeroAndChapterStartAndSupportsOff() {
         assertEquals(25_000L, PlaybackSessionManager.applyResumeRewindMs(30_000L, 5));
         assertEquals(0L, PlaybackSessionManager.applyResumeRewindMs(3_000L, 10));
         assertEquals(30_000L, PlaybackSessionManager.applyResumeRewindMs(30_000L, 0));
+        // Never jumps back before the current chapter's start timestamp
+        assertEquals(120_000L, PlaybackSessionManager.applyResumeRewindMs(120_000L, 5, 120_000L));
+        assertEquals(120_000L, PlaybackSessionManager.applyResumeRewindMs(122_000L, 5, 120_000L));
+        assertEquals(125_000L, PlaybackSessionManager.applyResumeRewindMs(130_000L, 5, 120_000L));
     }
 }

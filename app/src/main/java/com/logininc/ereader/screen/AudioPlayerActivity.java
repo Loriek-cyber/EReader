@@ -171,6 +171,7 @@ public class AudioPlayerActivity extends AppCompatActivity {
         boolean hasExplicitChapter = getIntent().hasExtra(NavigationFlowHelper.EXTRA_CHAPTER_INDEX);
         boolean autoPlay = !fromStateRestore
                 && getIntent().getBooleanExtra(NavigationFlowHelper.EXTRA_AUTO_PLAY, true);
+        boolean skipRewind = getIntent().getBooleanExtra(NavigationFlowHelper.EXTRA_SKIP_RESUME_REWIND, false);
         int targetChapter = hasExplicitChapter
                 ? getIntent().getIntExtra(NavigationFlowHelper.EXTRA_CHAPTER_INDEX, audioBook.getCurrentChapter())
                 : audioBook.getCurrentChapter();
@@ -179,6 +180,9 @@ public class AudioPlayerActivity extends AppCompatActivity {
         boolean sameTitle = currentActive instanceof AudioBook && currentActive.getId() == audioBook.getId();
         boolean sameChapter = sameTitle && currentActive.getCurrentChapter() == targetChapter;
 
+        if (skipRewind) {
+            sessionManager.skipNextResumeRewind();
+        }
         if (!sameTitle || !sameChapter || !sessionManager.hasPreparedAudio()) {
             sessionManager.startOrSwitchSession(this, audioBook, targetChapter, autoPlay);
         } else {

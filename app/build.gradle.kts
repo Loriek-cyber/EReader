@@ -17,7 +17,7 @@ android {
             ?: 1
         versionName = System.getenv("VERSION_NAME")
             ?: project.findProperty("VERSION_NAME")?.toString()
-            ?: "1.0"
+            ?: "1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

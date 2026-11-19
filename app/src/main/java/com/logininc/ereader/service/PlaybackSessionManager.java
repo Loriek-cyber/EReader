@@ -242,14 +242,23 @@ public class PlaybackSessionManager {
     }
 
     /**
-     * Applies the user-configured resume rewind offset, clamping only to {@code 0ms}
-     * (may cross back into the previous chapter if near a chapter boundary).
+     * Applies the user-configured resume rewind offset, clamping to {@code minPositionMs}
+     * (e.g., current chapter start) so resuming never jumps back into the previous chapter.
      */
     public static long applyResumeRewindMs(long currentPositionMs, int rewindSeconds) {
-        if (currentPositionMs <= 0L || rewindSeconds <= 0) {
-            return Math.max(0L, currentPositionMs);
+        return applyResumeRewindMs(currentPositionMs, rewindSeconds, 0L);
+    }
+
+    public static long applyResumeRewindMs(long currentPositionMs, int rewindSeconds, long minPositionMs) {
+        long floor = Math.max(0L, minPositionMs);
+        if (currentPositionMs <= floor || rewindSeconds <= 0) {
+            return Math.max(floor, currentPositionMs);
         }
-        return Math.max(0L, currentPositionMs - (rewindSeconds * 1000L));
+        return Math.max(floor, currentPositionMs - (rewindSeconds * 1000L));
+    }
+
+    public void skipNextResumeRewind() {
+        skipNextResumeRewind = true;
     }
 
     public void invalidateChapterCache(int titleId) {
@@ -318,6 +327,7 @@ public class PlaybackSessionManager {
                 prepareAndPlayAudio(appContext, audioBook, chapterIndex, startPlaying);
             } else {
                 if (switchingChapter) {
+                    skipNextResumeRewind = true;
                     Chapter ch = new ChapterDao(appContext).getChapter(audioBook.getId(), Math.max(1, chapterIndex));
                     if (ch != null) {
                         long chStart = ch.getAudioStartMs();
@@ -332,6 +342,7 @@ public class PlaybackSessionManager {
                 if (startPlaying && !playing) {
                     resume(appContext);
                 } else {
+                    skipNextResumeRewind = false;
                     notifyListeners();
                 }
             }
@@ -374,23 +385,30 @@ public class PlaybackSessionManager {
             }
 
             long seekTargetMs = audioBook.getCurrentPositionMs();
+            long chapterFloorMs = 0L;
             Chapter chapter = new ChapterDao(context).getChapter(audioBook.getId(), chapterIndex);
             if (chapter != null) {
                 long chStart = chapter.getAudioStartMs();
                 long chEnd = chStart + chapter.getAudioDurationMs();
-                if (seekTargetMs <= 0L) {
-                    seekTargetMs = chStart;
+                chapterFloorMs = chStart;
+                if (skipNextResumeRewind || seekTargetMs <= 0L) {
+                    if (seekTargetMs < chStart || (chapter.getAudioDurationMs() > 0 && seekTargetMs >= chEnd)) {
+                        seekTargetMs = chStart;
+                    }
                 } else if (seekTargetMs < chStart || (chapter.getAudioDurationMs() > 0 && seekTargetMs >= chEnd)) {
                     // If resuming with a valid saved position, prefer keeping the saved position and
                     // syncing the chapter index rather than resetting playback back to chapter start.
                     syncCurrentChapterOnSeek(audioBook, seekTargetMs);
+                    Chapter syncedCh = new ChapterDao(context).getChapter(audioBook.getId(), audioBook.getCurrentChapter());
+                    if (syncedCh != null) {
+                        chapterFloorMs = syncedCh.getAudioStartMs();
+                    }
                 }
             }
-            if (startPlaying && seekTargetMs > 0L && !skipNextResumeRewind) {
+            if (startPlaying && seekTargetMs > chapterFloorMs && !skipNextResumeRewind) {
                 int rewindSec = new SettingsDao(context).getAudioResumeRewindSec();
                 if (rewindSec > 0) {
-                    seekTargetMs = applyResumeRewindMs(seekTargetMs, rewindSec);
-                    syncCurrentChapterOnSeek(audioBook, seekTargetMs);
+                    seekTargetMs = applyResumeRewindMs(seekTargetMs, rewindSec, chapterFloorMs);
                 }
             }
             skipNextResumeRewind = false;
@@ -721,13 +739,13 @@ public class PlaybackSessionManager {
                 skipNextResumeRewind = false;
                 int rewindSec = applyRewind ? new SettingsDao(appContext).getAudioResumeRewindSec() : 0;
                 long currentPos = getCurrentPositionMs();
-                if (rewindSec > 0 && currentPos > 0L) {
-                    long targetMs = applyResumeRewindMs(currentPos, rewindSec);
+                long chapterFloorMs = resolveCurrentChapterStartMs(audioBook);
+                if (rewindSec > 0 && currentPos > chapterFloorMs) {
+                    long targetMs = applyResumeRewindMs(currentPos, rewindSec, chapterFloorMs);
                     audioBook.setCurrentPositionMs(targetMs);
                     if (audioBook.getTotalDurationMs() > 0L) {
                         audioBook.setProgressPercent(computeProgressPercent(targetMs, audioBook.getTotalDurationMs()));
                     }
-                    syncCurrentChapterOnSeek(audioBook, targetMs);
                     seeking = true;
                     pendingSeekTargetMs = targetMs;
                     final Context ctx = appContext;
@@ -757,6 +775,16 @@ public class PlaybackSessionManager {
         SleepTimerController.getInstance().onSessionActive(appContext);
         startTickerIfNeeded();
         notifyListeners();
+    }
+
+    private long resolveCurrentChapterStartMs(@NonNull AudioBook audioBook) {
+        List<Chapter> chapters = getCachedAudioChapters(audioBook.getId());
+        for (Chapter ch : chapters) {
+            if (ch.getChapterIndex() == audioBook.getCurrentChapter()) {
+                return Math.max(0L, ch.getAudioStartMs());
+            }
+        }
+        return 0L;
     }
 
     public void togglePlayPause(@NonNull Context context) {
