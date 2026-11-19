@@ -1,6 +1,7 @@
 package com.logininc.ereader.screen;
 
 import android.content.res.ColorStateList;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -14,7 +15,10 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -34,6 +38,7 @@ import com.logininc.ereader.persistence.TitleDao;
 import com.logininc.ereader.service.PlaybackSessionManager;
 import com.logininc.ereader.util.ChapterTreeHelper;
 import com.logininc.ereader.util.FileScanner;
+import com.logininc.ereader.util.MetadataJsonParser;
 import com.logininc.ereader.util.NavigationFlowHelper;
 import com.logininc.ereader.util.ThemeHelper;
 import com.logininc.ereader.util.UiSessionHelper;
@@ -93,6 +98,13 @@ public class AudioChaptersActivity extends AppCompatActivity {
 
     private PlaybackSessionManager.SessionListener miniPlayerListener;
 
+    private final ActivityResultLauncher<String[]> openMetadataJsonLauncher =
+            registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
+                if (uri != null) {
+                    importMetadataJson(uri);
+                }
+            });
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         ThemeHelper.applySavedLocale(this);
@@ -133,6 +145,8 @@ public class AudioChaptersActivity extends AppCompatActivity {
 
     private void bindViews() {
         findViewById(R.id.btnAudioChaptersBack).setOnClickListener(v -> finish());
+        findViewById(R.id.btnImportAudioMetadataJson).setOnClickListener(v ->
+                openMetadataJsonLauncher.launch(new String[]{"application/json", "text/plain", "*/*"}));
         tvTitle = findViewById(R.id.tvAudioChaptersTitle);
 
         chipChapters = findViewById(R.id.chipAudioChapters);
@@ -159,6 +173,13 @@ public class AudioChaptersActivity extends AppCompatActivity {
         chipChapters.setOnClickListener(v -> switchTab(TAB_CHAPTERS));
         chipBookmarks.setOnClickListener(v -> switchTab(TAB_BOOKMARKS));
         chipNotes.setOnClickListener(v -> switchTab(TAB_NOTES));
+
+        UiSessionHelper.bindSearchClearAndImeAction(etSearch, null);
+        UiSessionHelper.attachImeSafeBottomDock(
+                findViewById(android.R.id.content),
+                findViewById(R.id.bottomDockAudioChapters),
+                null
+        );
 
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
@@ -454,5 +475,30 @@ public class AudioChaptersActivity extends AppCompatActivity {
 
         NavigationFlowHelper.openReaderOrPlayer(this, audioBook, chapterIndex);
         finish();
+    }
+
+    private void importMetadataJson(@NonNull Uri jsonUri) {
+        if (audioBook == null) {
+            return;
+        }
+        final AudioBook target = audioBook;
+        new Thread(() -> {
+            MetadataJsonParser.ApplyResult res =
+                    MetadataJsonParser.applyJsonUriToTitle(getApplicationContext(), target, jsonUri);
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) {
+                    return;
+                }
+                if (res.success) {
+                    String msg = res.chapterCount > 0
+                            ? getString(R.string.metadata_json_imported_fmt, res.chapterCount)
+                            : getString(R.string.metadata_json_imported_no_chapters);
+                    Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+                    loadAndRender();
+                } else {
+                    Toast.makeText(this, R.string.metadata_json_error, Toast.LENGTH_LONG).show();
+                }
+            });
+        }).start();
     }
 }

@@ -4,6 +4,7 @@ import com.logininc.ereader.model.Chapter;
 import com.logininc.ereader.util.ChapterTreeHelper;
 import com.logininc.ereader.util.FileScanner;
 import com.logininc.ereader.util.M4BParser;
+import com.logininc.ereader.util.MetadataJsonParser;
 import com.logininc.ereader.util.Mp4ChapterParser;
 
 import org.junit.Test;
@@ -100,5 +101,57 @@ public class AudiobookM4bTest {
         assertEquals(6, leaves.get(2).getChapterIndex());
         assertEquals(12, leaves.get(7).getChapterIndex());
         assertEquals(6, ChapterTreeHelper.findNextLeafIndex(roots, 4));
+    }
+
+    @Test
+    public void metadataJsonParserSupportsNestedAndAudiobookshelfFormats() {
+        String nestedJson = "{\n"
+                + "  \"title\": \"Il Nome della Rosa\",\n"
+                + "  \"author\": \"Umberto Eco\",\n"
+                + "  \"narrator\": \"Tommaso Ragno\",\n"
+                + "  \"chapters\": [\n"
+                + "    {\n"
+                + "      \"title\": \"Primo Giorno\",\n"
+                + "      \"start\": \"00:00:00\",\n"
+                + "      \"children\": [\n"
+                + "        { \"title\": \"Prima\", \"start\": \"00:00:00\", \"end\": \"00:10:00\" },\n"
+                + "        { \"title\": \"Terza\", \"start\": \"00:10:00\", \"end\": \"00:25:00\" }\n"
+                + "      ]\n"
+                + "    }\n"
+                + "  ]\n"
+                + "}";
+
+        MetadataJsonParser.ParsedMetadata parsed = MetadataJsonParser.parseJson(nestedJson);
+        assertEquals("Il Nome della Rosa", parsed.title);
+        assertEquals("Umberto Eco", parsed.author);
+        assertEquals("Tommaso Ragno", parsed.narrator);
+
+        List<Chapter> roots = MetadataJsonParser.buildAudioChapterTree(1, parsed.chapters, 1_500_000L, 0L);
+        assertEquals(1, roots.size());
+        assertEquals("Primo Giorno", roots.get(0).getChapterTitle());
+        assertEquals(2, roots.get(0).getChildren().size());
+        assertEquals(1_500_000L, roots.get(0).getAudioDurationMs());
+        assertEquals(600_000L, roots.get(0).getChildren().get(0).getAudioDurationMs());
+        assertEquals(900_000L, roots.get(0).getChildren().get(1).getAudioDurationMs());
+
+        String flatAbsJson = "{\n"
+                + "  \"title\": \"Test ABS\",\n"
+                + "  \"authors\": [\"Autore A\", \"Autore B\"],\n"
+                + "  \"narrators\": [\"Narratore X\"],\n"
+                + "  \"chapters\": [\n"
+                + "    { \"start\": 0.0, \"end\": 30.0, \"title\": \"Parte 1\" },\n"
+                + "    { \"start\": 30.0, \"end\": 90.0, \"title\": \"  1.1 Introduzione\" },\n"
+                + "    { \"start\": 90.0, \"end\": 150.0, \"title\": \"  1.2 Sviluppo\" }\n"
+                + "  ]\n"
+                + "}";
+
+        MetadataJsonParser.ParsedMetadata absParsed = MetadataJsonParser.parseJson(flatAbsJson);
+        assertEquals("Autore A, Autore B", absParsed.author);
+        assertEquals("Narratore X", absParsed.narrator);
+        List<Chapter> absRoots = MetadataJsonParser.buildAudioChapterTree(2, absParsed.chapters, 150_000L, 0L);
+        assertEquals(1, absRoots.size());
+        assertEquals(2, absRoots.get(0).getChildren().size());
+        assertEquals("1.1 Introduzione", absRoots.get(0).getChildren().get(0).getChapterTitle());
+        assertEquals(60_000L, absRoots.get(0).getChildren().get(0).getAudioDurationMs());
     }
 }

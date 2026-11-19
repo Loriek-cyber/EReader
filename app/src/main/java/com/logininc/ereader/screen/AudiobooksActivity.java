@@ -3,6 +3,8 @@ package com.logininc.ereader.screen;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -67,8 +69,12 @@ public class AudiobooksActivity extends AppCompatActivity {
     private TextView tvAudioHeroProgressLabel;
     private TextView tvAudioHeroRemaining;
     private TextView tvAudiobooksCount;
+    private TextView tvNoResults;
+    private View btnClearSearch;
     private View layoutEmpty;
     private LinearLayout listAudiobooks;
+    private final Handler searchHandler = new Handler(Looper.getMainLooper());
+    private final Runnable debouncedSearchRunnable = this::refreshAudiobooks;
 
     private PlaybackSessionManager.SessionListener miniPlayerListener;
     private PlaybackSessionManager.SessionListener heroSessionListener;
@@ -129,6 +135,7 @@ public class AudiobooksActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
+        searchHandler.removeCallbacks(debouncedSearchRunnable);
         if (miniPlayerListener != null) {
             PlaybackSessionManager.getInstance().removeListener(miniPlayerListener);
             miniPlayerListener = null;
@@ -147,6 +154,7 @@ public class AudiobooksActivity extends AppCompatActivity {
 
     private void bindViews() {
         etSearch = findViewById(R.id.etAudioSearch);
+        btnClearSearch = findViewById(R.id.btnClearAudioSearch);
         sectionNowPlaying = findViewById(R.id.sectionAudioNowPlaying);
         cardAudioHero = findViewById(R.id.cardAudioHero);
         ivAudioHeroCover = findViewById(R.id.ivAudioHeroCover);
@@ -162,6 +170,7 @@ public class AudiobooksActivity extends AppCompatActivity {
         tvAudioHeroProgressLabel = findViewById(R.id.tvAudioHeroProgressLabel);
         tvAudioHeroRemaining = findViewById(R.id.tvAudioHeroRemaining);
         tvAudiobooksCount = findViewById(R.id.tvAudiobooksCount);
+        tvNoResults = findViewById(R.id.tvAudioNoResults);
         layoutEmpty = findViewById(R.id.layoutAudioEmpty);
         listAudiobooks = findViewById(R.id.listAudiobooks);
 
@@ -177,6 +186,13 @@ public class AudiobooksActivity extends AppCompatActivity {
         findViewById(R.id.btnImportAudio).setOnClickListener(importListener);
         findViewById(R.id.btnEmptyImportAudio).setOnClickListener(importListener);
 
+        UiSessionHelper.bindSearchClearAndImeAction(etSearch, btnClearSearch);
+        UiSessionHelper.attachImeSafeBottomDock(
+                findViewById(android.R.id.content),
+                findViewById(R.id.bottomDockAudiobooks),
+                findViewById(R.id.scrollAudiobooks)
+        );
+
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -184,7 +200,11 @@ public class AudiobooksActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                refreshAudiobooks();
+                if (btnClearSearch != null) {
+                    btnClearSearch.setVisibility(s != null && s.length() > 0 ? View.VISIBLE : View.GONE);
+                }
+                searchHandler.removeCallbacks(debouncedSearchRunnable);
+                searchHandler.postDelayed(debouncedSearchRunnable, 200L);
             }
 
             @Override
@@ -373,10 +393,14 @@ public class AudiobooksActivity extends AppCompatActivity {
 
     private void renderAudiobooksList(@NonNull List<AudioBook> items) {
         listAudiobooks.removeAllViews();
+        String query = etSearch.getText() != null ? etSearch.getText().toString().trim() : "";
+        boolean isSearching = !query.isEmpty();
         if (items.isEmpty()) {
-            layoutEmpty.setVisibility(View.VISIBLE);
+            tvNoResults.setVisibility(isSearching ? View.VISIBLE : View.GONE);
+            layoutEmpty.setVisibility(isSearching ? View.GONE : View.VISIBLE);
             return;
         }
+        tvNoResults.setVisibility(View.GONE);
         layoutEmpty.setVisibility(View.GONE);
         LayoutInflater inflater = LayoutInflater.from(this);
 

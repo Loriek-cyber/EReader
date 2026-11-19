@@ -3,6 +3,8 @@ package com.logininc.ereader.screen;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -52,6 +54,7 @@ public class LibraryActivity extends AppCompatActivity {
     private final ExecutorService ioExecutor = Executors.newSingleThreadExecutor();
 
     private EditText etSearch;
+    private View btnClearSearch;
     private View sectionInProgress;
     private View cardContinueReading;
     private ImageView ivHeroCover;
@@ -64,8 +67,11 @@ public class LibraryActivity extends AppCompatActivity {
     private MaterialButton btnHeroIndex;
     private MaterialButton btnHeroResume;
     private TextView tvLibraryCount;
+    private TextView tvNoResults;
     private View layoutEmpty;
     private LinearLayout gridBooks;
+    private final Handler searchHandler = new Handler(Looper.getMainLooper());
+    private final Runnable debouncedSearchRunnable = this::refreshLibrary;
     private PlaybackSessionManager.SessionListener miniPlayerListener;
 
     private final ActivityResultLauncher<String[]> openEbookLauncher =
@@ -106,6 +112,7 @@ public class LibraryActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
+        searchHandler.removeCallbacks(debouncedSearchRunnable);
         if (miniPlayerListener != null) {
             PlaybackSessionManager.getInstance().removeListener(miniPlayerListener);
             miniPlayerListener = null;
@@ -120,6 +127,7 @@ public class LibraryActivity extends AppCompatActivity {
 
     private void bindViews() {
         etSearch = findViewById(R.id.etLibrarySearch);
+        btnClearSearch = findViewById(R.id.btnClearLibrarySearch);
         sectionInProgress = findViewById(R.id.sectionLibraryInProgress);
         cardContinueReading = findViewById(R.id.cardContinueReading);
         ivHeroCover = findViewById(R.id.ivHeroCover);
@@ -132,12 +140,20 @@ public class LibraryActivity extends AppCompatActivity {
         btnHeroIndex = findViewById(R.id.btnHeroIndex);
         btnHeroResume = findViewById(R.id.btnHeroResume);
         tvLibraryCount = findViewById(R.id.tvLibraryCount);
+        tvNoResults = findViewById(R.id.tvLibraryNoResults);
         layoutEmpty = findViewById(R.id.layoutLibraryEmpty);
         gridBooks = findViewById(R.id.gridLibraryBooks);
 
         View.OnClickListener importListener = v -> launchEbookPicker();
         findViewById(R.id.btnImportEbook).setOnClickListener(importListener);
         findViewById(R.id.btnEmptyImportEbook).setOnClickListener(importListener);
+
+        UiSessionHelper.bindSearchClearAndImeAction(etSearch, btnClearSearch);
+        UiSessionHelper.attachImeSafeBottomDock(
+                findViewById(android.R.id.content),
+                findViewById(R.id.bottomDockLibrary),
+                findViewById(R.id.scrollLibrary)
+        );
 
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
@@ -146,7 +162,11 @@ public class LibraryActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                refreshLibrary();
+                if (btnClearSearch != null) {
+                    btnClearSearch.setVisibility(s != null && s.length() > 0 ? View.VISIBLE : View.GONE);
+                }
+                searchHandler.removeCallbacks(debouncedSearchRunnable);
+                searchHandler.postDelayed(debouncedSearchRunnable, 200L);
             }
 
             @Override
@@ -251,10 +271,14 @@ public class LibraryActivity extends AppCompatActivity {
 
     private void renderBooksGrid(@NonNull List<Book> books) {
         gridBooks.removeAllViews();
+        String query = etSearch.getText() != null ? etSearch.getText().toString().trim() : "";
+        boolean isSearching = !query.isEmpty();
         if (books.isEmpty()) {
-            layoutEmpty.setVisibility(View.VISIBLE);
+            tvNoResults.setVisibility(isSearching ? View.VISIBLE : View.GONE);
+            layoutEmpty.setVisibility(isSearching ? View.GONE : View.VISIBLE);
             return;
         }
+        tvNoResults.setVisibility(View.GONE);
         layoutEmpty.setVisibility(View.GONE);
         LayoutInflater inflater = LayoutInflater.from(this);
         int gapPx = getResources().getDimensionPixelSize(R.dimen.space_md);

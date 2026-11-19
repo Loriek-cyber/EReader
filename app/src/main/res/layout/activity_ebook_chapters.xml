@@ -53,6 +53,21 @@
                     android:ellipsize="end"
                     android:maxLines="1" />
             </LinearLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnImportEbookMetadataJson"
+                style="@style/Widget.EReader.Button.Secondary"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/space_xs"
+                android:minHeight="36dp"
+                android:paddingHorizontal="@dimen/space_md"
+                android:paddingVertical="4dp"
+                android:text="@string/action_import_metadata_json"
+                android:textSize="12sp"
+                app:cornerRadius="@dimen/radius_pill"
+                app:icon="@drawable/ic_folder"
+                app:iconSize="14dp" />
         </LinearLayout>
 
         <androidx.core.widget.NestedScrollView
@@ -413,6 +428,7 @@
 
     <!-- Bottom Dock (Mini-Player + Floating Continue Pill) -->
     <LinearLayout
+        android:id="@+id/bottomDockEbookChapters"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"

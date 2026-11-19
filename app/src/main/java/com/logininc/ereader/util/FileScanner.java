@@ -155,10 +155,11 @@ public final class FileScanner {
                 ));
             }
 
-            Book book = new Book(0, titleText, chapters.size(), uri);
+            List<Chapter> flattened = Chapter.flattenTree(chapters);
+            Book book = new Book(0, titleText, flattened.size(), uri);
             book.setAuthor(author);
             book.setCoverUri(coverUri);
-            book.setTotalPages(Math.max(1, chapters.size()));
+            book.setTotalPages(estimateEpubTotalPages(chapters));
             book.setChapters(chapters);
 
             long id = titleDao.saveBookWithChapters(book);
@@ -187,7 +188,7 @@ public final class FileScanner {
     }
 
     @NonNull
-    private static List<Chapter> buildEpubChapters(@NonNull io.documentnode.epub4j.domain.Book epubBook) {
+    public static List<Chapter> buildEpubChapters(@NonNull io.documentnode.epub4j.domain.Book epubBook) {
         List<Chapter> roots = new ArrayList<>();
         int[] indexCounter = {1};
 
@@ -200,6 +201,12 @@ public final class FileScanner {
                 roots.add(convertTocReference(tocRefs.get(i), 0, i, indexCounter));
             }
             return roots;
+        }
+
+        // EPUB 3 nav.xhtml fallback when NCX toc is absent or empty
+        List<Chapter> navChapters = buildChaptersFromEpub3Nav(epubBook, indexCounter);
+        if (!navChapters.isEmpty()) {
+            return navChapters;
         }
 
         List<SpineReference> spineRefs = epubBook.getSpine() != null
@@ -220,10 +227,126 @@ public final class FileScanner {
                         plainText, "", 0L, 0L, 0, false
                 );
                 attachHtmlSectionsIfPresent(chapter, rawHtml, href, 0, indexCounter);
+                if (!chapter.getChildren().isEmpty()) {
+                    chapter.setContentText("");
+                }
                 roots.add(chapter);
             }
         }
         return roots;
+    }
+
+    public static int estimateEpubTotalPages(@NonNull List<Chapter> rootChapters) {
+        List<Chapter> leaves = ChapterTreeHelper.collectLeafChapters(rootChapters);
+        long totalChars = 0L;
+        for (Chapter leaf : leaves) {
+            totalChars += leaf.getContentText().length();
+        }
+        int byChars = (int) Math.ceil(totalChars / 1800.0);
+        return Math.max(Math.max(1, leaves.size()), byChars);
+    }
+
+    @NonNull
+    private static List<Chapter> buildChaptersFromEpub3Nav(
+            @NonNull io.documentnode.epub4j.domain.Book epubBook,
+            @NonNull int[] indexCounter
+    ) {
+        if (epubBook.getResources() == null) {
+            return new ArrayList<>();
+        }
+        for (Resource res : epubBook.getResources().getAll()) {
+            String href = res.getHref() != null ? res.getHref().toLowerCase(Locale.ROOT) : "";
+            if (!href.endsWith(".xhtml") && !href.endsWith(".html")) {
+                continue;
+            }
+            String html = readResourceHtml(res);
+            if (!html.contains("epub:type=\"toc\"") && !html.contains("epub:type='toc'")) {
+                continue;
+            }
+            Document doc = Jsoup.parse(html);
+            Element nav = doc.selectFirst("nav[epub|type=toc], nav[epub\\:type=toc], nav");
+            if (nav == null) {
+                continue;
+            }
+            Element rootOl = nav.selectFirst("ol");
+            if (rootOl == null) {
+                continue;
+            }
+            String baseDir = "";
+            String origHref = res.getHref() != null ? res.getHref() : "";
+            int slash = origHref.lastIndexOf('/');
+            if (slash >= 0) {
+                baseDir = origHref.substring(0, slash + 1);
+            }
+            return parseNavList(epubBook, rootOl, baseDir, 0, indexCounter);
+        }
+        return new ArrayList<>();
+    }
+
+    @NonNull
+    private static List<Chapter> parseNavList(
+            @NonNull io.documentnode.epub4j.domain.Book epubBook,
+            @NonNull Element ol,
+            @NonNull String baseDir,
+            int level,
+            @NonNull int[] indexCounter
+    ) {
+        List<Chapter> nodes = new ArrayList<>();
+        int sortOrder = 0;
+        for (Element child : ol.children()) {
+            if (!"li".equalsIgnoreCase(child.tagName())) {
+                continue;
+            }
+            Element link = child.selectFirst("> a, > span");
+            String title = link != null ? link.text().trim() : "";
+            String rawHref = (link != null && "a".equalsIgnoreCase(link.tagName())) ? link.attr("href").trim() : "";
+            Element nestedOl = child.selectFirst("> ol");
+            boolean hasChildren = nestedOl != null && !nestedOl.select("> li").isEmpty();
+
+            String fileHref = rawHref;
+            String fragmentId = "";
+            int hash = rawHref.indexOf('#');
+            if (hash >= 0) {
+                fileHref = rawHref.substring(0, hash);
+                fragmentId = rawHref.substring(hash + 1);
+            }
+            String resolvedHref = (!fileHref.isEmpty() && !baseDir.isEmpty() && !fileHref.contains("/"))
+                    ? baseDir + fileHref
+                    : fileHref;
+
+            int chIndex = indexCounter[0]++;
+            if (title.isEmpty()) {
+                title = "Chapter " + chIndex;
+            }
+            String plainText = "";
+            String rawHtml = "";
+            if (!hasChildren && !resolvedHref.isEmpty() && epubBook.getResources() != null) {
+                Resource targetRes = epubBook.getResources().getByHref(resolvedHref);
+                if (targetRes == null && !fileHref.isEmpty()) {
+                    targetRes = epubBook.getResources().getByHref(fileHref);
+                }
+                rawHtml = readResourceHtml(targetRes);
+                plainText = extractReadableText(rawHtml, fragmentId);
+            }
+
+            Chapter node = new Chapter(
+                    0, 0, 0, chIndex, level, sortOrder++,
+                    title, "", resolvedHref, fragmentId, "",
+                    plainText, "", 0L, 0L, 0, false
+            );
+            if (hasChildren) {
+                for (Chapter sub : parseNavList(epubBook, nestedOl, baseDir, level + 1, indexCounter)) {
+                    node.addChild(sub);
+                }
+            } else if (fragmentId.isEmpty() && !rawHtml.isEmpty()) {
+                attachHtmlSectionsIfPresent(node, rawHtml, resolvedHref, level, indexCounter);
+                if (!node.getChildren().isEmpty()) {
+                    node.setContentText("");
+                }
+            }
+            nodes.add(node);
+        }
+        return nodes;
     }
 
     @NonNull
@@ -237,8 +360,11 @@ public final class FileScanner {
         Resource res = ref.getResource();
         String href = res != null && res.getHref() != null ? res.getHref() : "";
         String fragmentId = ref.getFragmentId() != null ? ref.getFragmentId() : "";
-        String rawHtml = readResourceHtml(res);
-        String plainText = extractReadableText(rawHtml, fragmentId);
+        List<TOCReference> children = ref.getChildren();
+        boolean hasTocChildren = children != null && !children.isEmpty();
+
+        String rawHtml = hasTocChildren ? "" : readResourceHtml(res);
+        String plainText = hasTocChildren ? "" : extractReadableText(rawHtml, fragmentId);
         String chTitle = ref.getTitle() != null && !ref.getTitle().trim().isEmpty()
                 ? ref.getTitle().trim()
                 : "Chapter " + chIndex;
@@ -249,13 +375,15 @@ public final class FileScanner {
                 plainText, "", 0L, 0L, 0, false
         );
 
-        List<TOCReference> children = ref.getChildren();
-        if (children != null && !children.isEmpty()) {
+        if (hasTocChildren) {
             for (int i = 0; i < children.size(); i++) {
                 chapter.addChild(convertTocReference(children.get(i), level + 1, i, indexCounter));
             }
         } else if (fragmentId.isEmpty() && !rawHtml.isEmpty()) {
             attachHtmlSectionsIfPresent(chapter, rawHtml, href, level, indexCounter);
+            if (!chapter.getChildren().isEmpty()) {
+                chapter.setContentText("");
+            }
         }
         return chapter;
     }

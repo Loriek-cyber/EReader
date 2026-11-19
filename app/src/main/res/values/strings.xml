@@ -222,6 +222,11 @@
     <!-- Notification & Common Dialog Buttons -->
     <string name="notification_audio_channel">Riproduzione Audiolibri</string>
     <string name="action_save">Salva</string>
+    <string name="search_no_results">Nessun risultato trovato</string>
+    <string name="action_import_metadata_json">JSON</string>
+    <string name="metadata_json_imported_fmt">Metadata JSON applicati (%1$d capitoli)</string>
+    <string name="metadata_json_imported_no_chapters">Metadata JSON applicati</string>
+    <string name="metadata_json_error">File JSON non valido o illeggibile</string>
     <string name="action_cancel">Annulla</string>
     <string name="action_delete">Elimina</string>
     <string name="action_close">Chiudi</string>

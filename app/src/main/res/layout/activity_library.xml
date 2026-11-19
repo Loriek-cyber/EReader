@@ -97,6 +97,17 @@
                     android:minHeight="@dimen/search_bar_height"
                     android:textColor="?attr/ereaderTextPrimary"
                     android:textColorHint="?attr/ereaderTextMuted" />
+
+                <ImageButton
+                    android:id="@+id/btnClearLibrarySearch"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/action_cancel"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_close"
+                    android:visibility="gone"
+                    app:tint="?attr/ereaderTextMuted" />
             </LinearLayout>
 
             <!-- Section: In Corso (Visible only when an in-progress book exists in DB) -->
@@ -376,6 +387,19 @@
                     android:textColor="?attr/ereaderTextMuted" />
             </LinearLayout>
 
+            <!-- No search results state -->
+            <TextView
+                android:id="@+id/tvLibraryNoResults"
+                style="@style/TextAppearance.EReader.BodySm"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_lg"
+                android:gravity="center"
+                android:padding="@dimen/space_xl"
+                android:text="@string/search_no_results"
+                android:textColor="?attr/ereaderTextMuted"
+                android:visibility="gone" />
+
             <!-- Empty State when no books in SQLite -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/layoutLibraryEmpty"
@@ -438,6 +462,7 @@
     </androidx.core.widget.NestedScrollView>
 
     <LinearLayout
+        android:id="@+id/bottomDockLibrary"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"

@@ -1,5 +1,6 @@
 package com.logininc.ereader.screen;
 
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -14,7 +15,10 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -33,6 +37,7 @@ import com.logininc.ereader.persistence.SettingsDao;
 import com.logininc.ereader.persistence.TitleDao;
 import com.logininc.ereader.service.PlaybackSessionManager;
 import com.logininc.ereader.util.ChapterTreeHelper;
+import com.logininc.ereader.util.MetadataJsonParser;
 import com.logininc.ereader.util.NavigationFlowHelper;
 import com.logininc.ereader.util.ThemeHelper;
 import com.logininc.ereader.util.UiSessionHelper;
@@ -98,6 +103,13 @@ public class EbookChaptersActivity extends AppCompatActivity {
 
     private PlaybackSessionManager.SessionListener miniPlayerListener;
 
+    private final ActivityResultLauncher<String[]> openMetadataJsonLauncher =
+            registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
+                if (uri != null) {
+                    importMetadataJson(uri);
+                }
+            });
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         ThemeHelper.applySavedLocale(this);
@@ -138,6 +150,8 @@ public class EbookChaptersActivity extends AppCompatActivity {
 
     private void bindViews() {
         findViewById(R.id.btnChaptersBack).setOnClickListener(v -> finish());
+        findViewById(R.id.btnImportEbookMetadataJson).setOnClickListener(v ->
+                openMetadataJsonLauncher.launch(new String[]{"application/json", "text/plain", "*/*"}));
         tvHeaderSub = findViewById(R.id.tvEbookChaptersHeaderSub);
         ivCover = findViewById(R.id.ivEbookSummaryCover);
         tvSummaryTitle = findViewById(R.id.tvEbookSummaryTitle);
@@ -170,6 +184,13 @@ public class EbookChaptersActivity extends AppCompatActivity {
         tabChapters.setOnClickListener(v -> switchTab(TAB_CHAPTERS));
         tabBookmarks.setOnClickListener(v -> switchTab(TAB_BOOKMARKS));
         tabNotes.setOnClickListener(v -> switchTab(TAB_NOTES));
+
+        UiSessionHelper.bindSearchClearAndImeAction(etSearch, null);
+        UiSessionHelper.attachImeSafeBottomDock(
+                findViewById(android.R.id.content),
+                findViewById(R.id.bottomDockEbookChapters),
+                null
+        );
 
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
@@ -412,5 +433,30 @@ public class EbookChaptersActivity extends AppCompatActivity {
         titleDao.update(book);
         NavigationFlowHelper.openReaderOrPlayer(this, book, chapterIndex);
         finish();
+    }
+
+    private void importMetadataJson(@NonNull Uri jsonUri) {
+        if (book == null) {
+            return;
+        }
+        final Book target = book;
+        new Thread(() -> {
+            MetadataJsonParser.ApplyResult res =
+                    MetadataJsonParser.applyJsonUriToTitle(getApplicationContext(), target, jsonUri);
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) {
+                    return;
+                }
+                if (res.success) {
+                    String msg = res.chapterCount > 0
+                            ? getString(R.string.metadata_json_imported_fmt, res.chapterCount)
+                            : getString(R.string.metadata_json_imported_no_chapters);
+                    Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+                    loadAndRender();
+                } else {
+                    Toast.makeText(this, R.string.metadata_json_error, Toast.LENGTH_LONG).show();
+                }
+            });
+        }).start();
     }
 }

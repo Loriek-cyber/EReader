@@ -1,6 +1,7 @@
 package com.logininc.ereader.util;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -10,6 +11,9 @@ import android.os.Looper;
 import android.util.LruCache;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -17,6 +21,8 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
@@ -412,6 +418,72 @@ public final class UiSessionHelper {
             ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) raw;
             lp.setMarginStart(marginPx);
             view.setLayoutParams(lp);
+        }
+    }
+
+    /**
+     * Hides the bottom navigation / mini-player dock while the soft keyboard (IME) is open so it
+     * never jumps up over search results, and restores it cleanly when the keyboard closes.
+     */
+    public static void attachImeSafeBottomDock(
+            @NonNull View rootView,
+            @Nullable View bottomDock,
+            @Nullable View scrollView
+    ) {
+        final int initialPadBottom = scrollView != null ? scrollView.getPaddingBottom() : 0;
+        final int compactPadBottom = Math.round(24f * rootView.getResources().getDisplayMetrics().density);
+
+        ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, insets) -> {
+            boolean imeVisible = insets.isVisible(WindowInsetsCompat.Type.ime());
+            if (bottomDock != null) {
+                bottomDock.setVisibility(imeVisible ? View.GONE : View.VISIBLE);
+            }
+            if (scrollView != null) {
+                int targetBottom = imeVisible ? compactPadBottom : initialPadBottom;
+                if (scrollView.getPaddingBottom() != targetBottom) {
+                    scrollView.setPadding(
+                            scrollView.getPaddingLeft(),
+                            scrollView.getPaddingTop(),
+                            scrollView.getPaddingRight(),
+                            targetBottom
+                    );
+                }
+            }
+            return insets;
+        });
+    }
+
+    /**
+     * Wires a clear ("X") button and IME search action (dismiss keyboard) for a search {@link EditText}.
+     */
+    public static void bindSearchClearAndImeAction(
+            @NonNull EditText editText,
+            @Nullable View clearButton
+    ) {
+        if (clearButton != null) {
+            CharSequence initial = editText.getText();
+            clearButton.setVisibility(initial != null && initial.length() > 0 ? View.VISIBLE : View.GONE);
+            clearButton.setOnClickListener(v -> {
+                editText.setText("");
+                editText.clearFocus();
+                hideKeyboard(editText);
+            });
+        }
+        editText.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE) {
+                v.clearFocus();
+                hideKeyboard(v);
+                return true;
+            }
+            return false;
+        });
+    }
+
+    public static void hideKeyboard(@NonNull View view) {
+        InputMethodManager imm = (InputMethodManager) view.getContext()
+                .getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
         }
     }
 }
