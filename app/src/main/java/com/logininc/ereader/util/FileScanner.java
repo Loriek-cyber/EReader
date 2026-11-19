@@ -516,25 +516,22 @@ public final class FileScanner {
                     metadata.coverArtData);
         }
 
-        List<Chapter> chapters = new ArrayList<>();
+        List<Chapter> rootChapters;
+        int totalChapterNodes;
         if (metadata != null && !metadata.chapters.isEmpty()) {
-            for (int i = 0; i < metadata.chapters.size(); i++) {
-                M4BParser.M4bChapter ch = metadata.chapters.get(i);
-                chapters.add(new Chapter(
-                        0, 0, 0, ch.index, 0, i,
-                        ch.title, "", "", "", formatDurationLabel(ch.durationMs),
-                        "", "", ch.startMs, ch.durationMs, 0, false
-                ));
-            }
+            rootChapters = buildAudiobookChapterTree(0, metadata.chapters, 0L);
+            totalChapterNodes = metadata.chapters.size();
         } else {
-            chapters.add(new Chapter(
+            rootChapters = new ArrayList<>();
+            rootChapters.add(new Chapter(
                     0, 0, 0, 1, 0, 0,
                     titleText, "", "", "", formatDurationLabel(totalDurationMs),
                     "", "", 0L, totalDurationMs, 0, false
             ));
+            totalChapterNodes = 1;
         }
 
-        AudioBook audioBook = new AudioBook(0, titleText, chapters.size(), uri);
+        AudioBook audioBook = new AudioBook(0, titleText, totalChapterNodes, uri);
         audioBook.setAuthor(author);
         audioBook.setNarrator(narrator);
         audioBook.setTotalDurationMs(totalDurationMs);
@@ -544,8 +541,77 @@ public final class FileScanner {
         if (id == -1) {
             return null;
         }
-        new ChapterDao(context).replaceChapterTree((int) id, chapters);
+        new ChapterDao(context).replaceChapterTree((int) id, rootChapters);
         return audioBook;
+    }
+
+    /**
+     * Builds a hierarchical {@link Chapter} tree from a flat ordered list of {@link M4BParser.M4bChapter}
+     * entries using their {@code level} (0 = root, 1 = child, 2 = grandchild, ...).
+     * Container sections automatically inherit their subtree's total duration span.
+     */
+    @NonNull
+    public static List<Chapter> buildAudiobookChapterTree(
+            int titleId,
+            @NonNull List<M4BParser.M4bChapter> flatChapters,
+            long savedPositionMs
+    ) {
+        List<Chapter> roots = new ArrayList<>();
+        List<Chapter> stack = new ArrayList<>();
+
+        for (int i = 0; i < flatChapters.size(); i++) {
+            M4BParser.M4bChapter ch = flatChapters.get(i);
+            long chEnd = ch.startMs + ch.durationMs;
+            boolean completed = savedPositionMs > 0L && ch.durationMs > 0L && savedPositionMs >= chEnd;
+            int pct = 0;
+            if (completed) {
+                pct = 100;
+            } else if (savedPositionMs > 0L && savedPositionMs >= ch.startMs && ch.durationMs > 0L && savedPositionMs < chEnd) {
+                long relMs = savedPositionMs - ch.startMs;
+                pct = (int) Math.min(99L, Math.max(1L, Math.round((relMs * 100.0) / ch.durationMs)));
+            }
+
+            int level = Math.max(0, ch.level);
+            while (stack.size() > level) {
+                stack.remove(stack.size() - 1);
+            }
+            int effectiveLevel = stack.size();
+            int sortOrder = stack.isEmpty()
+                    ? roots.size()
+                    : stack.get(stack.size() - 1).getChildren().size();
+
+            Chapter node = new Chapter(
+                    0, titleId, 0, ch.index, effectiveLevel, sortOrder,
+                    ch.title, "", "", "", formatDurationLabel(ch.durationMs),
+                    "", "", ch.startMs, ch.durationMs, pct, completed
+            );
+
+            if (stack.isEmpty()) {
+                roots.add(node);
+            } else {
+                stack.get(stack.size() - 1).addChild(node);
+            }
+            stack.add(node);
+        }
+
+        for (Chapter root : roots) {
+            rollupContainerAudioDuration(root);
+        }
+        return roots;
+    }
+
+    private static long rollupContainerAudioDuration(@NonNull Chapter node) {
+        if (node.getChildren().isEmpty()) {
+            return node.getAudioStartMs() + node.getAudioDurationMs();
+        }
+        long maxEnd = node.getAudioStartMs() + node.getAudioDurationMs();
+        for (Chapter child : node.getChildren()) {
+            maxEnd = Math.max(maxEnd, rollupContainerAudioDuration(child));
+        }
+        long totalDur = Math.max(node.getAudioDurationMs(), maxEnd - node.getAudioStartMs());
+        node.setAudioDurationMs(totalDur);
+        node.setPageOrDurationLabel(formatDurationLabel(totalDur));
+        return maxEnd;
     }
 
     /**
@@ -572,33 +638,24 @@ public final class FileScanner {
         }
 
         long savedPosMs = audioBook.getCurrentPositionMs();
-        int matchedChapterIndex = 1;
-        List<Chapter> chapters = new ArrayList<>(metadata.chapters.size());
-        for (int i = 0; i < metadata.chapters.size(); i++) {
-            M4BParser.M4bChapter ch = metadata.chapters.get(i);
-            long chEnd = ch.startMs + ch.durationMs;
-            boolean completed = ch.durationMs > 0L && savedPosMs >= chEnd;
-            int pct = 0;
-            if (completed) {
-                pct = 100;
-            } else if (savedPosMs >= ch.startMs && ch.durationMs > 0L && savedPosMs < chEnd) {
-                matchedChapterIndex = ch.index;
-                long relMs = savedPosMs - ch.startMs;
-                pct = (int) Math.min(99L, Math.max(1L, Math.round((relMs * 100.0) / ch.durationMs)));
+        List<Chapter> rootChapters = buildAudiobookChapterTree(audioBook.getId(), metadata.chapters, savedPosMs);
+        List<Chapter> leaves = ChapterTreeHelper.collectLeafChapters(rootChapters);
+        int matchedChapterIndex = leaves.isEmpty() ? 1 : leaves.get(0).getChapterIndex();
+        for (Chapter leaf : leaves) {
+            long start = leaf.getAudioStartMs();
+            long end = start + leaf.getAudioDurationMs();
+            if (savedPosMs >= start && (leaf.getAudioDurationMs() <= 0L || savedPosMs < end)) {
+                matchedChapterIndex = leaf.getChapterIndex();
+                break;
             }
-            chapters.add(new Chapter(
-                    0, audioBook.getId(), 0, ch.index, 0, i,
-                    ch.title, "", "", "", formatDuration(ch.durationMs),
-                    "", "", ch.startMs, ch.durationMs, pct, completed
-            ));
         }
 
-        audioBook.setLenChapters(chapters.size());
+        audioBook.setLenChapters(metadata.chapters.size());
         audioBook.setCurrentChapter(matchedChapterIndex);
         if (metadata.totalDurationMs > 0L && audioBook.getTotalDurationMs() <= 0L) {
             audioBook.setTotalDurationMs(metadata.totalDurationMs);
         }
-        new ChapterDao(context).replaceChapterTree(audioBook.getId(), chapters);
+        new ChapterDao(context).replaceChapterTree(audioBook.getId(), rootChapters);
         new TitleDao(context).update(audioBook);
         return true;
     }

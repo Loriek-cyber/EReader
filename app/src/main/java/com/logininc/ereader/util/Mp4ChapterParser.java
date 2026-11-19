@@ -46,11 +46,17 @@ public final class Mp4ChapterParser {
         public final long durationMs;
         @NonNull
         public final String title;
+        public final int level;
 
         public ParsedChapter(long startMs, long durationMs, @NonNull String title) {
+            this(startMs, durationMs, title, 0);
+        }
+
+        public ParsedChapter(long startMs, long durationMs, @NonNull String title, int level) {
             this.startMs = Math.max(0L, startMs);
             this.durationMs = Math.max(0L, durationMs);
             this.title = title;
+            this.level = Math.max(0, level);
         }
     }
 
@@ -194,19 +200,21 @@ public final class Mp4ChapterParser {
         for (int i = 0; i < primary.size(); i++) {
             ParsedChapter p = primary.get(i);
             String title = p.title;
-            if (isGenericOrEmptyTitle(title)) {
-                String better = findMatchingTitle(secondary, p.startMs, i);
-                if (better != null && !isGenericOrEmptyTitle(better)) {
-                    title = better;
-                }
+            int level = p.level;
+            ParsedChapter match = findMatchingChapter(secondary, p.startMs, i);
+            if (isGenericOrEmptyTitle(title) && match != null && !isGenericOrEmptyTitle(match.title)) {
+                title = match.title;
             }
-            merged.add(new ParsedChapter(p.startMs, p.durationMs, title));
+            if (level == 0 && match != null && match.level > 0) {
+                level = match.level;
+            }
+            merged.add(new ParsedChapter(p.startMs, p.durationMs, title, level));
         }
         return merged;
     }
 
     @Nullable
-    private static String findMatchingTitle(
+    private static ParsedChapter findMatchingChapter(
             @NonNull List<ParsedChapter> candidates,
             long targetStartMs,
             int preferredIndex
@@ -214,12 +222,12 @@ public final class Mp4ChapterParser {
         if (preferredIndex >= 0 && preferredIndex < candidates.size()) {
             ParsedChapter sameIdx = candidates.get(preferredIndex);
             if (Math.abs(sameIdx.startMs - targetStartMs) <= 2_000L && !sameIdx.title.isEmpty()) {
-                return sameIdx.title;
+                return sameIdx;
             }
         }
         for (ParsedChapter c : candidates) {
             if (Math.abs(c.startMs - targetStartMs) <= 2_000L && !c.title.isEmpty()) {
-                return c.title;
+                return c;
             }
         }
         return null;
@@ -295,9 +303,11 @@ public final class Mp4ChapterParser {
             }
             byte[] titleBytes = new byte[titleLen];
             buf.get(titleBytes);
-            String title = sanitizeTitle(new String(titleBytes, StandardCharsets.UTF_8));
+            String rawTitle = new String(titleBytes, StandardCharsets.UTF_8);
+            int level = detectHierarchyLevel(rawTitle);
+            String title = sanitizeTitle(rawTitle);
             long startMs = Math.max(0L, start100ns / 10_000L);
-            chapters.add(new ParsedChapter(startMs, 0L, title));
+            chapters.add(new ParsedChapter(startMs, 0L, title, level));
         }
 
         chapters.sort(Comparator.comparingLong(c -> c.startMs));
@@ -570,16 +580,18 @@ public final class Mp4ChapterParser {
                         ? textTrack.uniformSampleSize
                         : (sampleIdx < textTrack.sampleSizes.size() ? textTrack.sampleSizes.get(sampleIdx) : 0);
 
-                String title = "";
+                String rawTitle = "";
                 if (sampleSize >= 2 && sampleSize <= MAX_CHAPTER_SAMPLE_BYTES
                         && offsetInFile >= 0 && offsetInFile + sampleSize <= fileSize) {
                     byte[] sampleBytes = readBytes(channel, offsetInFile, sampleSize);
-                    title = decodeQuickTimeTextSample(sampleBytes);
+                    rawTitle = decodeQuickTimeTextSampleRaw(sampleBytes);
                 }
 
+                int level = detectHierarchyLevel(rawTitle);
+                String title = sanitizeTitle(rawTitle);
                 long startMs = sampleIdx < sampleStartMs.size() ? sampleStartMs.get(sampleIdx) : 0L;
                 long durMs = sampleIdx < sampleDurMs.size() ? sampleDurMs.get(sampleIdx) : 0L;
-                chapters.add(new ParsedChapter(startMs, durMs, title));
+                chapters.add(new ParsedChapter(startMs, durMs, title, level));
 
                 offsetInFile += Math.max(0, sampleSize);
                 sampleIdx++;
@@ -610,6 +622,11 @@ public final class Mp4ChapterParser {
      */
     @NonNull
     public static String decodeQuickTimeTextSample(@NonNull byte[] sampleBytes) {
+        return sanitizeTitle(decodeQuickTimeTextSampleRaw(sampleBytes));
+    }
+
+    @NonNull
+    private static String decodeQuickTimeTextSampleRaw(@NonNull byte[] sampleBytes) {
         if (sampleBytes.length < 2) {
             return "";
         }
@@ -618,15 +635,56 @@ public final class Mp4ChapterParser {
         if (textLen <= 0 || textLen > available) {
             return "";
         }
-        String decoded;
         if (textLen >= 2 && (sampleBytes[2] & 0xFF) == 0xFE && (sampleBytes[3] & 0xFF) == 0xFF) {
-            decoded = new String(sampleBytes, 4, textLen - 2, StandardCharsets.UTF_16BE);
+            return new String(sampleBytes, 4, textLen - 2, StandardCharsets.UTF_16BE);
         } else if (textLen >= 2 && (sampleBytes[2] & 0xFF) == 0xFF && (sampleBytes[3] & 0xFF) == 0xFE) {
-            decoded = new String(sampleBytes, 4, textLen - 2, StandardCharsets.UTF_16LE);
+            return new String(sampleBytes, 4, textLen - 2, StandardCharsets.UTF_16LE);
         } else {
-            decoded = new String(sampleBytes, 2, textLen, StandardCharsets.UTF_8);
+            return new String(sampleBytes, 2, textLen, StandardCharsets.UTF_8);
         }
-        return sanitizeTitle(decoded);
+    }
+
+    /**
+     * Infers hierarchical nesting level (0 = top-level, 1 = child, 2 = grandchild, ...)
+     * from leading indentation (tabs or pairs of spaces) or dotted numeric prefixes like
+     * {@code "1.1 ..."} (level 1) and {@code "1.2.1 ..."} (level 2).
+     */
+    public static int detectHierarchyLevel(@Nullable String rawTitle) {
+        if (rawTitle == null || rawTitle.isEmpty()) {
+            return 0;
+        }
+        String cleaned = rawTitle.replace("\u0000", "");
+        int leadingSpaces = 0;
+        int leadingTabs = 0;
+        for (int i = 0; i < cleaned.length(); i++) {
+            char c = cleaned.charAt(i);
+            if (c == ' ') {
+                leadingSpaces++;
+            } else if (c == '\t') {
+                leadingTabs++;
+            } else {
+                break;
+            }
+        }
+        int indentLevel = leadingTabs + (leadingSpaces / 2);
+        if (indentLevel > 0) {
+            return Math.min(6, indentLevel);
+        }
+
+        String trimmed = cleaned.trim();
+        if (trimmed.matches("^\\d+(?:\\.\\d+)+\\b.*")) {
+            int dots = 0;
+            for (int i = 0; i < trimmed.length(); i++) {
+                char c = trimmed.charAt(i);
+                if (c == '.') {
+                    dots++;
+                } else if (!Character.isDigit(c)) {
+                    break;
+                }
+            }
+            return Math.min(6, dots);
+        }
+        return 0;
     }
 
     @NonNull

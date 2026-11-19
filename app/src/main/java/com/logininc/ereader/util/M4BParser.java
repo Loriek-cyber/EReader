@@ -58,12 +58,18 @@ public class M4BParser {
         public final String title;
         public final long startMs;
         public final long durationMs;
+        public final int level;
 
         public M4bChapter(int index, @NonNull String title, long startMs, long durationMs) {
+            this(index, title, startMs, durationMs, 0);
+        }
+
+        public M4bChapter(int index, @NonNull String title, long startMs, long durationMs, int level) {
             this.index = index;
             this.title = title;
             this.startMs = Math.max(0L, startMs);
             this.durationMs = Math.max(0L, durationMs);
+            this.level = Math.max(0, level);
         }
     }
 
@@ -229,7 +235,7 @@ public class M4BParser {
         for (int i = 0; i < bestRaw.size(); i++) {
             Mp4ChapterParser.ParsedChapter ch = bestRaw.get(i);
             String cleanTitle = !ch.title.trim().isEmpty() ? ch.title.trim() : ("Chapter " + (i + 1));
-            chapters.add(new M4bChapter(i + 1, cleanTitle, ch.startMs, ch.durationMs));
+            chapters.add(new M4bChapter(i + 1, cleanTitle, ch.startMs, ch.durationMs, ch.level));
         }
 
         // Supplement with Android's MediaMetadataRetriever for container duration, tags, and cover art.
@@ -286,7 +292,7 @@ public class M4BParser {
             } else if (dur <= 0L && totalDurationMs > ch.startMs) {
                 dur = totalDurationMs - ch.startMs;
             }
-            normalized.add(new M4bChapter(i + 1, ch.title, ch.startMs, dur));
+            normalized.add(new M4bChapter(i + 1, ch.title, ch.startMs, dur, ch.level));
         }
 
         if (totalDurationMs <= 0L && !normalized.isEmpty()) {
