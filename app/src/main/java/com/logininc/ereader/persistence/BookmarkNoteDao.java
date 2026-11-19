@@ -3,6 +3,7 @@ package com.logininc.ereader.persistence;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 
 import androidx.annotation.NonNull;
@@ -73,7 +74,13 @@ public class BookmarkNoteDao {
     }
 
     public int countByTitleAndType(int titleId, @NonNull String entryType) {
-        return getByTitleAndType(titleId, entryType).size();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        return (int) DatabaseUtils.queryNumEntries(
+                db,
+                BookmarkNoteEntry.TABLE_NAME,
+                BookmarkNoteEntry.COLUMN_TITLE_ID + " = ? AND " + BookmarkNoteEntry.COLUMN_ENTRY_TYPE + " = ?",
+                new String[]{String.valueOf(titleId), entryType}
+        );
     }
 
     public int deleteById(int id) {

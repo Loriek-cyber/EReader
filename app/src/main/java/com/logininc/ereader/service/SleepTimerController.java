@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -26,7 +27,9 @@ public class SleepTimerController {
     @Nullable
     private Context appContext;
     private boolean manualArmed = false;
+    private int manualTimerMinutes = 0;
     private long manualOverrideIntervalMs = -1L;
+    private long scheduledDeadlineElapsedMs = 0L;
     private boolean timerScheduled = false;
 
     private final Runnable timerExpiredRunnable = new Runnable() {
@@ -34,7 +37,9 @@ public class SleepTimerController {
         public void run() {
             timerScheduled = false;
             manualArmed = false;
+            manualTimerMinutes = 0;
             manualOverrideIntervalMs = -1L;
+            scheduledDeadlineElapsedMs = 0L;
             if (appContext == null) {
                 return;
             }
@@ -107,12 +112,14 @@ public class SleepTimerController {
     public void armManualTimer(@NonNull Context context, int minutes) {
         appContext = context.getApplicationContext();
         manualArmed = true;
-        manualOverrideIntervalMs = Math.max(1, minutes) * 60_000L;
+        manualTimerMinutes = Math.max(1, minutes);
+        manualOverrideIntervalMs = manualTimerMinutes * 60_000L;
         schedule(manualOverrideIntervalMs);
     }
 
     public void cancelManualTimer() {
         manualArmed = false;
+        manualTimerMinutes = 0;
         manualOverrideIntervalMs = -1L;
         cancel();
     }
@@ -123,8 +130,20 @@ public class SleepTimerController {
 
     public void onSessionStopped() {
         manualArmed = false;
+        manualTimerMinutes = 0;
         manualOverrideIntervalMs = -1L;
         cancel();
+    }
+
+    public int getManualTimerMinutes() {
+        return manualArmed && timerScheduled ? manualTimerMinutes : 0;
+    }
+
+    public long getRemainingTimerMs() {
+        if (!timerScheduled || scheduledDeadlineElapsedMs <= 0L) {
+            return 0L;
+        }
+        return Math.max(0L, scheduledDeadlineElapsedMs - SystemClock.elapsedRealtime());
     }
 
     public void onUserVerifiedWake(@NonNull Context context) {
@@ -140,11 +159,13 @@ public class SleepTimerController {
     private void schedule(long delayMs) {
         handler.removeCallbacks(timerExpiredRunnable);
         timerScheduled = true;
+        scheduledDeadlineElapsedMs = SystemClock.elapsedRealtime() + Math.max(1L, delayMs);
         handler.postDelayed(timerExpiredRunnable, delayMs);
     }
 
     private void cancel() {
         timerScheduled = false;
+        scheduledDeadlineElapsedMs = 0L;
         handler.removeCallbacks(timerExpiredRunnable);
     }
 

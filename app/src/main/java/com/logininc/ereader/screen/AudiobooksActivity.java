@@ -363,7 +363,7 @@ public class AudiobooksActivity extends AppCompatActivity {
 
             if (Title.STATUS_COMPLETED.equals(item.getStatus())) {
                 tvBadge.setText(R.string.status_completed);
-            } else if (item.requiresChapterSelector()) {
+            } else if (Title.STATUS_TO_START.equals(item.getStatus())) {
                 tvBadge.setText(R.string.status_to_start);
             } else {
                 tvBadge.setText(R.string.status_in_progress);

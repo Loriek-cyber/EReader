@@ -128,6 +128,6 @@ public abstract class Title {
     }
 
     public boolean requiresChapterSelector() {
-        return lenChapters > 1;
+        return STATUS_TO_START.equals(getStatus()) && lenChapters > 1;
     }
 }

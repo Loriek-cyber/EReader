@@ -4,9 +4,12 @@ import android.graphics.Bitmap;
 import android.graphics.Typeface;
 import android.graphics.pdf.PdfRenderer;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.util.TypedValue;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -38,6 +41,9 @@ import com.logininc.ereader.util.ThemeHelper;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class EbookReaderActivity extends AppCompatActivity {
 
@@ -58,6 +64,12 @@ public class EbookReaderActivity extends AppCompatActivity {
     private int currentPdfPageZeroBased = 0;
     private int pendingRestoreScrollY = -1;
     private int pendingRestorePdfPage = -1;
+    private boolean isRestoringPosition = false;
+    private final Handler saveHandler = new Handler(Looper.getMainLooper());
+    private final Runnable debouncedSaveRunnable = this::saveCurrentReadingPosition;
+    private final ExecutorService pdfExecutor = Executors.newSingleThreadExecutor();
+    private final AtomicInteger pdfRenderGeneration = new AtomicInteger(0);
+    private int pdfTotalPages = 0;
 
     @Nullable
     private ParcelFileDescriptor pdfPfd;
@@ -107,21 +119,25 @@ public class EbookReaderActivity extends AppCompatActivity {
             return;
         }
         book = (Book) loaded;
+        int savedBookChapter = book.getCurrentChapter();
         currentChapterIndex = getIntent().getIntExtra(
-                NavigationFlowHelper.EXTRA_CHAPTER_INDEX, book.getCurrentChapter());
+                NavigationFlowHelper.EXTRA_CHAPTER_INDEX, savedBookChapter);
         if (savedInstanceState != null) {
             currentChapterIndex = savedInstanceState.getInt(STATE_CHAPTER_INDEX, currentChapterIndex);
             pendingRestorePdfPage = savedInstanceState.getInt(STATE_PDF_PAGE, -1);
             pendingRestoreScrollY = savedInstanceState.getInt(STATE_SCROLL_Y, -1);
         }
+        boolean shouldRestoreSavedPosition = (currentChapterIndex == savedBookChapter)
+                || pendingRestoreScrollY >= 0
+                || pendingRestorePdfPage >= 0;
 
         bindViews();
         if (savedInstanceState != null && savedInstanceState.getBoolean(STATE_HUD_VISIBLE, false)) {
             typographyHud.setVisibility(View.VISIBLE);
         }
-        PlaybackSessionManager.getInstance().startOrSwitchSession(this, book, currentChapterIndex, true);
-        loadChapter(currentChapterIndex);
         applyTypographyFromSettings();
+        PlaybackSessionManager.getInstance().startOrSwitchSession(this, book, currentChapterIndex, true);
+        loadChapter(currentChapterIndex, shouldRestoreSavedPosition);
     }
 
     @Override
@@ -149,9 +165,19 @@ public class EbookReaderActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onStop() {
+        super.onStop();
+        saveCurrentReadingPosition();
+        PlaybackSessionManager.getInstance().pauseEbookReadingSession(this);
+    }
+
+    @Override
     protected void onDestroy() {
+        saveHandler.removeCallbacks(debouncedSaveRunnable);
+        pdfRenderGeneration.incrementAndGet();
+        pdfExecutor.execute(this::closePdfRenderer);
+        pdfExecutor.shutdown();
         super.onDestroy();
-        closePdfRenderer();
     }
 
     private void bindViews() {
@@ -240,10 +266,10 @@ public class EbookReaderActivity extends AppCompatActivity {
         btnPrevChapter.setOnClickListener(v -> {
             if (currentChapterIndex > 1) {
                 saveCurrentReadingPosition();
-                loadChapter(currentChapterIndex - 1);
+                loadChapter(currentChapterIndex - 1, false);
             }
         });
-        btnCompleteChapter.setOnClickListener(v -> completeCurrentChapterAndOpenSelector());
+        btnCompleteChapter.setOnClickListener(v -> completeCurrentChapterAndAdvance());
 
         btnPdfPrev.setOnClickListener(v -> showPdfPage(currentPdfPageZeroBased - 1));
         btnPdfNext.setOnClickListener(v -> showPdfPage(currentPdfPageZeroBased + 1));
@@ -252,7 +278,9 @@ public class EbookReaderActivity extends AppCompatActivity {
                 (v, scrollX, scrollY, oldScrollX, oldScrollY) -> updateScrollProgress(v));
     }
 
-    private void loadChapter(int chapterIndex) {
+    private void loadChapter(int chapterIndex, boolean restoreSavedPosition) {
+        saveHandler.removeCallbacks(debouncedSaveRunnable);
+        isRestoringPosition = false;
         currentChapterIndex = Math.max(1, Math.min(book.getLenChapters(), chapterIndex));
         currentChapter = chapterDao.getChapter(book.getId(), currentChapterIndex);
         if (currentChapter == null) {
@@ -263,24 +291,21 @@ public class EbookReaderActivity extends AppCompatActivity {
             }
         }
 
-        boolean sameChapterAsBook = book.getCurrentChapter() == currentChapterIndex;
         getIntent().putExtra(NavigationFlowHelper.EXTRA_CHAPTER_INDEX, currentChapterIndex);
         book.setCurrentChapter(currentChapterIndex);
         book.setCurrentChapterCompleted(false);
         book.setStatus(Title.STATUS_IN_PROGRESS);
         book.setLastOpenedAt(System.currentTimeMillis());
+        if (!restoreSavedPosition) {
+            book.setScrollY(0);
+            book.setScrollMaxHeight(0);
+            book.setCharOffset(0);
+            book.setScrollPermille(0);
+        }
         titleDao.update(book);
+        PlaybackSessionManager.getInstance().syncActiveTitle(book);
 
-        String chTitle = currentChapter != null
-                ? currentChapter.getChapterTitle()
-                : getString(R.string.format_chapter_n, currentChapterIndex);
-
-        tvChapterPill.setText(book.getTitle() + " • " + getString(R.string.chapter_active_badge_fmt, currentChapterIndex));
-        tvChapterLabel.setText(getString(R.string.reader_chapter_label, currentChapterIndex));
-        tvChapterTitle.setText(chTitle);
-
-        btnPrevChapter.setEnabled(currentChapterIndex > 1);
-        btnPrevChapter.setAlpha(currentChapterIndex > 1 ? 1f : 0.4f);
+        updateChapterHeaderUi();
 
         String displayName = FileScanner.queryDisplayName(this, book.getContentUri()).toLowerCase(Locale.ROOT);
         boolean hasProseText = currentChapter != null && !currentChapter.getContentText().trim().isEmpty();
@@ -302,7 +327,7 @@ public class EbookReaderActivity extends AppCompatActivity {
             if (pendingRestorePdfPage >= 0) {
                 targetZeroBased = pendingRestorePdfPage;
                 pendingRestorePdfPage = -1;
-            } else if (sameChapterAsBook && pageInCurrentChapter && book.getCurrentPage() > 1) {
+            } else if (restoreSavedPosition && pageInCurrentChapter && book.getCurrentPage() > 1) {
                 targetZeroBased = book.getCurrentPage() - 1;
             } else {
                 targetZeroBased = Math.max(0, startPageOneBased - 1);
@@ -316,19 +341,15 @@ public class EbookReaderActivity extends AppCompatActivity {
             if (pendingRestoreScrollY >= 0) {
                 final int restoreY = pendingRestoreScrollY;
                 pendingRestoreScrollY = -1;
-                scrollContent.post(() -> {
-                    scrollContent.scrollTo(0, restoreY);
-                    updateScrollProgress(scrollContent);
-                });
-            } else if (sameChapterAsBook
+                restoreExplicitScrollYAfterLayout(restoreY);
+            } else if (restoreSavedPosition
                     && (book.getScrollY() > 0 || book.getCharOffset() > 0 || book.getScrollPermille() > 0)) {
                 restoreProsePositionAfterLayout(true);
             } else {
-                book.setScrollY(0);
-                book.setCharOffset(0);
-                book.setScrollPermille(0);
-                scrollContent.post(() -> {
+                isRestoringPosition = true;
+                runAfterProseLayout(() -> {
                     scrollContent.scrollTo(0, 0);
+                    isRestoringPosition = false;
                     updateScrollProgress(scrollContent);
                 });
             }
@@ -336,49 +357,140 @@ public class EbookReaderActivity extends AppCompatActivity {
         updateProgressFooter();
     }
 
+    private void updateChapterHeaderUi() {
+        String chTitle = currentChapter != null
+                ? currentChapter.getChapterTitle()
+                : getString(R.string.format_chapter_n, currentChapterIndex);
+
+        tvChapterPill.setText(book.getTitle() + " • " + getString(R.string.chapter_active_badge_fmt, currentChapterIndex));
+        tvChapterLabel.setText(getString(R.string.reader_chapter_label, currentChapterIndex));
+        tvChapterTitle.setText(chTitle);
+
+        btnPrevChapter.setEnabled(currentChapterIndex > 1);
+        btnPrevChapter.setAlpha(currentChapterIndex > 1 ? 1f : 0.4f);
+
+        boolean hasNextChapter = currentChapterIndex < book.getLenChapters();
+        btnCompleteChapter.setText(hasNextChapter ? R.string.reader_next_chapter_cta : R.string.reader_complete_book);
+    }
+
     private void openPdfAndShowPage(int pageZeroBased) {
-        try {
-            if (pdfRenderer == null) {
-                pdfPfd = getContentResolver().openFileDescriptor(book.getContentUri(), "r");
-                if (pdfPfd == null) {
-                    Toast.makeText(this, R.string.reader_file_error, Toast.LENGTH_LONG).show();
-                    return;
+        final int gen = pdfRenderGeneration.incrementAndGet();
+        final int maxWidthPx = Math.min(1600, Math.max(800, getResources().getDisplayMetrics().widthPixels));
+        pdfExecutor.execute(() -> {
+            try {
+                if (pdfRenderer == null) {
+                    pdfPfd = getContentResolver().openFileDescriptor(book.getContentUri(), "r");
+                    if (pdfPfd == null) {
+                        runOnUiThread(() -> {
+                            if (!isFinishing() && !isDestroyed()) {
+                                Toast.makeText(this, R.string.reader_file_error, Toast.LENGTH_LONG).show();
+                            }
+                        });
+                        return;
+                    }
+                    pdfRenderer = new PdfRenderer(pdfPfd);
+                    pdfTotalPages = Math.max(1, pdfRenderer.getPageCount());
                 }
-                pdfRenderer = new PdfRenderer(pdfPfd);
-                book.setTotalPages(Math.max(1, pdfRenderer.getPageCount()));
+                renderPdfPageOnWorker(pageZeroBased, gen, maxWidthPx);
+            } catch (IOException | SecurityException | IllegalStateException e) {
+                runOnUiThread(() -> {
+                    if (!isFinishing() && !isDestroyed()) {
+                        Toast.makeText(this, R.string.reader_file_error, Toast.LENGTH_LONG).show();
+                    }
+                });
             }
-            showPdfPage(pageZeroBased);
-        } catch (IOException | SecurityException e) {
-            Toast.makeText(this, R.string.reader_file_error, Toast.LENGTH_LONG).show();
-        }
+        });
     }
 
     private void showPdfPage(int pageZeroBased) {
-        if (pdfRenderer == null) {
+        final int gen = pdfRenderGeneration.incrementAndGet();
+        final int maxWidthPx = Math.min(1600, Math.max(800, getResources().getDisplayMetrics().widthPixels));
+        pdfExecutor.execute(() -> renderPdfPageOnWorker(pageZeroBased, gen, maxWidthPx));
+    }
+
+    private void renderPdfPageOnWorker(int pageZeroBased, int generation, int maxWidthPx) {
+        if (pdfRenderer == null || generation != pdfRenderGeneration.get()) {
             return;
         }
         int total = pdfRenderer.getPageCount();
         if (total <= 0) {
             return;
         }
-        currentPdfPageZeroBased = Math.max(0, Math.min(total - 1, pageZeroBased));
-        try (PdfRenderer.Page page = pdfRenderer.openPage(currentPdfPageZeroBased)) {
-            int width = Math.max(800, getResources().getDisplayMetrics().widthPixels);
-            int height = Math.max(800, Math.round((float) width * page.getHeight() / Math.max(1, page.getWidth())));
-            Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        int targetZeroBased = Math.max(0, Math.min(total - 1, pageZeroBased));
+        Bitmap bmp;
+        try (PdfRenderer.Page page = pdfRenderer.openPage(targetZeroBased)) {
+            int height = Math.max(800, Math.round((float) maxWidthPx * page.getHeight() / Math.max(1, page.getWidth())));
+            bmp = Bitmap.createBitmap(maxWidthPx, height, Bitmap.Config.ARGB_8888);
             bmp.eraseColor(android.graphics.Color.WHITE);
             page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
-            ivPdfPage.setImageBitmap(bmp);
+        } catch (IllegalStateException | OutOfMemoryError e) {
+            return;
         }
-        int oneBased = currentPdfPageZeroBased + 1;
-        book.setCurrentPage(oneBased);
-        book.setTotalPages(total);
-        int pct = (oneBased * 100) / Math.max(1, total);
-        book.setProgressPercent(pct);
-        tvPdfPageIndicator.setText(getString(R.string.format_pages_of, oneBased, total));
-        btnPdfPrev.setEnabled(currentPdfPageZeroBased > 0);
-        btnPdfNext.setEnabled(currentPdfPageZeroBased < total - 1);
-        updateProgressFooter();
+        if (generation != pdfRenderGeneration.get() || isFinishing() || isDestroyed()) {
+            bmp.recycle();
+            return;
+        }
+        runOnUiThread(() -> {
+            if (generation != pdfRenderGeneration.get() || isFinishing() || isDestroyed()) {
+                bmp.recycle();
+                return;
+            }
+            currentPdfPageZeroBased = targetZeroBased;
+            ivPdfPage.setImageBitmap(bmp);
+            int oneBased = currentPdfPageZeroBased + 1;
+            book.setCurrentPage(oneBased);
+            book.setTotalPages(total);
+            int pct = (oneBased * 100) / Math.max(1, total);
+            book.setProgressPercent(pct);
+            syncPdfChapterForPage(oneBased);
+            book.setLastOpenedAt(System.currentTimeMillis());
+            titleDao.update(book);
+            PlaybackSessionManager.getInstance().syncActiveTitle(book);
+            tvPdfPageIndicator.setText(getString(R.string.format_pages_of, oneBased, total));
+            btnPdfPrev.setEnabled(currentPdfPageZeroBased > 0);
+            btnPdfNext.setEnabled(currentPdfPageZeroBased < total - 1);
+            updateProgressFooter();
+        });
+    }
+
+    private void syncPdfChapterForPage(int oneBasedPage) {
+        if (book == null || book.getLenChapters() <= 1) {
+            return;
+        }
+        List<Chapter> allChapters = chapterDao.getChapterSummariesForTitle(book.getId());
+        Chapter matched = null;
+        for (Chapter ch : allChapters) {
+            long start = ch.getAudioStartMs();
+            long end = ch.getAudioDurationMs();
+            if (start > 0 && end >= start && oneBasedPage >= start && oneBasedPage <= end) {
+                matched = ch;
+                break;
+            }
+        }
+        if (matched != null) {
+            if (matched.getChapterIndex() != currentChapterIndex) {
+                if (matched.getChapterIndex() > currentChapterIndex) {
+                    chapterDao.updateChapterProgress(book.getId(), currentChapterIndex, 100, true);
+                }
+                currentChapter = matched;
+                currentChapterIndex = matched.getChapterIndex();
+                book.setCurrentChapter(currentChapterIndex);
+                getIntent().putExtra(NavigationFlowHelper.EXTRA_CHAPTER_INDEX, currentChapterIndex);
+                updateChapterHeaderUi();
+            }
+            long start = matched.getAudioStartMs();
+            long end = matched.getAudioDurationMs();
+            int chPct = end > start
+                    ? (int) Math.min(100L, Math.max(0L, ((oneBasedPage - start + 1) * 100L) / (end - start + 1)))
+                    : 100;
+            currentChapter.setProgressPercent(Math.max(currentChapter.getProgressPercent(), chPct));
+            chapterDao.updateChapterProgress(
+                    book.getId(),
+                    currentChapterIndex,
+                    currentChapter.getProgressPercent(),
+                    currentChapter.isCompleted()
+            );
+        }
     }
 
     private void closePdfRenderer() {
@@ -396,7 +508,7 @@ public class EbookReaderActivity extends AppCompatActivity {
     }
 
     private void updateScrollProgress(@NonNull NestedScrollView scrollView) {
-        if (layoutPdfContainer.getVisibility() == View.VISIBLE || scrollView.getChildCount() == 0) {
+        if (isRestoringPosition || layoutPdfContainer.getVisibility() == View.VISIBLE || scrollView.getChildCount() == 0) {
             return;
         }
         captureScrollStats(scrollView);
@@ -413,7 +525,7 @@ public class EbookReaderActivity extends AppCompatActivity {
 
         int totalChapters = Math.max(1, book.getLenChapters());
         int overallPct = ((currentChapterIndex - 1) * 100 + chPercent) / totalChapters;
-        book.setProgressPercent(Math.max(book.getProgressPercent(), overallPct));
+        book.setProgressPercent(Math.max(0, Math.min(100, overallPct)));
 
         int virtualPagesInChapter = Math.max(1, (int) Math.ceil((double) maxPageH / viewportH));
         int currentPageInChapter = Math.min(virtualPagesInChapter, 1 + (scrollView.getScrollY() / viewportH));
@@ -427,13 +539,20 @@ public class EbookReaderActivity extends AppCompatActivity {
             long endPage = currentChapter.getAudioDurationMs();
             book.setCurrentPage((int) (startPage + Math.round(((endPage - startPage) * chPercent) / 100.0)));
         } else {
-            book.setCurrentPage(Math.max(1, (int) Math.ceil((book.getProgressPercent() / 100.0) * book.getTotalPages())));
+            book.setCurrentPage(Math.max(1, (int) Math.ceil((overallPct / 100.0) * book.getTotalPages())));
         }
         updateProgressFooter();
+        scheduleDebouncedSave();
+    }
+
+    private void scheduleDebouncedSave() {
+        saveHandler.removeCallbacks(debouncedSaveRunnable);
+        saveHandler.postDelayed(debouncedSaveRunnable, 1200L);
     }
 
     private void captureScrollStats(@Nullable NestedScrollView scrollView) {
-        if (book == null || scrollView == null || layoutPdfContainer.getVisibility() == View.VISIBLE
+        if (isRestoringPosition || book == null || scrollView == null
+                || layoutPdfContainer.getVisibility() == View.VISIBLE
                 || scrollView.getChildCount() == 0) {
             return;
         }
@@ -441,15 +560,14 @@ public class EbookReaderActivity extends AppCompatActivity {
         int scrollY = Math.max(0, scrollView.getScrollY());
         int viewportH = Math.max(0, scrollView.getHeight());
         int maxPageH = Math.max(0, child.getHeight());
+        if (viewportH <= 0 || maxPageH <= 0) {
+            return;
+        }
         int maxScroll = Math.max(1, maxPageH - viewportH);
 
         book.setScrollY(scrollY);
-        if (maxPageH > 0) {
-            book.setScrollMaxHeight(maxPageH);
-        }
-        if (viewportH > 0) {
-            book.setViewportHeight(viewportH);
-        }
+        book.setScrollMaxHeight(maxPageH);
+        book.setViewportHeight(viewportH);
         book.setTextSizeSp(settingsDao.getReaderFontSizeSp());
         book.setScrollPermille((int) Math.min(10000L, (scrollY * 10000L) / maxScroll));
 
@@ -460,12 +578,66 @@ public class EbookReaderActivity extends AppCompatActivity {
         }
     }
 
+    private void runAfterProseLayout(@NonNull Runnable action) {
+        if (scrollContent == null) {
+            return;
+        }
+        Runnable executeWhenReady = () -> {
+            if (isFinishing() || isDestroyed() || scrollContent.getChildCount() == 0) {
+                isRestoringPosition = false;
+                return;
+            }
+            View child = scrollContent.getChildAt(0);
+            boolean layoutPending = scrollContent.isLayoutRequested()
+                    || (tvProseBody != null && tvProseBody.isLayoutRequested());
+            if (!layoutPending && scrollContent.getHeight() > 0 && child.getHeight() > 0
+                    && (tvProseBody == null || tvProseBody.getLayout() != null || tvProseBody.length() == 0)) {
+                action.run();
+                return;
+            }
+            ViewTreeObserver vto = scrollContent.getViewTreeObserver();
+            if (!vto.isAlive()) {
+                action.run();
+                return;
+            }
+            vto.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                @Override
+                public void onGlobalLayout() {
+                    if (scrollContent.getViewTreeObserver().isAlive()) {
+                        scrollContent.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                    }
+                    if (!isFinishing() && !isDestroyed()) {
+                        scrollContent.post(action);
+                    } else {
+                        isRestoringPosition = false;
+                    }
+                }
+            });
+        };
+        scrollContent.post(executeWhenReady);
+    }
+
+    private void restoreExplicitScrollYAfterLayout(int restoreY) {
+        isRestoringPosition = true;
+        runAfterProseLayout(() -> {
+            if (scrollContent.getChildCount() > 0) {
+                View child = scrollContent.getChildAt(0);
+                int maxScroll = Math.max(0, child.getHeight() - scrollContent.getHeight());
+                scrollContent.scrollTo(0, Math.min(maxScroll, Math.max(0, restoreY)));
+            }
+            isRestoringPosition = false;
+            updateScrollProgress(scrollContent);
+        });
+    }
+
     private void restoreProsePositionAfterLayout(boolean useSavedBookPosition) {
         if (scrollContent == null || book == null || !useSavedBookPosition) {
             return;
         }
-        scrollContent.post(() -> {
+        isRestoringPosition = true;
+        runAfterProseLayout(() -> {
             if (scrollContent.getChildCount() == 0) {
+                isRestoringPosition = false;
                 return;
             }
             View child = scrollContent.getChildAt(0);
@@ -490,6 +662,7 @@ public class EbookReaderActivity extends AppCompatActivity {
                 targetY = Math.min(maxScroll, (int) ((book.getScrollPermille() * (long) maxScroll) / 10000L));
             }
             scrollContent.scrollTo(0, targetY);
+            isRestoringPosition = false;
             updateScrollProgress(scrollContent);
         });
     }
@@ -500,38 +673,40 @@ public class EbookReaderActivity extends AppCompatActivity {
         progressReader.setProgress(book.getProgressPercent());
     }
 
-    private void completeCurrentChapterAndOpenSelector() {
+    private void completeCurrentChapterAndAdvance() {
+        saveHandler.removeCallbacks(debouncedSaveRunnable);
         chapterDao.updateChapterProgress(book.getId(), currentChapterIndex, 100, true);
 
-        List<Chapter> chapters = chapterDao.getChaptersForTitle(book.getId());
-        int completedCount = 0;
-        for (Chapter ch : chapters) {
-            if (ch.isCompleted()) {
-                completedCount++;
-            }
-        }
         int totalChapters = Math.max(1, book.getLenChapters());
-        int overallPct = Math.min(100, (completedCount * 100) / totalChapters);
-        book.setProgressPercent(overallPct);
-        book.setCurrentChapterCompleted(true);
-        if (currentChapterIndex >= totalChapters && completedCount >= totalChapters) {
-            book.setStatus(Title.STATUS_COMPLETED);
-            book.setProgressPercent(100);
-        } else {
+        if (currentChapterIndex < totalChapters) {
+            int nextIndex = currentChapterIndex + 1;
+            int overallPct = Math.min(100, (currentChapterIndex * 100) / totalChapters);
+            book.setProgressPercent(overallPct);
+            book.setCurrentChapterCompleted(false);
             book.setStatus(Title.STATUS_IN_PROGRESS);
+            loadChapter(nextIndex, false);
+            return;
         }
-        titleDao.update(book);
 
-        // Flow rule: (Libro nuovo o capitolo concluso) -> selettore di capitolo -> reader/player
-        NavigationFlowHelper.openChapterSelector(this, book);
+        // Last chapter finished -> mark book completed without forcing chapter selector
+        book.setProgressPercent(100);
+        book.setCurrentChapterCompleted(true);
+        book.setStatus(Title.STATUS_COMPLETED);
+        book.setLastOpenedAt(System.currentTimeMillis());
+        titleDao.update(book);
+        PlaybackSessionManager.getInstance().syncActiveTitle(book);
+        Toast.makeText(this, R.string.reader_book_completed_toast, Toast.LENGTH_LONG).show();
         finish();
     }
 
     private void saveCurrentReadingPosition() {
+        saveHandler.removeCallbacks(debouncedSaveRunnable);
         if (book == null) {
             return;
         }
-        captureScrollStats(scrollContent);
+        if (!isRestoringPosition) {
+            captureScrollStats(scrollContent);
+        }
         if (currentChapter != null) {
             chapterDao.updateChapterProgress(
                     book.getId(),
@@ -542,11 +717,7 @@ public class EbookReaderActivity extends AppCompatActivity {
         }
         book.setLastOpenedAt(System.currentTimeMillis());
         titleDao.update(book);
-
-        if (settingsDao.isAutoBookmark()) {
-            // Auto-update latest auto bookmark slot or save position cleanly in TitleDao
-            PlaybackSessionManager.getInstance().persistCurrentState();
-        }
+        PlaybackSessionManager.getInstance().syncActiveTitle(book);
     }
 
     private void applyTypographyFromSettings() {

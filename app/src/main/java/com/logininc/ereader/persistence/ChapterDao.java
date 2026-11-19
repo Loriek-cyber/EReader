@@ -33,6 +33,24 @@ public class ChapterDao {
             ChapterEntry.COLUMN_SORT_ORDER + " ASC, "
                     + ChapterEntry.COLUMN_CHAPTER_INDEX + " ASC";
 
+    private static final String[] SUMMARY_COLUMNS = {
+            ChapterEntry._ID,
+            ChapterEntry.COLUMN_TITLE_ID,
+            ChapterEntry.COLUMN_PARENT_CHAPTER_ID,
+            ChapterEntry.COLUMN_CHAPTER_INDEX,
+            ChapterEntry.COLUMN_LEVEL,
+            ChapterEntry.COLUMN_SORT_ORDER,
+            ChapterEntry.COLUMN_CHAPTER_TITLE,
+            ChapterEntry.COLUMN_SUBTITLE,
+            ChapterEntry.COLUMN_HREF,
+            ChapterEntry.COLUMN_FRAGMENT_ID,
+            ChapterEntry.COLUMN_PAGE_OR_DURATION,
+            ChapterEntry.COLUMN_AUDIO_START_MS,
+            ChapterEntry.COLUMN_AUDIO_DURATION_MS,
+            ChapterEntry.COLUMN_PROGRESS_PERCENT,
+            ChapterEntry.COLUMN_IS_COMPLETED
+    };
+
     private final EReaderDbHelper dbHelper;
 
     public ChapterDao(@NonNull Context context) {
@@ -155,11 +173,13 @@ public class ChapterDao {
     }
 
     /**
-     * Returns all chapters and nested sections for {@code titleId} as a flat list in reading order.
+     * Returns all chapters and nested sections for {@code titleId} as a flat list in reading order,
+     * omitting heavy {@code content_text} and {@code raw_html} payloads to prevent CursorWindow OOM.
      */
     @NonNull
-    public List<Chapter> getChaptersForTitle(int titleId) {
+    public List<Chapter> getChapterSummariesForTitle(int titleId) {
         return queryChapters(
+                SUMMARY_COLUMNS,
                 ChapterEntry.COLUMN_TITLE_ID + " = ?",
                 new String[]{String.valueOf(titleId)},
                 ORDER_BY_READING
@@ -167,12 +187,16 @@ public class ChapterDao {
     }
 
     /**
-     * Reconstructs and returns the hierarchical chapter/section tree (root chapters with populated
-     * {@link Chapter#getChildren()} lists) for {@code titleId}.
+     * Reconstructs and returns the lightweight hierarchical chapter/section tree (omitting body text)
+     * for {@code titleId}.
      */
     @NonNull
-    public List<Chapter> getChapterTreeForTitle(int titleId) {
-        List<Chapter> flat = getChaptersForTitle(titleId);
+    public List<Chapter> getChapterSummaryTreeForTitle(int titleId) {
+        return buildTreeFromFlat(getChapterSummariesForTitle(titleId));
+    }
+
+    @NonNull
+    public static List<Chapter> buildTreeFromFlat(@NonNull List<Chapter> flat) {
         Map<Integer, Chapter> byId = new HashMap<>(flat.size());
         for (Chapter ch : flat) {
             byId.put(ch.getId(), ch);
@@ -189,6 +213,28 @@ public class ChapterDao {
             }
         }
         return roots;
+    }
+
+    /**
+     * Returns all chapters and nested sections for {@code titleId} as a flat list in reading order.
+     */
+    @NonNull
+    public List<Chapter> getChaptersForTitle(int titleId) {
+        return queryChapters(
+                null,
+                ChapterEntry.COLUMN_TITLE_ID + " = ?",
+                new String[]{String.valueOf(titleId)},
+                ORDER_BY_READING
+        );
+    }
+
+    /**
+     * Reconstructs and returns the hierarchical chapter/section tree (root chapters with populated
+     * {@link Chapter#getChildren()} lists) for {@code titleId}.
+     */
+    @NonNull
+    public List<Chapter> getChapterTreeForTitle(int titleId) {
+        return buildTreeFromFlat(getChaptersForTitle(titleId));
     }
 
     /**
@@ -373,11 +419,21 @@ public class ChapterDao {
             @NonNull String[] selectionArgs,
             @NonNull String orderBy
     ) {
+        return queryChapters(null, selection, selectionArgs, orderBy);
+    }
+
+    @NonNull
+    private List<Chapter> queryChapters(
+            @Nullable String[] columns,
+            @NonNull String selection,
+            @NonNull String[] selectionArgs,
+            @NonNull String orderBy
+    ) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         List<Chapter> results = new ArrayList<>();
         try (Cursor cursor = db.query(
                 ChapterEntry.TABLE_NAME,
-                null,
+                columns,
                 selection,
                 selectionArgs,
                 null,
@@ -431,8 +487,10 @@ public class ChapterDao {
         String href = cursor.getString(cursor.getColumnIndexOrThrow(ChapterEntry.COLUMN_HREF));
         String fragmentId = cursor.getString(cursor.getColumnIndexOrThrow(ChapterEntry.COLUMN_FRAGMENT_ID));
         String label = cursor.getString(cursor.getColumnIndexOrThrow(ChapterEntry.COLUMN_PAGE_OR_DURATION));
-        String contentText = cursor.getString(cursor.getColumnIndexOrThrow(ChapterEntry.COLUMN_CONTENT_TEXT));
-        String rawHtml = cursor.getString(cursor.getColumnIndexOrThrow(ChapterEntry.COLUMN_RAW_HTML));
+        int contentCol = cursor.getColumnIndex(ChapterEntry.COLUMN_CONTENT_TEXT);
+        String contentText = contentCol >= 0 && !cursor.isNull(contentCol) ? cursor.getString(contentCol) : "";
+        int rawHtmlCol = cursor.getColumnIndex(ChapterEntry.COLUMN_RAW_HTML);
+        String rawHtml = rawHtmlCol >= 0 && !cursor.isNull(rawHtmlCol) ? cursor.getString(rawHtmlCol) : "";
         long startMs = cursor.getLong(cursor.getColumnIndexOrThrow(ChapterEntry.COLUMN_AUDIO_START_MS));
         long durationMs = cursor.getLong(cursor.getColumnIndexOrThrow(ChapterEntry.COLUMN_AUDIO_DURATION_MS));
         int progress = cursor.getInt(cursor.getColumnIndexOrThrow(ChapterEntry.COLUMN_PROGRESS_PERCENT));

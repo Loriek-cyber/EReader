@@ -3,8 +3,11 @@ package com.logininc.ereader.persistence;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
+
+import java.io.File;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -291,9 +294,34 @@ public class TitleDao {
     }
 
     /**
-     * Deletes a {@link Title} by its ID.
+     * Returns the count of stored titles of the given type ({@link TitleEntry#TYPE_BOOK} or {@link TitleEntry#TYPE_AUDIOBOOK}).
+     */
+    public int countByType(@NonNull String type) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        return (int) DatabaseUtils.queryNumEntries(
+                db,
+                TitleEntry.TABLE_NAME,
+                TitleEntry.COLUMN_TYPE + " = ?",
+                new String[]{type}
+        );
+    }
+
+    /**
+     * Deletes a {@link Title} by its ID, also removing any local cover image file owned by it.
      */
     public int deleteById(int id) {
+        Title existing = getById(id);
+        if (existing != null && existing.getCoverUri() != null
+                && "file".equals(existing.getCoverUri().getScheme())) {
+            String path = existing.getCoverUri().getPath();
+            if (path != null && !path.isEmpty()) {
+                File coverFile = new File(path);
+                if (coverFile.exists()) {
+                    //noinspection ResultOfMethodCallIgnored
+                    coverFile.delete();
+                }
+            }
+        }
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         String whereClause = TitleEntry._ID + " = ?";
         String[] whereArgs = {String.valueOf(id)};

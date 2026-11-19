@@ -75,9 +75,6 @@ public class ProfileSettingsActivity extends AppCompatActivity {
     private TextView btnDefaultSpeed;
     private MaterialSwitch switchAutoBookmark;
 
-    private TextView tvSettingsFooter;
-    private MaterialButton btnClearCache;
-
     private PlaybackSessionManager.SessionListener miniPlayerListener;
 
     private final ActivityResultLauncher<Uri> pickEbookFolderLauncher =
@@ -180,9 +177,6 @@ public class ProfileSettingsActivity extends AppCompatActivity {
         btnDefaultSpeed = findViewById(R.id.btnDefaultSpeed);
         switchAutoBookmark = findViewById(R.id.switchAutoBookmark);
 
-        tvSettingsFooter = findViewById(R.id.tvSettingsFooter);
-        btnClearCache = findViewById(R.id.btnClearCache);
-
         findViewById(R.id.btnEditProfile).setOnClickListener(v -> showEditProfileDialog());
         findViewById(R.id.btnPickEbookFolder).setOnClickListener(v -> {
             PermissionHelper.requestMissingPermissions(this);
@@ -203,7 +197,6 @@ public class ProfileSettingsActivity extends AppCompatActivity {
         findViewById(R.id.rowThemeSelector).setOnClickListener(v -> showThemePickerDialog());
         findViewById(R.id.rowLanguageSelector).setOnClickListener(v -> showLanguagePickerDialog());
         btnDefaultSpeed.setOnClickListener(v -> showDefaultSpeedDialog());
-        btnClearCache.setOnClickListener(v -> clearCacheAndRefresh());
 
         BottomNavigationView bottomNav = findViewById(R.id.bottomNavigation);
         UiSessionHelper.bindBottomNavigation(this, bottomNav, R.id.nav_profilo);
@@ -227,11 +220,10 @@ public class ProfileSettingsActivity extends AppCompatActivity {
                 ? getString(R.string.settings_folder_not_set)
                 : FileScanner.queryReadablePathLabel(Uri.parse(audioUriStr)));
 
-        int bookCount = titleDao.getAllBooks().size();
-        int audioCount = titleDao.getAllAudioBooks().size();
+        int bookCount = titleDao.countByType(com.logininc.ereader.persistence.DatabaseContract.TitleEntry.TYPE_BOOK);
+        int audioCount = titleDao.countByType(com.logininc.ereader.persistence.DatabaseContract.TitleEntry.TYPE_AUDIOBOOK);
         tvEbookFolderStats.setText(getString(R.string.format_titles_count, bookCount));
         tvAudioFolderStats.setText(getString(R.string.format_titles_count, audioCount));
-        tvSettingsFooter.setText(getString(R.string.settings_footer_fmt, bookCount, audioCount));
 
         switchSleepTimer.setOnCheckedChangeListener(null);
         switchSleepTimer.setChecked(settingsDao.isSleepTimerEnabled());
@@ -261,12 +253,6 @@ public class ProfileSettingsActivity extends AppCompatActivity {
         switchAutoBookmark.setOnCheckedChangeListener(null);
         switchAutoBookmark.setChecked(settingsDao.isAutoBookmark());
         switchAutoBookmark.setOnCheckedChangeListener(autoBookmarkListener);
-
-        long cacheBytes = computeCacheSizeBytes();
-        btnClearCache.setText(getString(
-                R.string.settings_clear_cache,
-                Formatter.formatShortFileSize(this, cacheBytes)
-        ));
     }
 
     private void onFolderPicked(@NonNull Uri treeUri, boolean isAudio) {

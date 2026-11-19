@@ -8,7 +8,7 @@ import android.provider.BaseColumns;
 public final class DatabaseContract {
 
     public static final String DATABASE_NAME = "ereader.db";
-    public static final int DATABASE_VERSION = 4;
+    public static final int DATABASE_VERSION = 5;
 
     private DatabaseContract() {
     }
@@ -70,6 +70,14 @@ public final class DatabaseContract {
                         + COLUMN_CHAR_OFFSET + " INTEGER NOT NULL DEFAULT 0, "
                         + COLUMN_SCROLL_PERMILLE + " INTEGER NOT NULL DEFAULT 0"
                         + ");";
+
+        public static final String SQL_CREATE_INDEX_CONTENT_URI =
+                "CREATE INDEX IF NOT EXISTS idx_titles_content_uri ON "
+                        + TABLE_NAME + " (" + COLUMN_CONTENT_URI + ");";
+
+        public static final String SQL_CREATE_INDEX_TYPE_OPENED =
+                "CREATE INDEX IF NOT EXISTS idx_titles_type_opened ON "
+                        + TABLE_NAME + " (" + COLUMN_TYPE + ", " + COLUMN_LAST_OPENED_AT + " DESC);";
 
         public static final String SQL_DROP_TABLE =
                 "DROP TABLE IF EXISTS " + TABLE_NAME + ";";
@@ -134,6 +142,10 @@ public final class DatabaseContract {
                         + COLUMN_PARENT_CHAPTER_ID + ", "
                         + COLUMN_SORT_ORDER + ");";
 
+        public static final String SQL_CREATE_INDEX_TITLE_CHAPTER =
+                "CREATE INDEX IF NOT EXISTS idx_chapters_title_index ON "
+                        + TABLE_NAME + " (" + COLUMN_TITLE_ID + ", " + COLUMN_CHAPTER_INDEX + ");";
+
         public static final String SQL_DROP_TABLE =
                 "DROP TABLE IF EXISTS " + TABLE_NAME + ";";
 
@@ -165,6 +177,10 @@ public final class DatabaseContract {
                         + "FOREIGN KEY(" + COLUMN_TITLE_ID + ") REFERENCES "
                         + TitleEntry.TABLE_NAME + "(" + TitleEntry._ID + ") ON DELETE CASCADE"
                         + ");";
+
+        public static final String SQL_CREATE_INDEX_TITLE_TYPE =
+                "CREATE INDEX IF NOT EXISTS idx_bookmarks_title_type ON "
+                        + TABLE_NAME + " (" + COLUMN_TITLE_ID + ", " + COLUMN_ENTRY_TYPE + ", " + COLUMN_CREATED_AT + " DESC);";
 
         public static final String SQL_DROP_TABLE =
                 "DROP TABLE IF EXISTS " + TABLE_NAME + ";";

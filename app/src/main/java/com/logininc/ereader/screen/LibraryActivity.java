@@ -315,7 +315,7 @@ public class LibraryActivity extends AppCompatActivity {
         if (Title.STATUS_COMPLETED.equals(book.getStatus())) {
             tvStatusValue.setText(R.string.status_completed);
             btnAction.setText(R.string.action_reread);
-        } else if (book.requiresChapterSelector()) {
+        } else if (Title.STATUS_TO_START.equals(book.getStatus())) {
             tvStatusValue.setText(R.string.status_to_start);
             btnAction.setText(R.string.action_start_reading);
         } else {

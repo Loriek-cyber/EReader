@@ -96,6 +96,10 @@
     <string name="reader_font_sans">Sans</string>
     <string name="reader_theme_oled">OLED Dark</string>
     <string name="reader_complete_chapter">Finish chapter</string>
+    <string name="reader_next_chapter_cta">Next chapter</string>
+    <string name="reader_complete_book">Finish book</string>
+    <string name="reader_book_completed_toast">Book completed!</string>
+    <string name="player_audiobook_completed_toast">Audiobook completed!</string>
     <string name="reader_prev_chapter">Prev</string>
     <string name="reader_next_chapter">Next</string>
     <string name="reader_prev_page">Prev page</string>

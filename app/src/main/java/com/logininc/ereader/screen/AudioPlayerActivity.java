@@ -48,7 +48,6 @@ public class AudioPlayerActivity extends AppCompatActivity {
     private AudioBook audioBook;
     private boolean isUserScrubbing = false;
     private boolean handledCompletion = false;
-    private int manualTimerMinutes = 0;
 
     private ImageView ivCover;
     private TextView tvChapterPill;
@@ -79,9 +78,14 @@ public class AudioPlayerActivity extends AppCompatActivity {
                         if (handledCompletion || audioBook == null || title.getId() != audioBook.getId()) {
                             return;
                         }
-                        handledCompletion = true;
-                        NavigationFlowHelper.openChapterSelector(AudioPlayerActivity.this, audioBook);
-                        finish();
+                        if (Title.STATUS_COMPLETED.equals(title.getStatus())) {
+                            handledCompletion = true;
+                            Toast.makeText(
+                                    AudioPlayerActivity.this,
+                                    R.string.player_audiobook_completed_toast,
+                                    Toast.LENGTH_LONG
+                            ).show();
+                        }
                     });
                 }
             };
@@ -137,7 +141,8 @@ public class AudioPlayerActivity extends AppCompatActivity {
 
     private void startOrAttachSession() {
         PlaybackSessionManager sessionManager = PlaybackSessionManager.getInstance();
-        int targetChapter = getIntent().hasExtra(NavigationFlowHelper.EXTRA_CHAPTER_INDEX)
+        boolean hasExplicitChapter = getIntent().hasExtra(NavigationFlowHelper.EXTRA_CHAPTER_INDEX);
+        int targetChapter = hasExplicitChapter
                 ? getIntent().getIntExtra(NavigationFlowHelper.EXTRA_CHAPTER_INDEX, audioBook.getCurrentChapter())
                 : audioBook.getCurrentChapter();
 
@@ -145,8 +150,10 @@ public class AudioPlayerActivity extends AppCompatActivity {
         boolean sameTitle = currentActive instanceof AudioBook && currentActive.getId() == audioBook.getId();
         boolean sameChapter = sameTitle && currentActive.getCurrentChapter() == targetChapter;
 
-        if (!sameTitle || !sameChapter || !sessionManager.isPlaying()) {
+        if (!sameTitle || !sameChapter || !sessionManager.hasPreparedAudio()) {
             sessionManager.startOrSwitchSession(this, audioBook, targetChapter, true);
+        } else if (currentActive instanceof AudioBook) {
+            audioBook = (AudioBook) currentActive;
         }
         if (sessionManager.getActiveTitle() == null) {
             Toast.makeText(this, R.string.player_audio_error, Toast.LENGTH_LONG).show();
@@ -275,11 +282,9 @@ public class AudioPlayerActivity extends AppCompatActivity {
         float speed = PlaybackSessionManager.getInstance().getPlaybackSpeed();
         tvSpeed.setText(formatSpeed(speed));
 
-        if (!SleepTimerController.getInstance().isTimerScheduled() && manualTimerMinutes > 0 && !isPlaying) {
-            manualTimerMinutes = 0;
-        }
-        tvTimer.setText(manualTimerMinutes > 0
-                ? getString(R.string.player_timer_fmt, manualTimerMinutes)
+        int activeTimerMinutes = SleepTimerController.getInstance().getManualTimerMinutes();
+        tvTimer.setText(activeTimerMinutes > 0
+                ? getString(R.string.player_timer_fmt, activeTimerMinutes)
                 : getString(R.string.player_timer_off));
 
         long safeTotal = Math.max(durationMs, audioBook.getTotalDurationMs());
@@ -381,12 +386,13 @@ public class AudioPlayerActivity extends AppCompatActivity {
     private void showSleepTimerDialog() {
         String[] labels = new String[TIMER_OPTIONS_MIN.length];
         int checked = 0;
+        int currentMinutes = SleepTimerController.getInstance().getManualTimerMinutes();
         for (int i = 0; i < TIMER_OPTIONS_MIN.length; i++) {
             int mins = TIMER_OPTIONS_MIN[i];
             labels[i] = mins == 0
                     ? getString(R.string.player_sleep_off)
                     : getString(R.string.player_timer_fmt, mins);
-            if (mins == manualTimerMinutes) {
+            if (mins == currentMinutes) {
                 checked = i;
             }
         }
@@ -394,7 +400,6 @@ public class AudioPlayerActivity extends AppCompatActivity {
                 .setTitle(R.string.player_sleep_dialog_title)
                 .setSingleChoiceItems(labels, checked, (dialog, which) -> {
                     int mins = TIMER_OPTIONS_MIN[which];
-                    manualTimerMinutes = mins;
                     if (mins == 0) {
                         SleepTimerController.getInstance().cancelManualTimer();
                     } else {

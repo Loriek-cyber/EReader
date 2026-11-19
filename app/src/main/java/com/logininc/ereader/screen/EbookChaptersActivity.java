@@ -1,6 +1,8 @@
 package com.logininc.ereader.screen;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.TypedValue;
@@ -91,6 +93,8 @@ public class EbookChaptersActivity extends AppCompatActivity {
 
     private List<Chapter> rootChapters = new ArrayList<>();
     private final Set<Integer> expandedChapterIndices = new HashSet<>();
+    private final Handler searchHandler = new Handler(Looper.getMainLooper());
+    private final Runnable debouncedSearchRunnable = this::renderActiveTab;
 
     private PlaybackSessionManager.SessionListener miniPlayerListener;
 
@@ -125,6 +129,7 @@ public class EbookChaptersActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
+        searchHandler.removeCallbacks(debouncedSearchRunnable);
         if (miniPlayerListener != null) {
             PlaybackSessionManager.getInstance().removeListener(miniPlayerListener);
             miniPlayerListener = null;
@@ -173,7 +178,8 @@ public class EbookChaptersActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                renderActiveTab();
+                searchHandler.removeCallbacks(debouncedSearchRunnable);
+                searchHandler.postDelayed(debouncedSearchRunnable, 200L);
             }
 
             @Override
@@ -233,8 +239,8 @@ public class EbookChaptersActivity extends AppCompatActivity {
         tvSummaryPages.setText(getString(R.string.format_pages_of, book.getCurrentPage(), book.getTotalPages()));
         progressSummary.setProgress(book.getProgressPercent());
 
-        List<Chapter> allChapters = chapterDao.getChaptersForTitle(book.getId());
-        rootChapters = chapterDao.getChapterTreeForTitle(book.getId());
+        List<Chapter> allChapters = chapterDao.getChapterSummariesForTitle(book.getId());
+        rootChapters = ChapterDao.buildTreeFromFlat(allChapters);
         if (Title.STATUS_IN_PROGRESS.equals(book.getStatus())) {
             expandedChapterIndices.addAll(
                     ChapterTreeHelper.collectAncestorIndices(rootChapters, resolveTargetChapterIndex())
@@ -385,6 +391,17 @@ public class EbookChaptersActivity extends AppCompatActivity {
     }
 
     private void openChapterInReader(int chapterIndex) {
+        boolean switchingChapter = chapterIndex != book.getCurrentChapter();
+        if (switchingChapter) {
+            book.setScrollY(0);
+            book.setScrollMaxHeight(0);
+            book.setCharOffset(0);
+            book.setScrollPermille(0);
+            Chapter targetChapter = chapterDao.getChapter(book.getId(), chapterIndex);
+            if (targetChapter != null && targetChapter.getAudioStartMs() > 0) {
+                book.setCurrentPage((int) targetChapter.getAudioStartMs());
+            }
+        }
         book.setCurrentChapter(chapterIndex);
         book.setCurrentChapterCompleted(false);
         book.setStatus(Title.STATUS_IN_PROGRESS);

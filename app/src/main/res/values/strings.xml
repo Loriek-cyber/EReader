@@ -96,6 +96,10 @@
     <string name="reader_font_sans">Sans</string>
     <string name="reader_theme_oled">Notturno OLED</string>
     <string name="reader_complete_chapter">Concludi capitolo</string>
+    <string name="reader_next_chapter_cta">Capitolo successivo</string>
+    <string name="reader_complete_book">Concludi libro</string>
+    <string name="reader_book_completed_toast">Libro completato!</string>
+    <string name="player_audiobook_completed_toast">Audiolibro completato!</string>
     <string name="reader_prev_chapter">Prec.</string>
     <string name="reader_next_chapter">Succ.</string>
     <string name="reader_prev_page">Pag. prec.</string>

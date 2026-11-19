@@ -2,6 +2,8 @@ package com.logininc.ereader.screen;
 
 import android.content.res.ColorStateList;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.TypedValue;
@@ -85,6 +87,8 @@ public class AudioChaptersActivity extends AppCompatActivity {
 
     private List<Chapter> rootChapters = new ArrayList<>();
     private final Set<Integer> expandedChapterIndices = new HashSet<>();
+    private final Handler searchHandler = new Handler(Looper.getMainLooper());
+    private final Runnable debouncedSearchRunnable = this::renderActiveTab;
 
     private PlaybackSessionManager.SessionListener miniPlayerListener;
 
@@ -119,6 +123,7 @@ public class AudioChaptersActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
+        searchHandler.removeCallbacks(debouncedSearchRunnable);
         if (miniPlayerListener != null) {
             PlaybackSessionManager.getInstance().removeListener(miniPlayerListener);
             miniPlayerListener = null;
@@ -161,7 +166,8 @@ public class AudioChaptersActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                renderActiveTab();
+                searchHandler.removeCallbacks(debouncedSearchRunnable);
+                searchHandler.postDelayed(debouncedSearchRunnable, 200L);
             }
 
             @Override
@@ -216,8 +222,8 @@ public class AudioChaptersActivity extends AppCompatActivity {
         tvOverallPercent.setText(getString(R.string.format_percent_completed, audioBook.getProgressPercent()));
         progressOverall.setProgress(audioBook.getProgressPercent());
 
-        List<Chapter> allChapters = chapterDao.getChaptersForTitle(audioBook.getId());
-        rootChapters = chapterDao.getChapterTreeForTitle(audioBook.getId());
+        List<Chapter> allChapters = chapterDao.getChapterSummariesForTitle(audioBook.getId());
+        rootChapters = ChapterDao.buildTreeFromFlat(allChapters);
         if (Title.STATUS_IN_PROGRESS.equals(audioBook.getStatus())) {
             expandedChapterIndices.addAll(
                     ChapterTreeHelper.collectAncestorIndices(rootChapters, resolveTargetChapterIndex())
@@ -387,9 +393,17 @@ public class AudioChaptersActivity extends AppCompatActivity {
     }
 
     private void openChapterInPlayer(int chapterIndex) {
+        boolean switchingChapter = chapterIndex != audioBook.getCurrentChapter();
         Chapter targetChapter = chapterDao.getChapter(audioBook.getId(), chapterIndex);
         if (targetChapter != null) {
-            audioBook.setCurrentPositionMs(targetChapter.getAudioStartMs());
+            long chStart = Math.max(0L, targetChapter.getAudioStartMs());
+            long chEnd = chStart + Math.max(0L, targetChapter.getAudioDurationMs());
+            long savedPos = audioBook.getCurrentPositionMs();
+            boolean outOfChapterBounds = savedPos < chStart
+                    || (targetChapter.getAudioDurationMs() > 0 && savedPos >= chEnd);
+            if (switchingChapter || outOfChapterBounds) {
+                audioBook.setCurrentPositionMs(chStart);
+            }
         }
         audioBook.setCurrentChapter(chapterIndex);
         audioBook.setCurrentChapterCompleted(false);

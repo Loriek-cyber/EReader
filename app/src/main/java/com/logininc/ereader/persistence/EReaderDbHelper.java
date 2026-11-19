@@ -45,14 +45,19 @@ public class EReaderDbHelper extends SQLiteOpenHelper {
     public void onConfigure(SQLiteDatabase db) {
         super.onConfigure(db);
         db.setForeignKeyConstraintsEnabled(true);
+        db.enableWriteAheadLogging();
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(TitleEntry.SQL_CREATE_TABLE);
+        db.execSQL(TitleEntry.SQL_CREATE_INDEX_CONTENT_URI);
+        db.execSQL(TitleEntry.SQL_CREATE_INDEX_TYPE_OPENED);
         db.execSQL(ChapterEntry.SQL_CREATE_TABLE);
         db.execSQL(ChapterEntry.SQL_CREATE_INDEX);
+        db.execSQL(ChapterEntry.SQL_CREATE_INDEX_TITLE_CHAPTER);
         db.execSQL(BookmarkNoteEntry.SQL_CREATE_TABLE);
+        db.execSQL(BookmarkNoteEntry.SQL_CREATE_INDEX_TITLE_TYPE);
         db.execSQL(SettingsEntry.SQL_CREATE_TABLE);
     }
 
@@ -63,6 +68,9 @@ public class EReaderDbHelper extends SQLiteOpenHelper {
         }
         if (oldVersion < 4 && newVersion >= 4) {
             upgradeFromV3ToV4(db);
+        }
+        if (oldVersion < 5 && newVersion >= 5) {
+            upgradeFromV4ToV5(db);
         }
         if (oldVersion >= newVersion) {
             recreateSchema(db);
@@ -104,6 +112,13 @@ public class EReaderDbHelper extends SQLiteOpenHelper {
                 + TitleEntry.COLUMN_CHAR_OFFSET + " INTEGER NOT NULL DEFAULT 0;");
         db.execSQL("ALTER TABLE " + TitleEntry.TABLE_NAME + " ADD COLUMN "
                 + TitleEntry.COLUMN_SCROLL_PERMILLE + " INTEGER NOT NULL DEFAULT 0;");
+    }
+
+    private void upgradeFromV4ToV5(@NonNull SQLiteDatabase db) {
+        db.execSQL(TitleEntry.SQL_CREATE_INDEX_CONTENT_URI);
+        db.execSQL(TitleEntry.SQL_CREATE_INDEX_TYPE_OPENED);
+        db.execSQL(ChapterEntry.SQL_CREATE_INDEX_TITLE_CHAPTER);
+        db.execSQL(BookmarkNoteEntry.SQL_CREATE_INDEX_TITLE_TYPE);
     }
 
     private void recreateSchema(@NonNull SQLiteDatabase db) {

@@ -3,6 +3,8 @@ package com.logininc.ereader.util;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.pdf.PdfRenderer;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
@@ -22,6 +24,8 @@ import com.logininc.ereader.persistence.ChapterDao;
 import com.logininc.ereader.persistence.TitleDao;
 
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -205,7 +209,7 @@ public final class FileScanner {
             for (int i = 0; i < spineRefs.size(); i++) {
                 Resource res = spineRefs.get(i).getResource();
                 String rawHtml = readResourceHtml(res);
-                String plainText = rawHtml.isEmpty() ? "" : Jsoup.parse(rawHtml).text();
+                String plainText = extractReadableText(rawHtml, null);
                 String chTitle = (res != null && res.getTitle() != null && !res.getTitle().trim().isEmpty())
                         ? res.getTitle().trim()
                         : "Chapter " + (i + 1);
@@ -213,7 +217,7 @@ public final class FileScanner {
                 roots.add(new Chapter(
                         0, 0, 0, indexCounter[0]++, 0, i,
                         chTitle, "", href, "", "",
-                        plainText, rawHtml, 0L, 0L, 0, false
+                        plainText, "", 0L, 0L, 0, false
                 ));
             }
         }
@@ -229,18 +233,18 @@ public final class FileScanner {
     ) {
         int chIndex = indexCounter[0]++;
         Resource res = ref.getResource();
+        String href = res != null && res.getHref() != null ? res.getHref() : "";
+        String fragmentId = ref.getFragmentId() != null ? ref.getFragmentId() : "";
         String rawHtml = readResourceHtml(res);
-        String plainText = rawHtml.isEmpty() ? "" : Jsoup.parse(rawHtml).text();
+        String plainText = extractReadableText(rawHtml, fragmentId);
         String chTitle = ref.getTitle() != null && !ref.getTitle().trim().isEmpty()
                 ? ref.getTitle().trim()
                 : "Chapter " + chIndex;
-        String href = res != null && res.getHref() != null ? res.getHref() : "";
-        String fragmentId = ref.getFragmentId() != null ? ref.getFragmentId() : "";
 
         Chapter chapter = new Chapter(
                 0, 0, 0, chIndex, level, sortOrder,
                 chTitle, "", href, fragmentId, "",
-                plainText, rawHtml, 0L, 0L, 0, false
+                plainText, "", 0L, 0L, 0, false
         );
 
         List<TOCReference> children = ref.getChildren();
@@ -250,6 +254,86 @@ public final class FileScanner {
             }
         }
         return chapter;
+    }
+
+    /**
+     * Extracts readable plain text from EPUB HTML while preserving paragraph breaks and
+     * scoping to {@code fragmentId} when present so sibling subsections do not duplicate the whole chapter.
+     */
+    @NonNull
+    public static String extractReadableText(@Nullable String rawHtml, @Nullable String fragmentId) {
+        if (rawHtml == null || rawHtml.trim().isEmpty()) {
+            return "";
+        }
+        Document doc = Jsoup.parse(rawHtml);
+        doc.select("script, style").remove();
+
+        Element root = doc.body();
+        if (root == null) {
+            return "";
+        }
+
+        String scopedHtml = null;
+        if (fragmentId != null && !fragmentId.trim().isEmpty()) {
+            Element target = doc.getElementById(fragmentId.trim());
+            if (target != null) {
+                String tag = target.tagName().toLowerCase(Locale.ROOT);
+                boolean isHeadingOrAnchor = tag.matches("h[1-6]|a|span");
+                if (isHeadingOrAnchor) {
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(target.outerHtml());
+                    Element sibling = target.nextElementSibling();
+                    while (sibling != null) {
+                        String sibId = sibling.id();
+                        String sibTag = sibling.tagName().toLowerCase(Locale.ROOT);
+                        if (!sibId.isEmpty() && sibTag.matches("h[1-6]|section|div|article")) {
+                            break;
+                        }
+                        if (tag.matches("h[1-6]") && sibTag.matches("h[1-6]")
+                                && sibTag.charAt(1) <= tag.charAt(1)) {
+                            break;
+                        }
+                        sb.append(sibling.outerHtml());
+                        sibling = sibling.nextElementSibling();
+                    }
+                    scopedHtml = sb.toString();
+                } else {
+                    scopedHtml = target.outerHtml();
+                }
+            }
+        }
+
+        Document workDoc = scopedHtml != null ? Jsoup.parseBodyFragment(scopedHtml) : doc;
+        Element workBody = workDoc.body();
+        if (workBody == null) {
+            return "";
+        }
+        workBody.select("br").append("%%BR%%");
+        workBody.select("p, h1, h2, h3, h4, h5, h6, li, blockquote, div, tr").prepend("%%PARA%%");
+
+        String rawText = workBody.text()
+                .replace("%%PARA%%", "\n\n")
+                .replace("%%BR%%", "\n");
+
+        String[] lines = rawText.split("\n");
+        StringBuilder cleaned = new StringBuilder(rawText.length());
+        int consecutiveEmpty = 0;
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if (trimmed.isEmpty()) {
+                consecutiveEmpty++;
+                if (cleaned.length() > 0 && consecutiveEmpty == 1) {
+                    cleaned.append("\n\n");
+                }
+            } else {
+                if (cleaned.length() > 0 && consecutiveEmpty == 0) {
+                    cleaned.append('\n');
+                }
+                cleaned.append(trimmed);
+                consecutiveEmpty = 0;
+            }
+        }
+        return cleaned.toString().trim();
     }
 
     @NonNull
@@ -365,11 +449,34 @@ public final class FileScanner {
         if (!dir.exists() && !dir.mkdirs()) {
             return null;
         }
-        File outFile = new File(dir, key + ".img");
-        try (FileOutputStream fos = new FileOutputStream(outFile)) {
-            fos.write(bytes);
-            return Uri.fromFile(outFile);
-        } catch (IOException e) {
+        File outFile = new File(dir, key + ".jpg");
+        try {
+            BitmapFactory.Options bounds = new BitmapFactory.Options();
+            bounds.inJustDecodeBounds = true;
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.length, bounds);
+            if (bounds.outWidth > 0 && bounds.outHeight > 0) {
+                int inSampleSize = 1;
+                int maxDim = Math.max(bounds.outWidth, bounds.outHeight);
+                while ((maxDim / inSampleSize) > 512) {
+                    inSampleSize *= 2;
+                }
+                BitmapFactory.Options opts = new BitmapFactory.Options();
+                opts.inSampleSize = inSampleSize;
+                Bitmap bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, opts);
+                if (bmp != null) {
+                    try (FileOutputStream fos = new FileOutputStream(outFile)) {
+                        bmp.compress(Bitmap.CompressFormat.JPEG, 85, fos);
+                    } finally {
+                        bmp.recycle();
+                    }
+                    return Uri.fromFile(outFile);
+                }
+            }
+            try (FileOutputStream fos = new FileOutputStream(outFile)) {
+                fos.write(bytes);
+                return Uri.fromFile(outFile);
+            }
+        } catch (IOException | OutOfMemoryError e) {
             Log.w(TAG, "Failed to write cover image", e);
             return null;
         }

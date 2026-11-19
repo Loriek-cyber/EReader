@@ -121,6 +121,18 @@ public class AudioPlaybackService extends Service {
         return null;
     }
 
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        PlaybackSessionManager.getInstance().persistCurrentState();
+        super.onTaskRemoved(rootIntent);
+    }
+
+    @Override
+    public void onDestroy() {
+        PlaybackSessionManager.getInstance().persistCurrentState();
+        super.onDestroy();
+    }
+
     private @interface ContextRequired {
     }
 }
