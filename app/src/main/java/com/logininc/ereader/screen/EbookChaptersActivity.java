@@ -260,9 +260,12 @@ public class EbookChaptersActivity extends AppCompatActivity {
     }
 
     private int resolveTargetChapterIndex() {
-        int targetChapterIndex = book.getCurrentChapter();
-        if (book.isCurrentChapterCompleted() && targetChapterIndex < book.getLenChapters()) {
-            targetChapterIndex = targetChapterIndex + 1;
+        int targetChapterIndex = ChapterTreeHelper.resolveNearestLeafIndex(rootChapters, book.getCurrentChapter());
+        if (book.isCurrentChapterCompleted()) {
+            int nextLeaf = ChapterTreeHelper.findNextLeafIndex(rootChapters, targetChapterIndex);
+            if (nextLeaf > 0) {
+                targetChapterIndex = nextLeaf;
+            }
         }
         return targetChapterIndex;
     }

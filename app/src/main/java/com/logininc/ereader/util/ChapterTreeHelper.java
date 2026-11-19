@@ -138,4 +138,117 @@ public final class ChapterTreeHelper {
         }
         return count;
     }
+
+    /**
+     * Collects all leaf chapters (nodes without children) in pre-order reading sequence.
+     */
+    @NonNull
+    public static List<Chapter> collectLeafChapters(@NonNull List<Chapter> roots) {
+        List<Chapter> leaves = new ArrayList<>();
+        collectLeavesRecursive(roots, leaves);
+        return leaves;
+    }
+
+    private static void collectLeavesRecursive(@NonNull List<Chapter> nodes, @NonNull List<Chapter> out) {
+        for (Chapter node : nodes) {
+            if (node.getChildren().isEmpty()) {
+                out.add(node);
+            } else {
+                collectLeavesRecursive(node.getChildren(), out);
+            }
+        }
+    }
+
+    /**
+     * If {@code targetChapterIndex} is a leaf node, returns it; if it is a container section with
+     * children, descends to its first leaf descendant. Falls back to the first leaf in the tree.
+     */
+    public static int resolveNearestLeafIndex(@NonNull List<Chapter> roots, int targetChapterIndex) {
+        if (roots.isEmpty()) {
+            return Math.max(1, targetChapterIndex);
+        }
+        Chapter matched = findByIndex(roots, targetChapterIndex);
+        if (matched != null) {
+            Chapter leaf = firstLeafOf(matched);
+            if (leaf != null) {
+                return leaf.getChapterIndex();
+            }
+        }
+        List<Chapter> leaves = collectLeafChapters(roots);
+        return leaves.isEmpty() ? Math.max(1, targetChapterIndex) : leaves.get(0).getChapterIndex();
+    }
+
+    /**
+     * Returns the {@code chapterIndex} of the next leaf chapter after {@code currentChapterIndex},
+     * or {@code -1} if already at or past the last leaf.
+     */
+    public static int findNextLeafIndex(@NonNull List<Chapter> roots, int currentChapterIndex) {
+        List<Chapter> leaves = collectLeafChapters(roots);
+        if (leaves.isEmpty()) {
+            return -1;
+        }
+        int resolvedCurrent = resolveNearestLeafIndex(roots, currentChapterIndex);
+        for (int i = 0; i < leaves.size(); i++) {
+            if (leaves.get(i).getChapterIndex() == resolvedCurrent) {
+                return (i + 1 < leaves.size()) ? leaves.get(i + 1).getChapterIndex() : -1;
+            }
+        }
+        for (Chapter leaf : leaves) {
+            if (leaf.getChapterIndex() > currentChapterIndex) {
+                return leaf.getChapterIndex();
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Returns the {@code chapterIndex} of the previous leaf chapter before {@code currentChapterIndex},
+     * or {@code -1} if already at or before the first leaf.
+     */
+    public static int findPreviousLeafIndex(@NonNull List<Chapter> roots, int currentChapterIndex) {
+        List<Chapter> leaves = collectLeafChapters(roots);
+        if (leaves.isEmpty()) {
+            return -1;
+        }
+        int resolvedCurrent = resolveNearestLeafIndex(roots, currentChapterIndex);
+        for (int i = 0; i < leaves.size(); i++) {
+            if (leaves.get(i).getChapterIndex() == resolvedCurrent) {
+                return (i - 1 >= 0) ? leaves.get(i - 1).getChapterIndex() : -1;
+            }
+        }
+        for (int i = leaves.size() - 1; i >= 0; i--) {
+            if (leaves.get(i).getChapterIndex() < currentChapterIndex) {
+                return leaves.get(i).getChapterIndex();
+            }
+        }
+        return -1;
+    }
+
+    @Nullable
+    private static Chapter findByIndex(@NonNull List<Chapter> nodes, int chapterIndex) {
+        for (Chapter node : nodes) {
+            if (node.getChapterIndex() == chapterIndex) {
+                return node;
+            }
+            Chapter found = findByIndex(node.getChildren(), chapterIndex);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
+    }
+
+    @Nullable
+    private static Chapter firstLeafOf(@NonNull Chapter node) {
+        if (node.getChildren().isEmpty()) {
+            return node;
+        }
+        for (Chapter child : node.getChildren()) {
+            Chapter leaf = firstLeafOf(child);
+            if (leaf != null) {
+                return leaf;
+            }
+        }
+        return null;
+    }
 }

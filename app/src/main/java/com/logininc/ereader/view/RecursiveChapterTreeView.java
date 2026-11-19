@@ -160,9 +160,7 @@ public class RecursiveChapterTreeView extends LinearLayout {
                 ivStatus.setImageResource(R.drawable.ic_radio_unchecked);
             }
 
-            cardRow.setOnClickListener(v -> clickListener.onChapterClick(ch));
-
-            UiSessionHelper.bindRecursiveChapterChildren(
+            Runnable toggleChildren = UiSessionHelper.bindRecursiveChapterChildren(
                     node,
                     depth,
                     filtering,
@@ -186,6 +184,12 @@ public class RecursiveChapterTreeView extends LinearLayout {
                             clickListener
                     )
             );
+
+            if (toggleChildren != null) {
+                cardRow.setOnClickListener(v -> toggleChildren.run());
+            } else {
+                cardRow.setOnClickListener(v -> clickListener.onChapterClick(ch));
+            }
 
             container.addView(row);
         }

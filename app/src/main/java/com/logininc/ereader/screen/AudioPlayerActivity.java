@@ -26,6 +26,7 @@ import com.logininc.ereader.persistence.SettingsDao;
 import com.logininc.ereader.persistence.TitleDao;
 import com.logininc.ereader.service.PlaybackSessionManager;
 import com.logininc.ereader.service.SleepTimerController;
+import com.logininc.ereader.util.ChapterTreeHelper;
 import com.logininc.ereader.util.FileScanner;
 import com.logininc.ereader.util.NavigationFlowHelper;
 import com.logininc.ereader.util.PermissionHelper;
@@ -323,8 +324,11 @@ public class AudioPlayerActivity extends AppCompatActivity {
 
     private void shiftChapter(int delta) {
         int current = audioBook.getCurrentChapter();
-        int target = Math.max(1, Math.min(audioBook.getLenChapters(), current + delta));
-        if (target != current) {
+        java.util.List<Chapter> roots = chapterDao.getChapterSummaryTreeForTitle(audioBook.getId());
+        int target = delta > 0
+                ? ChapterTreeHelper.findNextLeafIndex(roots, current)
+                : ChapterTreeHelper.findPreviousLeafIndex(roots, current);
+        if (target > 0 && target != current) {
             PlaybackSessionManager.getInstance().jumpToChapter(this, target);
         }
     }

@@ -258,9 +258,12 @@ public class AudioChaptersActivity extends AppCompatActivity {
     }
 
     private int resolveTargetChapterIndex() {
-        int targetChapterIndex = audioBook.getCurrentChapter();
-        if (audioBook.isCurrentChapterCompleted() && targetChapterIndex < audioBook.getLenChapters()) {
-            targetChapterIndex = targetChapterIndex + 1;
+        int targetChapterIndex = ChapterTreeHelper.resolveNearestLeafIndex(rootChapters, audioBook.getCurrentChapter());
+        if (audioBook.isCurrentChapterCompleted()) {
+            int nextLeaf = ChapterTreeHelper.findNextLeafIndex(rootChapters, targetChapterIndex);
+            if (nextLeaf > 0) {
+                targetChapterIndex = nextLeaf;
+            }
         }
         return targetChapterIndex;
     }

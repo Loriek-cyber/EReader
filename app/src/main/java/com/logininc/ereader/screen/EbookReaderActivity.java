@@ -34,6 +34,7 @@ import com.logininc.ereader.persistence.ChapterDao;
 import com.logininc.ereader.persistence.SettingsDao;
 import com.logininc.ereader.persistence.TitleDao;
 import com.logininc.ereader.service.PlaybackSessionManager;
+import com.logininc.ereader.util.ChapterTreeHelper;
 import com.logininc.ereader.util.FileScanner;
 import com.logininc.ereader.util.NavigationFlowHelper;
 import com.logininc.ereader.util.ThemeHelper;
@@ -60,6 +61,7 @@ public class EbookReaderActivity extends AppCompatActivity {
 
     private Book book;
     private Chapter currentChapter;
+    private List<Chapter> chapterTreeRoots = java.util.Collections.emptyList();
     private int currentChapterIndex = 1;
     private int currentPdfPageZeroBased = 0;
     private int pendingRestoreScrollY = -1;
@@ -119,9 +121,12 @@ public class EbookReaderActivity extends AppCompatActivity {
             return;
         }
         book = (Book) loaded;
-        int savedBookChapter = book.getCurrentChapter();
-        currentChapterIndex = getIntent().getIntExtra(
-                NavigationFlowHelper.EXTRA_CHAPTER_INDEX, savedBookChapter);
+        chapterTreeRoots = chapterDao.getChapterSummaryTreeForTitle(book.getId());
+        int savedBookChapter = ChapterTreeHelper.resolveNearestLeafIndex(chapterTreeRoots, book.getCurrentChapter());
+        currentChapterIndex = ChapterTreeHelper.resolveNearestLeafIndex(
+                chapterTreeRoots,
+                getIntent().getIntExtra(NavigationFlowHelper.EXTRA_CHAPTER_INDEX, savedBookChapter)
+        );
         if (savedInstanceState != null) {
             currentChapterIndex = savedInstanceState.getInt(STATE_CHAPTER_INDEX, currentChapterIndex);
             pendingRestorePdfPage = savedInstanceState.getInt(STATE_PDF_PAGE, -1);
@@ -264,9 +269,10 @@ public class EbookReaderActivity extends AppCompatActivity {
         findViewById(R.id.btnActionBookmark).setOnClickListener(v -> showSaveBookmarkNoteDialog());
 
         btnPrevChapter.setOnClickListener(v -> {
-            if (currentChapterIndex > 1) {
+            int prevLeaf = ChapterTreeHelper.findPreviousLeafIndex(chapterTreeRoots, currentChapterIndex);
+            if (prevLeaf > 0) {
                 saveCurrentReadingPosition();
-                loadChapter(currentChapterIndex - 1, false);
+                loadChapter(prevLeaf, false);
             }
         });
         btnCompleteChapter.setOnClickListener(v -> completeCurrentChapterAndAdvance());
@@ -281,7 +287,8 @@ public class EbookReaderActivity extends AppCompatActivity {
     private void loadChapter(int chapterIndex, boolean restoreSavedPosition) {
         saveHandler.removeCallbacks(debouncedSaveRunnable);
         isRestoringPosition = false;
-        currentChapterIndex = Math.max(1, Math.min(book.getLenChapters(), chapterIndex));
+        int resolvedIndex = ChapterTreeHelper.resolveNearestLeafIndex(chapterTreeRoots, chapterIndex);
+        currentChapterIndex = Math.max(1, Math.min(book.getLenChapters(), resolvedIndex));
         currentChapter = chapterDao.getChapter(book.getId(), currentChapterIndex);
         if (currentChapter == null) {
             List<Chapter> all = chapterDao.getChaptersForTitle(book.getId());
@@ -366,11 +373,12 @@ public class EbookReaderActivity extends AppCompatActivity {
         tvChapterLabel.setText(getString(R.string.reader_chapter_label, currentChapterIndex));
         tvChapterTitle.setText(chTitle);
 
-        btnPrevChapter.setEnabled(currentChapterIndex > 1);
-        btnPrevChapter.setAlpha(currentChapterIndex > 1 ? 1f : 0.4f);
+        boolean hasPrevLeaf = ChapterTreeHelper.findPreviousLeafIndex(chapterTreeRoots, currentChapterIndex) > 0;
+        btnPrevChapter.setEnabled(hasPrevLeaf);
+        btnPrevChapter.setAlpha(hasPrevLeaf ? 1f : 0.4f);
 
-        boolean hasNextChapter = currentChapterIndex < book.getLenChapters();
-        btnCompleteChapter.setText(hasNextChapter ? R.string.reader_next_chapter_cta : R.string.reader_complete_book);
+        boolean hasNextLeaf = ChapterTreeHelper.findNextLeafIndex(chapterTreeRoots, currentChapterIndex) > 0;
+        btnCompleteChapter.setText(hasNextLeaf ? R.string.reader_next_chapter_cta : R.string.reader_complete_book);
     }
 
     private void openPdfAndShowPage(int pageZeroBased) {
@@ -677,18 +685,26 @@ public class EbookReaderActivity extends AppCompatActivity {
         saveHandler.removeCallbacks(debouncedSaveRunnable);
         chapterDao.updateChapterProgress(book.getId(), currentChapterIndex, 100, true);
 
-        int totalChapters = Math.max(1, book.getLenChapters());
-        if (currentChapterIndex < totalChapters) {
-            int nextIndex = currentChapterIndex + 1;
-            int overallPct = Math.min(100, (currentChapterIndex * 100) / totalChapters);
+        int nextLeaf = ChapterTreeHelper.findNextLeafIndex(chapterTreeRoots, currentChapterIndex);
+        if (nextLeaf > 0) {
+            List<Chapter> leaves = ChapterTreeHelper.collectLeafChapters(chapterTreeRoots);
+            int leafPos = 1;
+            int totalLeaves = Math.max(1, leaves.size());
+            for (int i = 0; i < leaves.size(); i++) {
+                if (leaves.get(i).getChapterIndex() == currentChapterIndex) {
+                    leafPos = i + 1;
+                    break;
+                }
+            }
+            int overallPct = Math.min(100, (leafPos * 100) / totalLeaves);
             book.setProgressPercent(overallPct);
             book.setCurrentChapterCompleted(false);
             book.setStatus(Title.STATUS_IN_PROGRESS);
-            loadChapter(nextIndex, false);
+            loadChapter(nextLeaf, false);
             return;
         }
 
-        // Last chapter finished -> mark book completed without forcing chapter selector
+        // Last leaf chapter finished -> mark book completed without forcing chapter selector
         book.setProgressPercent(100);
         book.setCurrentChapterCompleted(true);
         book.setStatus(Title.STATUS_COMPLETED);

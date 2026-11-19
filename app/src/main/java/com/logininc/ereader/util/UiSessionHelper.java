@@ -334,8 +334,12 @@ public final class UiSessionHelper {
 
     /**
      * Binds expand/collapse controls and recursive subtree inflation for a chapter/section row.
+     *
+     * @return a {@link Runnable} that toggles expansion for this section, or {@code null} if this
+     *         node is a leaf without children.
      */
-    public static void bindRecursiveChapterChildren(
+    @Nullable
+    public static Runnable bindRecursiveChapterChildren(
             @NonNull ChapterTreeHelper.TreeNode node,
             int depth,
             boolean filtering,
@@ -354,7 +358,7 @@ public final class UiSessionHelper {
                 trailingLeafView.setVisibility(View.VISIBLE);
             }
             layoutChildrenWrapper.setVisibility(View.GONE);
-            return;
+            return null;
         }
 
         if (trailingLeafView != null) {
@@ -379,7 +383,7 @@ public final class UiSessionHelper {
             layoutChildrenWrapper.setVisibility(View.GONE);
         }
 
-        btnExpand.setOnClickListener(v -> {
+        Runnable toggleAction = () -> {
             boolean nowExpanded = layoutChildrenWrapper.getVisibility() != View.VISIBLE;
             if (!filtering) {
                 if (nowExpanded) {
@@ -396,7 +400,10 @@ public final class UiSessionHelper {
             }
             layoutChildrenWrapper.setVisibility(nowExpanded ? View.VISIBLE : View.GONE);
             btnExpand.animate().rotation(nowExpanded ? 0f : -90f).setDuration(150).start();
-        });
+        };
+
+        btnExpand.setOnClickListener(v -> toggleAction.run());
+        return toggleAction;
     }
 
     private static void setMarginStart(@NonNull View view, int marginPx) {

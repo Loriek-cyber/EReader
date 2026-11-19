@@ -214,11 +214,13 @@ public final class FileScanner {
                         ? res.getTitle().trim()
                         : "Chapter " + (i + 1);
                 String href = res != null && res.getHref() != null ? res.getHref() : "";
-                roots.add(new Chapter(
+                Chapter chapter = new Chapter(
                         0, 0, 0, indexCounter[0]++, 0, i,
                         chTitle, "", href, "", "",
                         plainText, "", 0L, 0L, 0, false
-                ));
+                );
+                attachHtmlSectionsIfPresent(chapter, rawHtml, href, 0, indexCounter);
+                roots.add(chapter);
             }
         }
         return roots;
@@ -248,12 +250,115 @@ public final class FileScanner {
         );
 
         List<TOCReference> children = ref.getChildren();
-        if (children != null) {
+        if (children != null && !children.isEmpty()) {
             for (int i = 0; i < children.size(); i++) {
                 chapter.addChild(convertTocReference(children.get(i), level + 1, i, indexCounter));
             }
+        } else if (fragmentId.isEmpty() && !rawHtml.isEmpty()) {
+            attachHtmlSectionsIfPresent(chapter, rawHtml, href, level, indexCounter);
         }
         return chapter;
+    }
+
+    /**
+     * Parses nested HTML {@code <section>} elements into hierarchical child {@link Chapter} nodes
+     * when an EPUB document structures chapters/subsections via {@code <section>} tags rather than
+     * nested NCX/NAV TOC entries.
+     */
+    public static void attachHtmlSectionsIfPresent(
+            @NonNull Chapter parent,
+            @Nullable String rawHtml,
+            @NonNull String href,
+            int parentLevel,
+            @NonNull int[] indexCounter
+    ) {
+        if (rawHtml == null || rawHtml.trim().isEmpty()) {
+            return;
+        }
+        Document doc = Jsoup.parse(rawHtml);
+        doc.select("script, style").remove();
+        Element body = doc.body();
+        if (body == null) {
+            return;
+        }
+        List<Element> topSections = directSectionElements(body);
+        if (topSections.size() == 1) {
+            List<Element> inner = directSectionElements(topSections.get(0));
+            if (inner.size() >= 2) {
+                topSections = inner;
+            } else {
+                return;
+            }
+        }
+        if (topSections.size() < 2) {
+            return;
+        }
+        for (int i = 0; i < topSections.size(); i++) {
+            parent.addChild(convertHtmlSectionElement(topSections.get(i), href, parentLevel + 1, i, indexCounter));
+        }
+    }
+
+    @NonNull
+    private static Chapter convertHtmlSectionElement(
+            @NonNull Element sectionEl,
+            @NonNull String href,
+            int level,
+            int sortOrder,
+            @NonNull int[] indexCounter
+    ) {
+        int chIndex = indexCounter[0]++;
+        String title = resolveSectionTitle(sectionEl, chIndex);
+        String fragmentId = sectionEl.id();
+        List<Element> nestedSections = directSectionElements(sectionEl);
+        String text = nestedSections.isEmpty()
+                ? extractReadableText(sectionEl.outerHtml(), null)
+                : "";
+        Chapter node = new Chapter(
+                0, 0, 0, chIndex, level, sortOrder,
+                title, "", href, fragmentId, "",
+                text, "", 0L, 0L, 0, false
+        );
+        for (int i = 0; i < nestedSections.size(); i++) {
+            node.addChild(convertHtmlSectionElement(nestedSections.get(i), href, level + 1, i, indexCounter));
+        }
+        return node;
+    }
+
+    @NonNull
+    private static List<Element> directSectionElements(@NonNull Element container) {
+        List<Element> result = new ArrayList<>();
+        collectTopLevelSections(container, result);
+        return result;
+    }
+
+    private static void collectTopLevelSections(@NonNull Element element, @NonNull List<Element> out) {
+        for (Element child : element.children()) {
+            if ("section".equalsIgnoreCase(child.tagName())) {
+                out.add(child);
+            } else {
+                collectTopLevelSections(child, out);
+            }
+        }
+    }
+
+    @NonNull
+    private static String resolveSectionTitle(@NonNull Element sectionEl, int fallbackIndex) {
+        Element heading = sectionEl.selectFirst("h1, h2, h3, h4, h5, h6");
+        if (heading != null) {
+            String hText = heading.text().trim();
+            if (!hText.isEmpty()) {
+                return hText;
+            }
+        }
+        String aria = sectionEl.attr("aria-label").trim();
+        if (!aria.isEmpty()) {
+            return aria;
+        }
+        String titleAttr = sectionEl.attr("title").trim();
+        if (!titleAttr.isEmpty()) {
+            return titleAttr;
+        }
+        return "Section " + fallbackIndex;
     }
 
     /**

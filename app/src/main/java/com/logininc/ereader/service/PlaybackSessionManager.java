@@ -25,6 +25,7 @@ import com.logininc.ereader.model.Title;
 import com.logininc.ereader.persistence.ChapterDao;
 import com.logininc.ereader.persistence.SettingsDao;
 import com.logininc.ereader.persistence.TitleDao;
+import com.logininc.ereader.util.ChapterTreeHelper;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -468,7 +469,10 @@ public class PlaybackSessionManager {
             return Collections.emptyList();
         }
         if (cachedChaptersTitleId != titleId || cachedAudioChapters.isEmpty()) {
-            cachedAudioChapters = new ChapterDao(appContext).getChapterSummariesForTitle(titleId);
+            List<Chapter> flat = new ChapterDao(appContext).getChapterSummariesForTitle(titleId);
+            List<Chapter> roots = ChapterDao.buildTreeFromFlat(flat);
+            List<Chapter> leaves = ChapterTreeHelper.collectLeafChapters(roots);
+            cachedAudioChapters = leaves.isEmpty() ? flat : leaves;
             cachedChaptersTitleId = titleId;
         }
         return cachedAudioChapters;

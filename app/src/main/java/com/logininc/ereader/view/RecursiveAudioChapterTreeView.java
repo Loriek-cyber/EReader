@@ -171,17 +171,13 @@ public class RecursiveAudioChapterTreeView extends LinearLayout {
             boolean isPlayingThis = playingChecker.isPlayingChapter(ch.getChapterIndex());
             btnAction.setImageResource(isPlayingThis ? R.drawable.ic_pause : R.drawable.ic_play_circle);
 
-            View.OnClickListener openListener = v -> clickListener.onChapterClick(ch);
-            cardRow.setOnClickListener(openListener);
-            btnAction.setOnClickListener(openListener);
-
-            UiSessionHelper.bindRecursiveChapterChildren(
+            Runnable toggleChildren = UiSessionHelper.bindRecursiveChapterChildren(
                     node,
                     depth,
                     filtering,
                     expandedIndices,
                     btnExpand,
-                    null,
+                    btnAction,
                     layoutChildrenWrapper,
                     viewTreeGuide,
                     containerChildren,
@@ -200,6 +196,15 @@ public class RecursiveAudioChapterTreeView extends LinearLayout {
                             clickListener
                     )
             );
+
+            if (toggleChildren != null) {
+                cardRow.setOnClickListener(v -> toggleChildren.run());
+                btnAction.setOnClickListener(null);
+            } else {
+                View.OnClickListener openListener = v -> clickListener.onChapterClick(ch);
+                cardRow.setOnClickListener(openListener);
+                btnAction.setOnClickListener(openListener);
+            }
 
             container.addView(row);
         }
