@@ -71,6 +71,7 @@ public class AudioPlaybackService extends Service {
 
         Intent openIntent = new Intent(this, AudioPlayerActivity.class);
         openIntent.putExtra(NavigationFlowHelper.EXTRA_TITLE_ID, titleId);
+        openIntent.putExtra(NavigationFlowHelper.EXTRA_AUTO_PLAY, false);
         PendingIntent contentPi = PendingIntent.getActivity(
                 this, 0, openIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE

@@ -112,9 +112,18 @@ public class AudiobooksActivity extends AppCompatActivity {
         UiSessionHelper.syncBottomNavigation(this, R.id.nav_audiolibri);
         miniPlayerListener = UiSessionHelper.attachMiniPlayer(this);
         refreshAudiobooks();
+        PlaybackSessionManager session = PlaybackSessionManager.getInstance();
         heroSessionListener = (activeTitle, isPlaying, positionMs, durationMs) ->
                 runOnUiThread(() -> syncHeroWithSession(activeTitle, isPlaying, positionMs, durationMs));
-        PlaybackSessionManager.getInstance().addListener(heroSessionListener);
+        session.addListener(heroSessionListener);
+        if (session.getActiveTitle() instanceof AudioBook) {
+            syncHeroWithSession(
+                    session.getActiveTitle(),
+                    session.isPlaying(),
+                    session.getCurrentPositionMs(),
+                    session.getTotalDurationMs()
+            );
+        }
     }
 
     @Override
@@ -215,11 +224,15 @@ public class AudiobooksActivity extends AppCompatActivity {
     private void refreshAudiobooks() {
         String query = etSearch.getText() != null ? etSearch.getText().toString().trim() : "";
 
+        PlaybackSessionManager session = PlaybackSessionManager.getInstance();
         AudioBook hero = null;
         if (query.isEmpty()) {
-            Title active = PlaybackSessionManager.getInstance().getActiveTitle();
+            Title active = session.getActiveTitle();
             if (active instanceof AudioBook) {
                 hero = (AudioBook) titleDao.getById(active.getId());
+                if (hero != null) {
+                    applyLiveSessionToAudioBook(hero, session);
+                }
             }
             if (hero == null) {
                 hero = titleDao.getMostRecentInProgressAudioBook();
@@ -238,6 +251,9 @@ public class AudiobooksActivity extends AppCompatActivity {
                     items.add((AudioBook) t);
                 }
             }
+        }
+        for (AudioBook item : items) {
+            applyLiveSessionToAudioBook(item, session);
         }
 
         tvAudiobooksCount.setText(getString(R.string.format_titles_count, items.size()));
@@ -268,8 +284,11 @@ public class AudiobooksActivity extends AppCompatActivity {
             tvAudioHeroNarrator.setText(getString(R.string.format_narrator, hero.getNarrator()));
         }
 
-        progressAudioHero.setProgress(hero.getProgressPercent());
-        tvAudioHeroProgressLabel.setText(getString(R.string.format_percent_completed, hero.getProgressPercent()));
+        int pct = hero.getTotalDurationMs() > 0L
+                ? PlaybackSessionManager.computeProgressPercent(hero.getCurrentPositionMs(), hero.getTotalDurationMs())
+                : hero.getProgressPercent();
+        progressAudioHero.setProgress(pct);
+        tvAudioHeroProgressLabel.setText(getString(R.string.format_percent_completed, pct));
         long remainingMs = Math.max(0L, hero.getTotalDurationMs() - hero.getCurrentPositionMs());
         tvAudioHeroRemaining.setText(getString(R.string.format_remaining_time, FileScanner.formatDuration(remainingMs)));
 
@@ -284,11 +303,33 @@ public class AudiobooksActivity extends AppCompatActivity {
         btnHeroPlayPause.setOnClickListener(v -> {
             if (session.getActiveTitle() != null && session.getActiveTitle().getId() == hero.getId()) {
                 session.togglePlayPause(this);
-                refreshAudiobooks();
+                syncHeroWithSession(
+                        session.getActiveTitle(),
+                        session.isPlaying(),
+                        session.getCurrentPositionMs(),
+                        session.getTotalDurationMs()
+                );
             } else {
                 NavigationFlowHelper.openTitle(this, hero);
             }
         });
+    }
+
+    private void applyLiveSessionToAudioBook(@NonNull AudioBook target, @NonNull PlaybackSessionManager session) {
+        Title active = session.getActiveTitle();
+        if (active instanceof AudioBook && active.getId() == target.getId()) {
+            long pos = session.getCurrentPositionMs();
+            long dur = Math.max(session.getTotalDurationMs(), target.getTotalDurationMs());
+            target.setCurrentChapter(active.getCurrentChapter());
+            target.setCurrentPositionMs(pos);
+            if (dur > 0L) {
+                target.setTotalDurationMs(dur);
+                target.setProgressPercent(PlaybackSessionManager.computeProgressPercent(pos, dur));
+            }
+        } else if (target.getTotalDurationMs() > 0L && target.getCurrentPositionMs() > 0L) {
+            target.setProgressPercent(PlaybackSessionManager.computeProgressPercent(
+                    target.getCurrentPositionMs(), target.getTotalDurationMs()));
+        }
     }
 
     private void syncHeroWithSession(
@@ -322,7 +363,7 @@ public class AudiobooksActivity extends AppCompatActivity {
         tvHeroChapterTime.setText(FileScanner.formatDuration(safePos)
                 + " / " + FileScanner.formatDuration(totalMs));
         int pct = totalMs > 0
-                ? (int) Math.min(100L, Math.max(0L, (safePos * 100L) / totalMs))
+                ? PlaybackSessionManager.computeProgressPercent(safePos, totalMs)
                 : activeAudio.getProgressPercent();
         progressAudioHero.setProgress(pct);
         tvAudioHeroProgressLabel.setText(getString(R.string.format_percent_completed, pct));

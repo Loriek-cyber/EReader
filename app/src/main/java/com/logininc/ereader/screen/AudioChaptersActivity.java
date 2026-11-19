@@ -217,6 +217,21 @@ public class AudioChaptersActivity extends AppCompatActivity {
             return;
         }
         audioBook = (AudioBook) loaded;
+        PlaybackSessionManager session = PlaybackSessionManager.getInstance();
+        Title activeSessionTitle = session.getActiveTitle();
+        if (activeSessionTitle instanceof AudioBook && activeSessionTitle.getId() == audioBook.getId()) {
+            long livePos = session.getCurrentPositionMs();
+            long liveDur = Math.max(session.getTotalDurationMs(), audioBook.getTotalDurationMs());
+            audioBook.setCurrentChapter(activeSessionTitle.getCurrentChapter());
+            audioBook.setCurrentPositionMs(livePos);
+            if (liveDur > 0L) {
+                audioBook.setTotalDurationMs(liveDur);
+                audioBook.setProgressPercent(PlaybackSessionManager.computeProgressPercent(livePos, liveDur));
+            }
+        } else if (audioBook.getTotalDurationMs() > 0L && audioBook.getCurrentPositionMs() > 0L) {
+            audioBook.setProgressPercent(PlaybackSessionManager.computeProgressPercent(
+                    audioBook.getCurrentPositionMs(), audioBook.getTotalDurationMs()));
+        }
 
         tvTitle.setText(audioBook.getTitle());
         tvOverallPercent.setText(getString(R.string.format_percent_completed, audioBook.getProgressPercent()));
@@ -272,7 +287,14 @@ public class AudioChaptersActivity extends AppCompatActivity {
                     : FileScanner.formatDuration(currentCh.getAudioDurationMs());
             tvActiveTime.setText(durationText);
             tvActiveTitle.setText(currentCh.getChapterTitle());
-            progressActive.setProgress(currentCh.getProgressPercent());
+            int activeChPct = currentCh.getProgressPercent();
+            if (currentCh.getChapterIndex() == audioBook.getCurrentChapter()
+                    && currentCh.getAudioDurationMs() > 0L) {
+                long relMs = Math.max(0L, audioBook.getCurrentPositionMs() - currentCh.getAudioStartMs());
+                activeChPct = Math.max(activeChPct,
+                        PlaybackSessionManager.computeProgressPercent(relMs, currentCh.getAudioDurationMs()));
+            }
+            progressActive.setProgress(activeChPct);
 
             boolean isPlayingThis = isCurrentlyPlayingChapter(currentCh.getChapterIndex());
             btnActivePlayPause.setImageResource(isPlayingThis ? R.drawable.ic_pause : R.drawable.ic_play);

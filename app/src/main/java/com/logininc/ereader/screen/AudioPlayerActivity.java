@@ -111,7 +111,7 @@ public class AudioPlayerActivity extends AppCompatActivity {
         }
 
         bindViews();
-        startOrAttachSession();
+        startOrAttachSession(savedInstanceState != null);
     }
 
     @Override
@@ -121,7 +121,7 @@ public class AudioPlayerActivity extends AppCompatActivity {
         handledCompletion = false;
         if (resolveTargetAudioBook()) {
             bindViews();
-            startOrAttachSession();
+            startOrAttachSession(false);
         }
     }
 
@@ -139,9 +139,11 @@ public class AudioPlayerActivity extends AppCompatActivity {
         return true;
     }
 
-    private void startOrAttachSession() {
+    private void startOrAttachSession(boolean fromStateRestore) {
         PlaybackSessionManager sessionManager = PlaybackSessionManager.getInstance();
         boolean hasExplicitChapter = getIntent().hasExtra(NavigationFlowHelper.EXTRA_CHAPTER_INDEX);
+        boolean autoPlay = !fromStateRestore
+                && getIntent().getBooleanExtra(NavigationFlowHelper.EXTRA_AUTO_PLAY, true);
         int targetChapter = hasExplicitChapter
                 ? getIntent().getIntExtra(NavigationFlowHelper.EXTRA_CHAPTER_INDEX, audioBook.getCurrentChapter())
                 : audioBook.getCurrentChapter();
@@ -151,9 +153,14 @@ public class AudioPlayerActivity extends AppCompatActivity {
         boolean sameChapter = sameTitle && currentActive.getCurrentChapter() == targetChapter;
 
         if (!sameTitle || !sameChapter || !sessionManager.hasPreparedAudio()) {
-            sessionManager.startOrSwitchSession(this, audioBook, targetChapter, true);
-        } else if (currentActive instanceof AudioBook) {
-            audioBook = (AudioBook) currentActive;
+            sessionManager.startOrSwitchSession(this, audioBook, targetChapter, autoPlay);
+        } else {
+            if (currentActive instanceof AudioBook) {
+                audioBook = (AudioBook) currentActive;
+            }
+            if (autoPlay && !sessionManager.isPlaying()) {
+                sessionManager.resume(this);
+            }
         }
         if (sessionManager.getActiveTitle() == null) {
             Toast.makeText(this, R.string.player_audio_error, Toast.LENGTH_LONG).show();

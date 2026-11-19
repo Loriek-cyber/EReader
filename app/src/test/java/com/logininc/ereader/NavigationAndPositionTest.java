@@ -5,6 +5,7 @@ import android.net.Uri;
 import com.logininc.ereader.model.AudioBook;
 import com.logininc.ereader.model.Book;
 import com.logininc.ereader.model.Title;
+import com.logininc.ereader.service.PlaybackSessionManager;
 import com.logininc.ereader.service.SleepTimerController;
 import com.logininc.ereader.util.FileScanner;
 import com.logininc.ereader.util.NavigationFlowHelper;
@@ -117,5 +118,14 @@ public class NavigationAndPositionTest {
         assertFalse(SleepTimerController.isWithinNightWindow(600, 1350, 420));
         assertTrue(SleepTimerController.shouldScheduleTimer(false, 600, 1350, 420, true));
         assertFalse(SleepTimerController.shouldScheduleTimer(false, 1400, 1350, 420, false));
+    }
+
+    @Test
+    public void audioProgressPercentNeverSticksAtZeroOnceStarted() {
+        assertEquals(0, PlaybackSessionManager.computeProgressPercent(0L, 36_000_000L));
+        assertEquals(1, PlaybackSessionManager.computeProgressPercent(15_000L, 36_000_000L));
+        assertEquals(50, PlaybackSessionManager.computeProgressPercent(18_000_000L, 36_000_000L));
+        assertEquals(99, PlaybackSessionManager.computeProgressPercent(35_999_000L, 36_000_000L));
+        assertEquals(100, PlaybackSessionManager.computeProgressPercent(36_000_000L, 36_000_000L));
     }
 }
