@@ -1033,6 +1033,68 @@
                         android:layout_marginVertical="@dimen/space_md"
                         android:background="?attr/ereaderBorderSubtle" />
 
+                    <!-- Audio Metadata Automatic Source -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:background="@drawable/bg_rounded_container"
+                            android:contentDescription="@null"
+                            android:padding="7dp"
+                            android:src="@drawable/ic_search"
+                            app:tint="?attr/ereaderTextAccent" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="@dimen/space_sm"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.BodyMd"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_audio_metadata_source" />
+
+                            <TextView
+                                style="@style/TextAppearance.EReader.Caption"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_audio_metadata_source_desc"
+                                android:textColor="?attr/ereaderTextMuted" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/btnAudioMetadataSource"
+                            style="@style/TextAppearance.EReader.BodySm"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_rounded_container"
+                            android:clickable="true"
+                            android:drawablePadding="4dp"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:minWidth="@dimen/touch_target_min"
+                            android:minHeight="@dimen/touch_target_min"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="10dp"
+                            android:textColor="?attr/ereaderTextPrimary"
+                            app:drawableEndCompat="@drawable/ic_chevron_right"
+                            app:drawableTint="?attr/ereaderTextMuted" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="@dimen/space_md"
+                        android:background="?attr/ereaderBorderSubtle" />
+
                     <!-- Auto Bookmark -->
                     <LinearLayout
                         android:layout_width="match_parent"

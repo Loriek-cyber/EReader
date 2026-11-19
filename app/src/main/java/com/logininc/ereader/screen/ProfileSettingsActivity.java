@@ -76,6 +76,7 @@ public class ProfileSettingsActivity extends AppCompatActivity {
     private TextView btnDefaultSpeed;
     private TextView btnAudioResumeRewind;
     private MaterialSwitch switchAudioAutoAdvance;
+    private TextView btnAudioMetadataSource;
     private MaterialSwitch switchAutoBookmark;
 
     private PlaybackSessionManager.SessionListener miniPlayerListener;
@@ -183,6 +184,7 @@ public class ProfileSettingsActivity extends AppCompatActivity {
         btnDefaultSpeed = findViewById(R.id.btnDefaultSpeed);
         btnAudioResumeRewind = findViewById(R.id.btnAudioResumeRewind);
         switchAudioAutoAdvance = findViewById(R.id.switchAudioAutoAdvance);
+        btnAudioMetadataSource = findViewById(R.id.btnAudioMetadataSource);
         switchAutoBookmark = findViewById(R.id.switchAutoBookmark);
 
         findViewById(R.id.btnEditProfile).setOnClickListener(v -> showEditProfileDialog());
@@ -206,6 +208,7 @@ public class ProfileSettingsActivity extends AppCompatActivity {
         findViewById(R.id.rowLanguageSelector).setOnClickListener(v -> showLanguagePickerDialog());
         btnDefaultSpeed.setOnClickListener(v -> showDefaultSpeedDialog());
         btnAudioResumeRewind.setOnClickListener(v -> showResumeRewindDialog());
+        btnAudioMetadataSource.setOnClickListener(v -> showAudioMetadataSourceDialog());
 
         BottomNavigationView bottomNav = findViewById(R.id.bottomNavigation);
         UiSessionHelper.bindBottomNavigation(this, bottomNav, R.id.nav_profilo);
@@ -263,6 +266,7 @@ public class ProfileSettingsActivity extends AppCompatActivity {
         switchAudioAutoAdvance.setOnCheckedChangeListener(null);
         switchAudioAutoAdvance.setChecked(settingsDao.isAudioAutoAdvanceChapter());
         switchAudioAutoAdvance.setOnCheckedChangeListener(audioAutoAdvanceListener);
+        btnAudioMetadataSource.setText(getMetadataSourceDisplayName(settingsDao.getAudioMetadataSource()));
 
         switchAutoBookmark.setOnCheckedChangeListener(null);
         switchAutoBookmark.setChecked(settingsDao.isAutoBookmark());
@@ -298,6 +302,36 @@ public class ProfileSettingsActivity extends AppCompatActivity {
             return getString(R.string.settings_audio_resume_rewind_off);
         }
         return getString(R.string.settings_audio_resume_rewind_sec_fmt, seconds);
+    }
+
+    private void showAudioMetadataSourceDialog() {
+        String[] codes = {
+                SettingsDao.METADATA_SOURCE_FILE,
+                SettingsDao.METADATA_SOURCE_AUDNEXUS
+        };
+        String[] labels = {
+                getString(R.string.settings_metadata_source_file),
+                getString(R.string.settings_metadata_source_audnexus)
+        };
+        String current = settingsDao.getAudioMetadataSource();
+        int checked = SettingsDao.METADATA_SOURCE_AUDNEXUS.equals(current) ? 1 : 0;
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.settings_audio_metadata_source)
+                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                    settingsDao.setAudioMetadataSource(codes[which]);
+                    btnAudioMetadataSource.setText(labels[which]);
+                    dialog.dismiss();
+                })
+                .setNegativeButton(R.string.action_cancel, null)
+                .show();
+    }
+
+    @NonNull
+    private String getMetadataSourceDisplayName(@NonNull String code) {
+        if (SettingsDao.METADATA_SOURCE_AUDNEXUS.equals(code)) {
+            return getString(R.string.settings_metadata_source_audnexus);
+        }
+        return getString(R.string.settings_metadata_source_file);
     }
 
     private void onFolderPicked(@NonNull Uri treeUri, boolean isAudio) {

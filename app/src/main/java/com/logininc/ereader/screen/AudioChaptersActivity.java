@@ -77,6 +77,7 @@ public class AudioChaptersActivity extends AppCompatActivity {
     private MaterialButton chipNotes;
     private EditText etSearch;
 
+    private TextView tvAudioMetadataSummary;
     private TextView tvOverallPercent;
     private LinearProgressIndicator progressOverall;
 
@@ -156,6 +157,7 @@ public class AudioChaptersActivity extends AppCompatActivity {
         chipNotes = findViewById(R.id.chipAudioNotes);
         etSearch = findViewById(R.id.etAudioChapterSearch);
 
+        tvAudioMetadataSummary = findViewById(R.id.tvAudioMetadataSummary);
         tvOverallPercent = findViewById(R.id.tvAudioOverallPercent);
         progressOverall = findViewById(R.id.progressAudioOverall);
 
@@ -258,6 +260,28 @@ public class AudioChaptersActivity extends AppCompatActivity {
         }
 
         tvTitle.setText(audioBook.getTitle());
+        StringBuilder metaSummary = new StringBuilder();
+        if (!audioBook.getAuthor().isEmpty()) {
+            metaSummary.append(audioBook.getAuthor());
+        }
+        if (!audioBook.getNarrator().isEmpty()) {
+            if (metaSummary.length() > 0) {
+                metaSummary.append(" • ");
+            }
+            metaSummary.append(getString(R.string.format_narrator, audioBook.getNarrator()));
+        }
+        if (audioBook.getTotalDurationMs() > 0L) {
+            if (metaSummary.length() > 0) {
+                metaSummary.append(" • ");
+            }
+            metaSummary.append(FileScanner.formatDuration(audioBook.getTotalDurationMs()));
+        }
+        if (metaSummary.length() > 0) {
+            tvAudioMetadataSummary.setText(metaSummary.toString());
+            tvAudioMetadataSummary.setVisibility(View.VISIBLE);
+        } else {
+            tvAudioMetadataSummary.setVisibility(View.GONE);
+        }
         tvOverallPercent.setText(getString(R.string.format_percent_completed, audioBook.getProgressPercent()));
         progressOverall.setProgress(audioBook.getProgressPercent());
 
@@ -482,19 +506,48 @@ public class AudioChaptersActivity extends AppCompatActivity {
     private void showMetadataSourceDialog() {
         String[] options = {
                 getString(R.string.metadata_source_audnexus),
-                getString(R.string.metadata_source_json)
+                getString(R.string.metadata_source_json),
+                getString(R.string.metadata_source_file)
         };
         new AlertDialog.Builder(this)
                 .setTitle(R.string.metadata_source_title)
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) {
                         showAudnexusSearchDialog();
-                    } else {
+                    } else if (which == 1) {
                         openMetadataJsonLauncher.launch(new String[]{"application/json", "text/plain", "*/*"});
+                    } else {
+                        reloadEmbeddedFileMetadata();
                     }
                 })
                 .setNegativeButton(R.string.action_cancel, null)
                 .show();
+    }
+
+    private void reloadEmbeddedFileMetadata() {
+        if (audioBook == null) {
+            return;
+        }
+        final AudioBook target = audioBook;
+        new Thread(() -> {
+            MetadataJsonParser.ApplyResult res =
+                    FileScanner.reloadAudiobookEmbeddedMetadata(getApplicationContext(), target);
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) {
+                    return;
+                }
+                if (res.success) {
+                    Toast.makeText(
+                            this,
+                            getString(R.string.metadata_file_reloaded_fmt, res.chapterCount),
+                            Toast.LENGTH_SHORT
+                    ).show();
+                    loadAndRender();
+                } else {
+                    Toast.makeText(this, R.string.metadata_file_reload_error, Toast.LENGTH_LONG).show();
+                }
+            });
+        }).start();
     }
 
     private void showAudnexusSearchDialog() {
@@ -563,7 +616,9 @@ public class AudioChaptersActivity extends AppCompatActivity {
                     Toast.makeText(this, R.string.audnexus_no_results, Toast.LENGTH_LONG).show();
                     return;
                 }
-                if (results.size() == 1 && AudnexusClient.isAsin(query)) {
+                boolean autoPickFirst = SettingsDao.METADATA_SOURCE_AUDNEXUS.equals(
+                        settingsDao.getAudioMetadataSource());
+                if (autoPickFirst || (results.size() == 1 && AudnexusClient.isAsin(query))) {
                     applyAudnexusCandidate(results.get(0), region);
                     return;
                 }

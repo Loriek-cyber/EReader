@@ -21,7 +21,9 @@ import com.logininc.ereader.model.Book;
 import com.logininc.ereader.model.Chapter;
 import com.logininc.ereader.model.Title;
 import com.logininc.ereader.persistence.ChapterDao;
+import com.logininc.ereader.persistence.SettingsDao;
 import com.logininc.ereader.persistence.TitleDao;
+import com.logininc.ereader.service.PlaybackSessionManager;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -670,7 +672,93 @@ public final class FileScanner {
             return null;
         }
         new ChapterDao(context).replaceChapterTree((int) id, rootChapters);
+
+        // If user selected automatic Audnexus API metadata in Settings, fetch the 1st match automatically
+        SettingsDao settingsDao = new SettingsDao(context);
+        if (SettingsDao.METADATA_SOURCE_AUDNEXUS.equals(settingsDao.getAudioMetadataSource())) {
+            String query = audioBook.getAuthor().isEmpty()
+                    ? audioBook.getTitle()
+                    : audioBook.getTitle() + " " + audioBook.getAuthor();
+            String region = "en".equalsIgnoreCase(settingsDao.getLanguageTag()) ? "us" : "it";
+            List<AudnexusClient.SearchCandidate> candidates = AudnexusClient.search(query, region);
+            if (!candidates.isEmpty()) {
+                AudnexusClient.fetchAndApply(context, audioBook, candidates.get(0).asin, region);
+            }
+        }
         return audioBook;
+    }
+
+    /**
+     * Forces a fresh reload of embedded metadata (title, author, narrator, cover, chapters)
+     * directly from the audiobook file, preserving {@code currentPositionMs} and {@code status}.
+     */
+    @OptIn(markerClass = UnstableApi.class)
+    @NonNull
+    public static MetadataJsonParser.ApplyResult reloadAudiobookEmbeddedMetadata(
+            @NonNull Context context,
+            @NonNull AudioBook audioBook
+    ) {
+        if (audioBook.getContentUri() == null || Uri.EMPTY.equals(audioBook.getContentUri())) {
+            return new MetadataJsonParser.ApplyResult(false, 0);
+        }
+        M4BParser.M4bMetadata metadata;
+        try {
+            metadata = new M4BParser().parseM4bMetadata(context.getApplicationContext(), audioBook.getContentUri())
+                    .get(15, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            Log.w(TAG, "Embedded metadata reload failed for " + audioBook.getContentUri(), e);
+            return new MetadataJsonParser.ApplyResult(false, 0);
+        }
+        if (metadata == null) {
+            return new MetadataJsonParser.ApplyResult(false, 0);
+        }
+
+        if (!metadata.title.isEmpty()) {
+            audioBook.setTitle(metadata.title);
+        }
+        if (!metadata.author.isEmpty()) {
+            audioBook.setAuthor(metadata.author);
+        }
+        if (!metadata.narrator.isEmpty()) {
+            audioBook.setNarrator(metadata.narrator);
+        }
+        if (metadata.totalDurationMs > 0L) {
+            audioBook.setTotalDurationMs(metadata.totalDurationMs);
+        }
+        if (metadata.coverArtData != null && metadata.coverArtData.length > 0) {
+            Uri coverUri = saveCoverBytes(
+                    context,
+                    "m4b_" + Math.abs(audioBook.getContentUri().toString().hashCode()),
+                    metadata.coverArtData
+            );
+            if (coverUri != null) {
+                audioBook.setCoverUri(coverUri);
+            }
+        }
+
+        int chapterCount = 0;
+        if (!metadata.chapters.isEmpty()) {
+            long savedPosMs = audioBook.getCurrentPositionMs();
+            List<Chapter> rootChapters = buildAudiobookChapterTree(audioBook.getId(), metadata.chapters, savedPosMs);
+            List<Chapter> leaves = ChapterTreeHelper.collectLeafChapters(rootChapters);
+            int matchedChapterIndex = leaves.isEmpty() ? 1 : leaves.get(0).getChapterIndex();
+            for (Chapter leaf : leaves) {
+                long start = leaf.getAudioStartMs();
+                long end = start + leaf.getAudioDurationMs();
+                if (savedPosMs >= start && (leaf.getAudioDurationMs() <= 0L || savedPosMs < end)) {
+                    matchedChapterIndex = leaf.getChapterIndex();
+                    break;
+                }
+            }
+            chapterCount = metadata.chapters.size();
+            audioBook.setLenChapters(chapterCount);
+            audioBook.setCurrentChapter(matchedChapterIndex);
+            new ChapterDao(context).replaceChapterTree(audioBook.getId(), rootChapters);
+        }
+
+        new TitleDao(context).update(audioBook);
+        PlaybackSessionManager.getInstance().invalidateChapterCache(audioBook.getId());
+        return new MetadataJsonParser.ApplyResult(true, chapterCount);
     }
 
     /**

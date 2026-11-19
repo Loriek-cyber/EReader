@@ -204,6 +204,10 @@
     <string name="settings_audio_resume_rewind_sec_fmt">%1$ds</string>
     <string name="settings_audio_auto_advance">Capitolo successivo automatico</string>
     <string name="settings_audio_auto_advance_desc">Passa direttamente al capitolo seguente al termine di quello corrente</string>
+    <string name="settings_audio_metadata_source">Sorgente metadata audiolibri</string>
+    <string name="settings_audio_metadata_source_desc">Metodo automatico all\'importazione e ricerca rapida</string>
+    <string name="settings_metadata_source_file">Metadata del file</string>
+    <string name="settings_metadata_source_audnexus">Audnexus API (1° risultato)</string>
     <string name="settings_auto_bookmark">Salvataggio segnalibri auto</string>
     <string name="settings_auto_bookmark_desc">Memorizza la posizione ad ogni chiusura</string>
     <string name="settings_footer_fmt">Database locale: %1$d eBook • %2$d Audiolibri</string>
@@ -228,6 +232,9 @@
     <string name="metadata_source_title">Carica metadata audiolibro</string>
     <string name="metadata_source_audnexus">Cerca su Audnexus (online)</string>
     <string name="metadata_source_json">Importa file .json locale</string>
+    <string name="metadata_source_file">Ricarica metadata del file</string>
+    <string name="metadata_file_reloaded_fmt">Metadata del file ricaricati (%1$d capitoli)</string>
+    <string name="metadata_file_reload_error">Impossibile leggere i metadata dal file</string>
     <string name="audnexus_dialog_title">Cerca su Audnexus</string>
     <string name="audnexus_query_hint">Titolo, autore o ASIN (es. B08G9PRS1K)…</string>
     <string name="audnexus_region_label">Regione catalogo</string>
