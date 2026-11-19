@@ -207,7 +207,7 @@
     <string name="settings_audio_metadata_source">Sorgente metadata audiolibri</string>
     <string name="settings_audio_metadata_source_desc">Metodo automatico all\'importazione e ricerca rapida</string>
     <string name="settings_metadata_source_file">Metadata del file</string>
-    <string name="settings_metadata_source_audnexus">Audnexus API (1° risultato)</string>
+    <string name="settings_metadata_source_audnexus">Audnexus</string>
     <string name="settings_auto_bookmark">Salvataggio segnalibri auto</string>
     <string name="settings_auto_bookmark_desc">Memorizza la posizione ad ogni chiusura</string>
     <string name="settings_footer_fmt">Database locale: %1$d eBook • %2$d Audiolibri</string>
