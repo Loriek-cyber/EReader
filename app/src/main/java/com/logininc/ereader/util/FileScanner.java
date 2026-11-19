@@ -548,6 +548,61 @@ public final class FileScanner {
         return audioBook;
     }
 
+    /**
+     * Re-parses embedded chapters for an already-imported audiobook that currently has {@code <= 1}
+     * fallback chapter, preserving its saved playback position and status.
+     *
+     * @return {@code true} if multiple chapters were discovered and persisted.
+     */
+    @OptIn(markerClass = UnstableApi.class)
+    public static boolean refreshAudiobookChaptersIfNeeded(@NonNull Context context, @NonNull AudioBook audioBook) {
+        if (audioBook.getLenChapters() > 1 || audioBook.getContentUri() == null || Uri.EMPTY.equals(audioBook.getContentUri())) {
+            return false;
+        }
+        M4BParser.M4bMetadata metadata;
+        try {
+            metadata = new M4BParser().parseM4bMetadata(context.getApplicationContext(), audioBook.getContentUri())
+                    .get(15, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            Log.w(TAG, "Chapter refresh failed for " + audioBook.getContentUri(), e);
+            return false;
+        }
+        if (metadata == null || metadata.chapters.size() <= 1) {
+            return false;
+        }
+
+        long savedPosMs = audioBook.getCurrentPositionMs();
+        int matchedChapterIndex = 1;
+        List<Chapter> chapters = new ArrayList<>(metadata.chapters.size());
+        for (int i = 0; i < metadata.chapters.size(); i++) {
+            M4BParser.M4bChapter ch = metadata.chapters.get(i);
+            long chEnd = ch.startMs + ch.durationMs;
+            boolean completed = ch.durationMs > 0L && savedPosMs >= chEnd;
+            int pct = 0;
+            if (completed) {
+                pct = 100;
+            } else if (savedPosMs >= ch.startMs && ch.durationMs > 0L && savedPosMs < chEnd) {
+                matchedChapterIndex = ch.index;
+                long relMs = savedPosMs - ch.startMs;
+                pct = (int) Math.min(99L, Math.max(1L, Math.round((relMs * 100.0) / ch.durationMs)));
+            }
+            chapters.add(new Chapter(
+                    0, audioBook.getId(), 0, ch.index, 0, i,
+                    ch.title, "", "", "", formatDuration(ch.durationMs),
+                    "", "", ch.startMs, ch.durationMs, pct, completed
+            ));
+        }
+
+        audioBook.setLenChapters(chapters.size());
+        audioBook.setCurrentChapter(matchedChapterIndex);
+        if (metadata.totalDurationMs > 0L && audioBook.getTotalDurationMs() <= 0L) {
+            audioBook.setTotalDurationMs(metadata.totalDurationMs);
+        }
+        new ChapterDao(context).replaceChapterTree(audioBook.getId(), chapters);
+        new TitleDao(context).update(audioBook);
+        return true;
+    }
+
     @Nullable
     private static Uri saveCoverBytes(@NonNull Context context, @NonNull String key, @NonNull byte[] bytes) {
         File dir = new File(context.getFilesDir(), "covers");

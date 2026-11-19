@@ -40,6 +40,7 @@ import java.util.concurrent.Executors;
 public class ProfileSettingsActivity extends AppCompatActivity {
 
     private static final float[] SPEED_OPTIONS = {0.75f, 1.0f, 1.25f, 1.5f, 2.0f};
+    private static final int[] RESUME_REWIND_OPTIONS_SEC = {0, 5, 10, 15, 30};
     private static final String[] THEME_CODES = {
             SettingsDao.THEME_DARK,
             SettingsDao.THEME_OLED,
@@ -73,6 +74,8 @@ public class ProfileSettingsActivity extends AppCompatActivity {
     private MaterialSwitch switchOledMode;
     private TextView tvCurrentLanguage;
     private TextView btnDefaultSpeed;
+    private TextView btnAudioResumeRewind;
+    private MaterialSwitch switchAudioAutoAdvance;
     private MaterialSwitch switchAutoBookmark;
 
     private PlaybackSessionManager.SessionListener miniPlayerListener;
@@ -105,6 +108,9 @@ public class ProfileSettingsActivity extends AppCompatActivity {
 
     private final CompoundButton.OnCheckedChangeListener autoBookmarkListener =
             (buttonView, isChecked) -> settingsDao.setAutoBookmark(isChecked);
+
+    private final CompoundButton.OnCheckedChangeListener audioAutoAdvanceListener =
+            (buttonView, isChecked) -> settingsDao.setAudioAutoAdvanceChapter(isChecked);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -175,6 +181,8 @@ public class ProfileSettingsActivity extends AppCompatActivity {
         switchOledMode = findViewById(R.id.switchOledMode);
         tvCurrentLanguage = findViewById(R.id.tvCurrentLanguage);
         btnDefaultSpeed = findViewById(R.id.btnDefaultSpeed);
+        btnAudioResumeRewind = findViewById(R.id.btnAudioResumeRewind);
+        switchAudioAutoAdvance = findViewById(R.id.switchAudioAutoAdvance);
         switchAutoBookmark = findViewById(R.id.switchAutoBookmark);
 
         findViewById(R.id.btnEditProfile).setOnClickListener(v -> showEditProfileDialog());
@@ -197,6 +205,7 @@ public class ProfileSettingsActivity extends AppCompatActivity {
         findViewById(R.id.rowThemeSelector).setOnClickListener(v -> showThemePickerDialog());
         findViewById(R.id.rowLanguageSelector).setOnClickListener(v -> showLanguagePickerDialog());
         btnDefaultSpeed.setOnClickListener(v -> showDefaultSpeedDialog());
+        btnAudioResumeRewind.setOnClickListener(v -> showResumeRewindDialog());
 
         BottomNavigationView bottomNav = findViewById(R.id.bottomNavigation);
         UiSessionHelper.bindBottomNavigation(this, bottomNav, R.id.nav_profilo);
@@ -249,10 +258,46 @@ public class ProfileSettingsActivity extends AppCompatActivity {
 
         tvCurrentLanguage.setText(getLanguageDisplayName(settingsDao.getLanguageTag()));
         btnDefaultSpeed.setText(formatSpeed(settingsDao.getDefaultAudioSpeed()));
+        btnAudioResumeRewind.setText(formatRewindSeconds(settingsDao.getAudioResumeRewindSec()));
+
+        switchAudioAutoAdvance.setOnCheckedChangeListener(null);
+        switchAudioAutoAdvance.setChecked(settingsDao.isAudioAutoAdvanceChapter());
+        switchAudioAutoAdvance.setOnCheckedChangeListener(audioAutoAdvanceListener);
 
         switchAutoBookmark.setOnCheckedChangeListener(null);
         switchAutoBookmark.setChecked(settingsDao.isAutoBookmark());
         switchAutoBookmark.setOnCheckedChangeListener(autoBookmarkListener);
+    }
+
+    private void showResumeRewindDialog() {
+        String[] labels = new String[RESUME_REWIND_OPTIONS_SEC.length];
+        int current = settingsDao.getAudioResumeRewindSec();
+        int checked = 1;
+        for (int i = 0; i < RESUME_REWIND_OPTIONS_SEC.length; i++) {
+            int sec = RESUME_REWIND_OPTIONS_SEC[i];
+            labels[i] = formatRewindSeconds(sec);
+            if (sec == current) {
+                checked = i;
+            }
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.settings_audio_resume_rewind)
+                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                    int sec = RESUME_REWIND_OPTIONS_SEC[which];
+                    settingsDao.setAudioResumeRewindSec(sec);
+                    btnAudioResumeRewind.setText(formatRewindSeconds(sec));
+                    dialog.dismiss();
+                })
+                .setNegativeButton(R.string.action_cancel, null)
+                .show();
+    }
+
+    @NonNull
+    private String formatRewindSeconds(int seconds) {
+        if (seconds <= 0) {
+            return getString(R.string.settings_audio_resume_rewind_off);
+        }
+        return getString(R.string.settings_audio_resume_rewind_sec_fmt, seconds);
     }
 
     private void onFolderPicked(@NonNull Uri treeUri, boolean isAudio) {

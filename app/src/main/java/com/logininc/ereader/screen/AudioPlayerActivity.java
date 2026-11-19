@@ -49,6 +49,7 @@ public class AudioPlayerActivity extends AppCompatActivity {
     private AudioBook audioBook;
     private boolean isUserScrubbing = false;
     private boolean handledCompletion = false;
+    private boolean attemptedChapterRefresh = false;
 
     private ImageView ivCover;
     private TextView tvChapterPill;
@@ -113,6 +114,31 @@ public class AudioPlayerActivity extends AppCompatActivity {
 
         bindViews();
         startOrAttachSession(savedInstanceState != null);
+        maybeRefreshAudiobookChapters();
+    }
+
+    private void maybeRefreshAudiobookChapters() {
+        if (attemptedChapterRefresh || audioBook == null || audioBook.getLenChapters() > 1) {
+            return;
+        }
+        attemptedChapterRefresh = true;
+        final AudioBook target = audioBook;
+        new Thread(() -> {
+            if (FileScanner.refreshAudiobookChaptersIfNeeded(getApplicationContext(), target)) {
+                PlaybackSessionManager.getInstance().invalidateChapterCache(target.getId());
+                runOnUiThread(() -> {
+                    if (!isFinishing() && !isDestroyed()) {
+                        PlaybackSessionManager sm = PlaybackSessionManager.getInstance();
+                        renderSessionState(
+                                sm.getActiveTitle() != null ? sm.getActiveTitle() : audioBook,
+                                sm.isPlaying(),
+                                sm.getCurrentPositionMs(),
+                                sm.getTotalDurationMs()
+                        );
+                    }
+                });
+            }
+        }).start();
     }
 
     @Override

@@ -66,6 +66,7 @@ public class PlaybackSessionManager {
     private boolean playing = false;
     private boolean seeking = false;
     private long pendingSeekTargetMs = -1L;
+    private boolean skipNextResumeRewind = false;
     private float playbackSpeed = 1.0f;
     private boolean tickerRunning = false;
     private long lastPeriodicPersistElapsedMs = 0L;
@@ -240,6 +241,32 @@ public class PlaybackSessionManager {
         return Math.max(1, Math.min(99, rounded));
     }
 
+    /**
+     * Applies the user-configured resume rewind offset, clamping only to {@code 0ms}
+     * (may cross back into the previous chapter if near a chapter boundary).
+     */
+    public static long applyResumeRewindMs(long currentPositionMs, int rewindSeconds) {
+        if (currentPositionMs <= 0L || rewindSeconds <= 0) {
+            return Math.max(0L, currentPositionMs);
+        }
+        return Math.max(0L, currentPositionMs - (rewindSeconds * 1000L));
+    }
+
+    public void invalidateChapterCache(int titleId) {
+        if (cachedChaptersTitleId == titleId) {
+            cachedChaptersTitleId = -1;
+            cachedAudioChapters = Collections.emptyList();
+        }
+        if (activeTitle instanceof AudioBook && activeTitle.getId() == titleId && appContext != null) {
+            Title refreshed = new TitleDao(appContext).getById(titleId);
+            if (refreshed instanceof AudioBook) {
+                activeTitle.setLenChapters(refreshed.getLenChapters());
+                activeTitle.setCurrentChapter(refreshed.getCurrentChapter());
+            }
+            notifyListeners();
+        }
+    }
+
     public void startOrSwitchSession(@NonNull Context context, @NonNull Title title, int chapterIndex, boolean startPlaying) {
         appContext = context.getApplicationContext();
         SettingsDao settingsDao = new SettingsDao(appContext);
@@ -359,6 +386,14 @@ public class PlaybackSessionManager {
                     syncCurrentChapterOnSeek(audioBook, seekTargetMs);
                 }
             }
+            if (startPlaying && seekTargetMs > 0L && !skipNextResumeRewind) {
+                int rewindSec = new SettingsDao(context).getAudioResumeRewindSec();
+                if (rewindSec > 0) {
+                    seekTargetMs = applyResumeRewindMs(seekTargetMs, rewindSec);
+                    syncCurrentChapterOnSeek(audioBook, seekTargetMs);
+                }
+            }
+            skipNextResumeRewind = false;
             if (durationMs > 0 && seekTargetMs >= durationMs) {
                 seekTargetMs = Math.max(0L, durationMs - 1000L);
             }
@@ -530,6 +565,35 @@ public class PlaybackSessionManager {
                 audioBook.setCurrentChapterCompleted(false);
                 current = nextChapter;
                 chapterChanged = true;
+
+                boolean autoAdvance = new SettingsDao(appContext).isAudioAutoAdvanceChapter();
+                if (!autoAdvance) {
+                    long nextStartMs = Math.max(0L, nextChapter.getAudioStartMs());
+                    audioBook.setCurrentPositionMs(nextStartMs);
+                    if (audioBook.getTotalDurationMs() > 0L) {
+                        audioBook.setProgressPercent(computeProgressPercent(nextStartMs, audioBook.getTotalDurationMs()));
+                    }
+                    audioBook.setLastOpenedAt(System.currentTimeMillis());
+                    skipNextResumeRewind = true;
+                    playing = false;
+                    unregisterNoisyReceiver();
+                    abandonAudioFocus();
+                    if (mediaPlayer != null && mediaPlayerPrepared) {
+                        try {
+                            if (mediaPlayer.isPlaying()) {
+                                mediaPlayer.pause();
+                            }
+                            seekMediaPlayer(mediaPlayer, nextStartMs);
+                        } catch (IllegalStateException ignored) {
+                        }
+                    }
+                    new SettingsDao(appContext).setActiveSessionPlaying(false);
+                    AudioPlaybackService.stop(appContext);
+                    SleepTimerController.getInstance().onSessionPaused();
+                    maybePersistAudioStateThrottled(audioBook, nextChapter.getChapterIndex(), 0, false, true);
+                    notifyListeners();
+                    return;
+                }
             }
         }
 
@@ -653,19 +717,35 @@ public class PlaybackSessionManager {
                 return;
             }
             try {
-                requestAudioFocus(appContext);
-                registerNoisyReceiver(appContext);
-                mediaPlayer.start();
-                applySpeedToPlayer(playbackSpeed);
-                playing = true;
-                pausedByTransientFocusLoss = false;
-                lastPeriodicPersistElapsedMs = SystemClock.elapsedRealtime();
-                AudioPlaybackService.start(
-                        appContext,
-                        audioBook.getId(),
-                        audioBook.getTitle(),
-                        audioBook.getAuthor()
-                );
+                boolean applyRewind = !skipNextResumeRewind;
+                skipNextResumeRewind = false;
+                int rewindSec = applyRewind ? new SettingsDao(appContext).getAudioResumeRewindSec() : 0;
+                long currentPos = getCurrentPositionMs();
+                if (rewindSec > 0 && currentPos > 0L) {
+                    long targetMs = applyResumeRewindMs(currentPos, rewindSec);
+                    audioBook.setCurrentPositionMs(targetMs);
+                    if (audioBook.getTotalDurationMs() > 0L) {
+                        audioBook.setProgressPercent(computeProgressPercent(targetMs, audioBook.getTotalDurationMs()));
+                    }
+                    syncCurrentChapterOnSeek(audioBook, targetMs);
+                    seeking = true;
+                    pendingSeekTargetMs = targetMs;
+                    final Context ctx = appContext;
+                    mediaPlayer.setOnSeekCompleteListener(mp -> {
+                        seeking = false;
+                        pendingSeekTargetMs = -1L;
+                        if (mp != mediaPlayer || !mediaPlayerPrepared) {
+                            return;
+                        }
+                        mp.setOnSeekCompleteListener(null);
+                        startPreparedAudioPlayback(ctx, audioBook);
+                        notifyListeners();
+                    });
+                    seekMediaPlayer(mediaPlayer, targetMs);
+                    notifyListeners();
+                    return;
+                }
+                startPreparedAudioPlayback(appContext, audioBook);
             } catch (IllegalStateException e) {
                 prepareAndPlayAudio(appContext, audioBook, audioBook.getCurrentChapter(), true);
                 return;

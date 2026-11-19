@@ -198,6 +198,12 @@
     <string name="lang_english">English</string>
     <string name="settings_default_speed">Default speed</string>
     <string name="settings_default_speed_desc">Audiobook playback rate</string>
+    <string name="settings_audio_resume_rewind">Rewind on resume</string>
+    <string name="settings_audio_resume_rewind_desc">Step back a few seconds whenever playback resumes</string>
+    <string name="settings_audio_resume_rewind_off">Off</string>
+    <string name="settings_audio_resume_rewind_sec_fmt">%1$ds</string>
+    <string name="settings_audio_auto_advance">Auto-advance chapter</string>
+    <string name="settings_audio_auto_advance_desc">Continue directly to the next chapter when the current one ends</string>
     <string name="settings_auto_bookmark">Auto-save bookmarks</string>
     <string name="settings_auto_bookmark_desc">Remember position whenever you close</string>
     <string name="settings_footer_fmt">Local database: %1$d eBooks • %2$d Audiobooks</string>

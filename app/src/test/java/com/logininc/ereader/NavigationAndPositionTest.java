@@ -10,10 +10,15 @@ import com.logininc.ereader.service.PlaybackSessionManager;
 import com.logininc.ereader.service.SleepTimerController;
 import com.logininc.ereader.util.ChapterTreeHelper;
 import com.logininc.ereader.util.FileScanner;
+import com.logininc.ereader.util.M4BParser;
+import com.logininc.ereader.util.Mp4ChapterParser;
 import com.logininc.ereader.util.NavigationFlowHelper;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Test;
 
@@ -195,5 +200,64 @@ public class NavigationAndPositionTest {
         assertEquals("Sottosezione 1B", s1.getChildren().get(1).getChapterTitle());
         assertEquals("Sezione 2", s2.getChapterTitle());
         assertTrue(s2.getContentText().contains("Contenuto 2"));
+    }
+
+    @Test
+    public void mp4QuickTimeTextSampleDecodesUtf8AndUtf16() {
+        byte[] utf8Title = "Prologo: L'inizio".getBytes(StandardCharsets.UTF_8);
+        byte[] qtSample = new byte[2 + utf8Title.length + 12]; // with trailing encd atom bytes
+        qtSample[0] = (byte) ((utf8Title.length >> 8) & 0xFF);
+        qtSample[1] = (byte) (utf8Title.length & 0xFF);
+        System.arraycopy(utf8Title, 0, qtSample, 2, utf8Title.length);
+        assertEquals("Prologo: L'inizio", Mp4ChapterParser.decodeQuickTimeTextSample(qtSample));
+
+        byte[] utf16Title = "Capitolo II".getBytes(StandardCharsets.UTF_16BE);
+        byte[] qtUtf16 = new byte[4 + utf16Title.length];
+        int len = 2 + utf16Title.length;
+        qtUtf16[0] = (byte) ((len >> 8) & 0xFF);
+        qtUtf16[1] = (byte) (len & 0xFF);
+        qtUtf16[2] = (byte) 0xFE;
+        qtUtf16[3] = (byte) 0xFF;
+        System.arraycopy(utf16Title, 0, qtUtf16, 4, utf16Title.length);
+        assertEquals("Capitolo II", Mp4ChapterParser.decodeQuickTimeTextSample(qtUtf16));
+    }
+
+    @Test
+    public void mp4ChapterMergePrefersRealTitlesOverGenericOnes() {
+        List<Mp4ChapterParser.ParsedChapter> qt = Arrays.asList(
+                new Mp4ChapterParser.ParsedChapter(0L, 60_000L, "Chapter 1"),
+                new Mp4ChapterParser.ParsedChapter(60_000L, 90_000L, "Il Viaggio")
+        );
+        List<Mp4ChapterParser.ParsedChapter> nero = Arrays.asList(
+                new Mp4ChapterParser.ParsedChapter(0L, 0L, "Introduzione"),
+                new Mp4ChapterParser.ParsedChapter(60_000L, 0L, "Chapter 2")
+        );
+        List<Mp4ChapterParser.ParsedChapter> merged = Mp4ChapterParser.mergeBestChapters(qt, nero);
+        assertEquals(2, merged.size());
+        assertEquals("Introduzione", merged.get(0).title);
+        assertEquals("Il Viaggio", merged.get(1).title);
+    }
+
+    @Test
+    public void vorbisCommentChaptersAreParsedInOrder() {
+        Map<String, String> comments = new HashMap<>();
+        comments.put("CHAPTER001", "00:00:00.000");
+        comments.put("CHAPTER001NAME", "Prologo");
+        comments.put("CHAPTER002", "00:05:30.500");
+        comments.put("CHAPTER002NAME", "Capitolo Uno");
+
+        List<Mp4ChapterParser.ParsedChapter> chapters = M4BParser.parseVorbisChapters(comments);
+        assertEquals(2, chapters.size());
+        assertEquals(0L, chapters.get(0).startMs);
+        assertEquals("Prologo", chapters.get(0).title);
+        assertEquals(330_500L, chapters.get(1).startMs);
+        assertEquals("Capitolo Uno", chapters.get(1).title);
+    }
+
+    @Test
+    public void resumeRewindClampsToZeroAndSupportsOff() {
+        assertEquals(25_000L, PlaybackSessionManager.applyResumeRewindMs(30_000L, 5));
+        assertEquals(0L, PlaybackSessionManager.applyResumeRewindMs(3_000L, 10));
+        assertEquals(30_000L, PlaybackSessionManager.applyResumeRewindMs(30_000L, 0));
     }
 }

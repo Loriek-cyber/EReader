@@ -89,6 +89,7 @@ public class AudioChaptersActivity extends AppCompatActivity {
     private final Set<Integer> expandedChapterIndices = new HashSet<>();
     private final Handler searchHandler = new Handler(Looper.getMainLooper());
     private final Runnable debouncedSearchRunnable = this::renderActiveTab;
+    private boolean attemptedChapterRefresh = false;
 
     private PlaybackSessionManager.SessionListener miniPlayerListener;
 
@@ -255,6 +256,21 @@ public class AudioChaptersActivity extends AppCompatActivity {
         updateChipAppearance();
         bindActiveChapterCard(allChapters);
         renderActiveTab();
+
+        if (!attemptedChapterRefresh && audioBook.getLenChapters() <= 1) {
+            attemptedChapterRefresh = true;
+            final AudioBook targetBook = audioBook;
+            new Thread(() -> {
+                if (FileScanner.refreshAudiobookChaptersIfNeeded(getApplicationContext(), targetBook)) {
+                    PlaybackSessionManager.getInstance().invalidateChapterCache(targetBook.getId());
+                    runOnUiThread(() -> {
+                        if (!isFinishing() && !isDestroyed()) {
+                            loadAndRender();
+                        }
+                    });
+                }
+            }).start();
+        }
     }
 
     private int resolveTargetChapterIndex() {

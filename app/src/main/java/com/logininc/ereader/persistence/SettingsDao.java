@@ -33,6 +33,8 @@ public class SettingsDao {
     public static final String KEY_SLEEP_END_MIN = "sleep_end_min";
     public static final String KEY_SLEEP_INTERVAL_MIN = "sleep_interval_min";
     public static final String KEY_DEFAULT_AUDIO_SPEED = "default_audio_speed";
+    public static final String KEY_AUDIO_RESUME_REWIND_SEC = "audio_resume_rewind_sec";
+    public static final String KEY_AUDIO_AUTO_ADVANCE_CHAPTER = "audio_auto_advance_chapter";
     public static final String KEY_AUTO_BOOKMARK = "auto_bookmark";
     public static final String KEY_ACTIVE_SESSION_TITLE_ID = "active_session_title_id";
     public static final String KEY_ACTIVE_SESSION_PLAYING = "active_session_playing";
@@ -215,6 +217,22 @@ public class SettingsDao {
 
     public void setDefaultAudioSpeed(float speed) {
         putFloat(KEY_DEFAULT_AUDIO_SPEED, speed);
+    }
+
+    public int getAudioResumeRewindSec() {
+        return Math.max(0, Math.min(60, getInt(KEY_AUDIO_RESUME_REWIND_SEC, 5)));
+    }
+
+    public void setAudioResumeRewindSec(int seconds) {
+        putInt(KEY_AUDIO_RESUME_REWIND_SEC, Math.max(0, Math.min(60, seconds)));
+    }
+
+    public boolean isAudioAutoAdvanceChapter() {
+        return getBoolean(KEY_AUDIO_AUTO_ADVANCE_CHAPTER, true);
+    }
+
+    public void setAudioAutoAdvanceChapter(boolean enabled) {
+        putBoolean(KEY_AUDIO_AUTO_ADVANCE_CHAPTER, enabled);
     }
 
     public boolean isAutoBookmark() {
