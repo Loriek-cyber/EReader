@@ -5,48 +5,27 @@ import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.pdf.PdfRenderer;
 import android.net.Uri;
-import android.os.ParcelFileDescriptor;
 import android.provider.OpenableColumns;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.OptIn;
-import androidx.media3.common.util.UnstableApi;
 
 import com.logininc.ereader.model.AudioBook;
-import com.logininc.ereader.model.Book;
 import com.logininc.ereader.model.Chapter;
 import com.logininc.ereader.model.Title;
-import com.logininc.ereader.persistence.ChapterDao;
-import com.logininc.ereader.persistence.SettingsDao;
 import com.logininc.ereader.persistence.TitleDao;
-import com.logininc.ereader.service.PlaybackSessionManager;
-
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
-
-import io.documentnode.epub4j.domain.Author;
-import io.documentnode.epub4j.domain.Resource;
-import io.documentnode.epub4j.domain.SpineReference;
-import io.documentnode.epub4j.domain.TOCReference;
 
 /**
- * Imports selected document URIs, parses EPUBs via {@link EbookParser} ({@code epub4j Book})
- * and M4B/audio files via {@link M4BParser}, and persists them into SQLite.
+ * Thin facade routing file-import requests to {@link EpubImporter}, {@link PdfImporter},
+ * and {@link AudioImporter}, plus shared URI/cover/duration utilities.
  */
 public final class FileScanner {
 
@@ -110,291 +89,26 @@ public final class FileScanner {
         String lowerMime = mime != null ? mime.toLowerCase(Locale.ROOT) : "";
 
         if (lowerName.endsWith(".epub") || "application/epub+zip".equals(lowerMime)) {
-            return importEpub(context, uri, displayName, titleDao);
+            return EpubImporter.importEpub(context, uri, displayName, titleDao);
         }
         if (lowerName.endsWith(".pdf") || "application/pdf".equals(lowerMime)) {
-            return importPdf(context, uri, displayName, titleDao);
+            return PdfImporter.importPdf(context, uri, displayName, titleDao);
         }
         if (isAudioFile(displayName) || M4BParser.isM4bOrAudioMime(mime)) {
-            return importAudiobook(context, uri, displayName, titleDao);
+            return AudioImporter.importAudiobook(context, uri, displayName, titleDao);
         }
         return null;
     }
 
-    @Nullable
-    private static Book importEpub(
-            @NonNull Context context,
-            @NonNull Uri uri,
-            @NonNull String displayName,
-            @NonNull TitleDao titleDao
-    ) {
-        try (InputStream is = context.getContentResolver().openInputStream(uri)) {
-            if (is == null) {
-                return null;
-            }
-            io.documentnode.epub4j.domain.Book epubBook = EbookParser.parse(is);
-
-            String titleText = epubBook.getTitle();
-            if (titleText == null || titleText.trim().isEmpty()) {
-                titleText = stripExtension(displayName);
-            } else {
-                titleText = titleText.trim();
-            }
-
-            String author = extractEpubAuthor(epubBook);
-            Uri coverUri = null;
-            if (epubBook.getCoverImage() != null && epubBook.getCoverImage().getData() != null) {
-                coverUri = saveCoverBytes(context, "epub_" + Math.abs(uri.toString().hashCode()),
-                        epubBook.getCoverImage().getData());
-            }
-
-            List<Chapter> chapters = buildEpubChapters(epubBook);
-            if (chapters.isEmpty()) {
-                chapters.add(new Chapter(
-                        0, 0, 0, 1, 0, 0,
-                        titleText, "", "", "", "",
-                        "", "", 0L, 0L, 0, false
-                ));
-            }
-
-            List<Chapter> flattened = Chapter.flattenTree(chapters);
-            Book book = new Book(0, titleText, flattened.size(), uri);
-            book.setAuthor(author);
-            book.setCoverUri(coverUri);
-            book.setTotalPages(estimateEpubTotalPages(chapters));
-            book.setChapters(chapters);
-
-            long id = titleDao.saveBookWithChapters(book);
-            return id != -1 ? book : null;
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to import EPUB: " + uri, e);
-            return null;
-        }
-    }
-
-    @NonNull
-    private static String extractEpubAuthor(@NonNull io.documentnode.epub4j.domain.Book epubBook) {
-        if (epubBook.getMetadata() == null || epubBook.getMetadata().getAuthors() == null) {
-            return "";
-        }
-        List<String> names = new ArrayList<>();
-        for (Author author : epubBook.getMetadata().getAuthors()) {
-            String first = author.getFirstname() != null ? author.getFirstname().trim() : "";
-            String last = author.getLastname() != null ? author.getLastname().trim() : "";
-            String combined = (first + " " + last).trim();
-            if (!combined.isEmpty()) {
-                names.add(combined);
-            }
-        }
-        return String.join(", ", names);
-    }
-
     @NonNull
     public static List<Chapter> buildEpubChapters(@NonNull io.documentnode.epub4j.domain.Book epubBook) {
-        List<Chapter> roots = new ArrayList<>();
-        int[] indexCounter = {1};
-
-        List<TOCReference> tocRefs = epubBook.getTableOfContents() != null
-                ? epubBook.getTableOfContents().getTocReferences()
-                : null;
-
-        if (tocRefs != null && !tocRefs.isEmpty()) {
-            for (int i = 0; i < tocRefs.size(); i++) {
-                roots.add(convertTocReference(tocRefs.get(i), 0, i, indexCounter));
-            }
-            return roots;
-        }
-
-        // EPUB 3 nav.xhtml fallback when NCX toc is absent or empty
-        List<Chapter> navChapters = buildChaptersFromEpub3Nav(epubBook, indexCounter);
-        if (!navChapters.isEmpty()) {
-            return navChapters;
-        }
-
-        List<SpineReference> spineRefs = epubBook.getSpine() != null
-                ? epubBook.getSpine().getSpineReferences()
-                : null;
-        if (spineRefs != null) {
-            for (int i = 0; i < spineRefs.size(); i++) {
-                Resource res = spineRefs.get(i).getResource();
-                String rawHtml = readResourceHtml(res);
-                String plainText = extractReadableText(rawHtml, null);
-                String chTitle = (res != null && res.getTitle() != null && !res.getTitle().trim().isEmpty())
-                        ? res.getTitle().trim()
-                        : "Chapter " + (i + 1);
-                String href = res != null && res.getHref() != null ? res.getHref() : "";
-                Chapter chapter = new Chapter(
-                        0, 0, 0, indexCounter[0]++, 0, i,
-                        chTitle, "", href, "", "",
-                        plainText, "", 0L, 0L, 0, false
-                );
-                attachHtmlSectionsIfPresent(chapter, rawHtml, href, 0, indexCounter);
-                if (!chapter.getChildren().isEmpty()) {
-                    chapter.setContentText("");
-                }
-                roots.add(chapter);
-            }
-        }
-        return roots;
+        return EpubImporter.buildEpubChapters(epubBook);
     }
 
     public static int estimateEpubTotalPages(@NonNull List<Chapter> rootChapters) {
-        List<Chapter> leaves = ChapterTreeHelper.collectLeafChapters(rootChapters);
-        long totalChars = 0L;
-        for (Chapter leaf : leaves) {
-            totalChars += leaf.getContentText().length();
-        }
-        int byChars = (int) Math.ceil(totalChars / 1800.0);
-        return Math.max(Math.max(1, leaves.size()), byChars);
+        return EpubImporter.estimateEpubTotalPages(rootChapters);
     }
 
-    @NonNull
-    private static List<Chapter> buildChaptersFromEpub3Nav(
-            @NonNull io.documentnode.epub4j.domain.Book epubBook,
-            @NonNull int[] indexCounter
-    ) {
-        if (epubBook.getResources() == null) {
-            return new ArrayList<>();
-        }
-        for (Resource res : epubBook.getResources().getAll()) {
-            String href = res.getHref() != null ? res.getHref().toLowerCase(Locale.ROOT) : "";
-            if (!href.endsWith(".xhtml") && !href.endsWith(".html")) {
-                continue;
-            }
-            String html = readResourceHtml(res);
-            if (!html.contains("epub:type=\"toc\"") && !html.contains("epub:type='toc'")) {
-                continue;
-            }
-            Document doc = Jsoup.parse(html);
-            Element nav = doc.selectFirst("nav[epub|type=toc], nav[epub\\:type=toc], nav");
-            if (nav == null) {
-                continue;
-            }
-            Element rootOl = nav.selectFirst("ol");
-            if (rootOl == null) {
-                continue;
-            }
-            String baseDir = "";
-            String origHref = res.getHref() != null ? res.getHref() : "";
-            int slash = origHref.lastIndexOf('/');
-            if (slash >= 0) {
-                baseDir = origHref.substring(0, slash + 1);
-            }
-            return parseNavList(epubBook, rootOl, baseDir, 0, indexCounter);
-        }
-        return new ArrayList<>();
-    }
-
-    @NonNull
-    private static List<Chapter> parseNavList(
-            @NonNull io.documentnode.epub4j.domain.Book epubBook,
-            @NonNull Element ol,
-            @NonNull String baseDir,
-            int level,
-            @NonNull int[] indexCounter
-    ) {
-        List<Chapter> nodes = new ArrayList<>();
-        int sortOrder = 0;
-        for (Element child : ol.children()) {
-            if (!"li".equalsIgnoreCase(child.tagName())) {
-                continue;
-            }
-            Element link = child.selectFirst("> a, > span");
-            String title = link != null ? link.text().trim() : "";
-            String rawHref = (link != null && "a".equalsIgnoreCase(link.tagName())) ? link.attr("href").trim() : "";
-            Element nestedOl = child.selectFirst("> ol");
-            boolean hasChildren = nestedOl != null && !nestedOl.select("> li").isEmpty();
-
-            String fileHref = rawHref;
-            String fragmentId = "";
-            int hash = rawHref.indexOf('#');
-            if (hash >= 0) {
-                fileHref = rawHref.substring(0, hash);
-                fragmentId = rawHref.substring(hash + 1);
-            }
-            String resolvedHref = (!fileHref.isEmpty() && !baseDir.isEmpty() && !fileHref.contains("/"))
-                    ? baseDir + fileHref
-                    : fileHref;
-
-            int chIndex = indexCounter[0]++;
-            if (title.isEmpty()) {
-                title = "Chapter " + chIndex;
-            }
-            String plainText = "";
-            String rawHtml = "";
-            if (!hasChildren && !resolvedHref.isEmpty() && epubBook.getResources() != null) {
-                Resource targetRes = epubBook.getResources().getByHref(resolvedHref);
-                if (targetRes == null && !fileHref.isEmpty()) {
-                    targetRes = epubBook.getResources().getByHref(fileHref);
-                }
-                rawHtml = readResourceHtml(targetRes);
-                plainText = extractReadableText(rawHtml, fragmentId);
-            }
-
-            Chapter node = new Chapter(
-                    0, 0, 0, chIndex, level, sortOrder++,
-                    title, "", resolvedHref, fragmentId, "",
-                    plainText, "", 0L, 0L, 0, false
-            );
-            if (hasChildren) {
-                for (Chapter sub : parseNavList(epubBook, nestedOl, baseDir, level + 1, indexCounter)) {
-                    node.addChild(sub);
-                }
-            } else if (fragmentId.isEmpty() && !rawHtml.isEmpty()) {
-                attachHtmlSectionsIfPresent(node, rawHtml, resolvedHref, level, indexCounter);
-                if (!node.getChildren().isEmpty()) {
-                    node.setContentText("");
-                }
-            }
-            nodes.add(node);
-        }
-        return nodes;
-    }
-
-    @NonNull
-    private static Chapter convertTocReference(
-            @NonNull TOCReference ref,
-            int level,
-            int sortOrder,
-            @NonNull int[] indexCounter
-    ) {
-        int chIndex = indexCounter[0]++;
-        Resource res = ref.getResource();
-        String href = res != null && res.getHref() != null ? res.getHref() : "";
-        String fragmentId = ref.getFragmentId() != null ? ref.getFragmentId() : "";
-        List<TOCReference> children = ref.getChildren();
-        boolean hasTocChildren = children != null && !children.isEmpty();
-
-        String rawHtml = hasTocChildren ? "" : readResourceHtml(res);
-        String plainText = hasTocChildren ? "" : extractReadableText(rawHtml, fragmentId);
-        String chTitle = ref.getTitle() != null && !ref.getTitle().trim().isEmpty()
-                ? ref.getTitle().trim()
-                : "Chapter " + chIndex;
-
-        Chapter chapter = new Chapter(
-                0, 0, 0, chIndex, level, sortOrder,
-                chTitle, "", href, fragmentId, "",
-                plainText, "", 0L, 0L, 0, false
-        );
-
-        if (hasTocChildren) {
-            for (int i = 0; i < children.size(); i++) {
-                chapter.addChild(convertTocReference(children.get(i), level + 1, i, indexCounter));
-            }
-        } else if (fragmentId.isEmpty() && !rawHtml.isEmpty()) {
-            attachHtmlSectionsIfPresent(chapter, rawHtml, href, level, indexCounter);
-            if (!chapter.getChildren().isEmpty()) {
-                chapter.setContentText("");
-            }
-        }
-        return chapter;
-    }
-
-    /**
-     * Parses nested HTML {@code <section>} elements into hierarchical child {@link Chapter} nodes
-     * when an EPUB document structures chapters/subsections via {@code <section>} tags rather than
-     * nested NCX/NAV TOC entries.
-     */
     public static void attachHtmlSectionsIfPresent(
             @NonNull Chapter parent,
             @Nullable String rawHtml,
@@ -402,478 +116,33 @@ public final class FileScanner {
             int parentLevel,
             @NonNull int[] indexCounter
     ) {
-        if (rawHtml == null || rawHtml.trim().isEmpty()) {
-            return;
-        }
-        Document doc = Jsoup.parse(rawHtml);
-        doc.select("script, style").remove();
-        Element body = doc.body();
-        if (body == null) {
-            return;
-        }
-        List<Element> topSections = directSectionElements(body);
-        if (topSections.size() == 1) {
-            List<Element> inner = directSectionElements(topSections.get(0));
-            if (inner.size() >= 2) {
-                topSections = inner;
-            } else {
-                return;
-            }
-        }
-        if (topSections.size() < 2) {
-            return;
-        }
-        for (int i = 0; i < topSections.size(); i++) {
-            parent.addChild(convertHtmlSectionElement(topSections.get(i), href, parentLevel + 1, i, indexCounter));
-        }
+        EpubImporter.attachHtmlSectionsIfPresent(parent, rawHtml, href, parentLevel, indexCounter);
     }
 
-    @NonNull
-    private static Chapter convertHtmlSectionElement(
-            @NonNull Element sectionEl,
-            @NonNull String href,
-            int level,
-            int sortOrder,
-            @NonNull int[] indexCounter
-    ) {
-        int chIndex = indexCounter[0]++;
-        String title = resolveSectionTitle(sectionEl, chIndex);
-        String fragmentId = sectionEl.id();
-        List<Element> nestedSections = directSectionElements(sectionEl);
-        String text = nestedSections.isEmpty()
-                ? extractReadableText(sectionEl.outerHtml(), null)
-                : "";
-        Chapter node = new Chapter(
-                0, 0, 0, chIndex, level, sortOrder,
-                title, "", href, fragmentId, "",
-                text, "", 0L, 0L, 0, false
-        );
-        for (int i = 0; i < nestedSections.size(); i++) {
-            node.addChild(convertHtmlSectionElement(nestedSections.get(i), href, level + 1, i, indexCounter));
-        }
-        return node;
-    }
-
-    @NonNull
-    private static List<Element> directSectionElements(@NonNull Element container) {
-        List<Element> result = new ArrayList<>();
-        collectTopLevelSections(container, result);
-        return result;
-    }
-
-    private static void collectTopLevelSections(@NonNull Element element, @NonNull List<Element> out) {
-        for (Element child : element.children()) {
-            if ("section".equalsIgnoreCase(child.tagName())) {
-                out.add(child);
-            } else {
-                collectTopLevelSections(child, out);
-            }
-        }
-    }
-
-    @NonNull
-    private static String resolveSectionTitle(@NonNull Element sectionEl, int fallbackIndex) {
-        Element heading = sectionEl.selectFirst("h1, h2, h3, h4, h5, h6");
-        if (heading != null) {
-            String hText = heading.text().trim();
-            if (!hText.isEmpty()) {
-                return hText;
-            }
-        }
-        String aria = sectionEl.attr("aria-label").trim();
-        if (!aria.isEmpty()) {
-            return aria;
-        }
-        String titleAttr = sectionEl.attr("title").trim();
-        if (!titleAttr.isEmpty()) {
-            return titleAttr;
-        }
-        return "Section " + fallbackIndex;
-    }
-
-    /**
-     * Extracts readable plain text from EPUB HTML while preserving paragraph breaks and
-     * scoping to {@code fragmentId} when present so sibling subsections do not duplicate the whole chapter.
-     */
     @NonNull
     public static String extractReadableText(@Nullable String rawHtml, @Nullable String fragmentId) {
-        if (rawHtml == null || rawHtml.trim().isEmpty()) {
-            return "";
-        }
-        Document doc = Jsoup.parse(rawHtml);
-        doc.select("script, style").remove();
-
-        Element root = doc.body();
-        if (root == null) {
-            return "";
-        }
-
-        String scopedHtml = null;
-        if (fragmentId != null && !fragmentId.trim().isEmpty()) {
-            Element target = doc.getElementById(fragmentId.trim());
-            if (target != null) {
-                String tag = target.tagName().toLowerCase(Locale.ROOT);
-                boolean isHeadingOrAnchor = tag.matches("h[1-6]|a|span");
-                if (isHeadingOrAnchor) {
-                    StringBuilder sb = new StringBuilder();
-                    sb.append(target.outerHtml());
-                    Element sibling = target.nextElementSibling();
-                    while (sibling != null) {
-                        String sibId = sibling.id();
-                        String sibTag = sibling.tagName().toLowerCase(Locale.ROOT);
-                        if (!sibId.isEmpty() && sibTag.matches("h[1-6]|section|div|article")) {
-                            break;
-                        }
-                        if (tag.matches("h[1-6]") && sibTag.matches("h[1-6]")
-                                && sibTag.charAt(1) <= tag.charAt(1)) {
-                            break;
-                        }
-                        sb.append(sibling.outerHtml());
-                        sibling = sibling.nextElementSibling();
-                    }
-                    scopedHtml = sb.toString();
-                } else {
-                    scopedHtml = target.outerHtml();
-                }
-            }
-        }
-
-        Document workDoc = scopedHtml != null ? Jsoup.parseBodyFragment(scopedHtml) : doc;
-        Element workBody = workDoc.body();
-        if (workBody == null) {
-            return "";
-        }
-        workBody.select("br").append("%%BR%%");
-        workBody.select("p, h1, h2, h3, h4, h5, h6, li, blockquote, div, tr").prepend("%%PARA%%");
-
-        String rawText = workBody.text()
-                .replace("%%PARA%%", "\n\n")
-                .replace("%%BR%%", "\n");
-
-        String[] lines = rawText.split("\n");
-        StringBuilder cleaned = new StringBuilder(rawText.length());
-        int consecutiveEmpty = 0;
-        for (String line : lines) {
-            String trimmed = line.trim();
-            if (trimmed.isEmpty()) {
-                consecutiveEmpty++;
-                if (cleaned.length() > 0 && consecutiveEmpty == 1) {
-                    cleaned.append("\n\n");
-                }
-            } else {
-                if (cleaned.length() > 0 && consecutiveEmpty == 0) {
-                    cleaned.append('\n');
-                }
-                cleaned.append(trimmed);
-                consecutiveEmpty = 0;
-            }
-        }
-        return cleaned.toString().trim();
+        return EpubImporter.extractReadableText(rawHtml, fragmentId);
     }
 
-    @NonNull
-    private static String readResourceHtml(@Nullable Resource res) {
-        if (res == null) {
-            return "";
-        }
-        try {
-            byte[] data = res.getData();
-            return data != null ? new String(data, StandardCharsets.UTF_8) : "";
-        } catch (IOException e) {
-            return "";
-        }
-    }
-
-    @Nullable
-    private static Book importPdf(
-            @NonNull Context context,
-            @NonNull Uri uri,
-            @NonNull String displayName,
-            @NonNull TitleDao titleDao
-    ) {
-        int pageCount = 1;
-        try (ParcelFileDescriptor pfd = context.getContentResolver().openFileDescriptor(uri, "r")) {
-            if (pfd != null) {
-                try (PdfRenderer renderer = new PdfRenderer(pfd)) {
-                    pageCount = Math.max(1, renderer.getPageCount());
-                }
-            }
-        } catch (Exception e) {
-            Log.w(TAG, "Failed to inspect PDF page count for " + uri, e);
-        }
-
-        String titleText = stripExtension(displayName);
-        Book book = new Book(0, titleText, 1, uri);
-        book.setTotalPages(pageCount);
-
-        List<Chapter> chapters = new ArrayList<>();
-        chapters.add(new Chapter(
-                0, 0, 0, 1, 0, 0,
-                titleText, "", "", "", pageCount + " p.",
-                "", "", 0L, 0L, 0, false
-        ));
-        book.setChapters(chapters);
-
-        long id = titleDao.saveBookWithChapters(book);
-        return id != -1 ? book : null;
-    }
-
-    @OptIn(markerClass = UnstableApi.class)
-    @Nullable
-    private static AudioBook importAudiobook(
-            @NonNull Context context,
-            @NonNull Uri uri,
-            @NonNull String displayName,
-            @NonNull TitleDao titleDao
-    ) {
-        M4BParser.M4bMetadata metadata = null;
-        try {
-            metadata = new M4BParser().parseM4bMetadata(context, uri).get(15, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            Log.w(TAG, "M4B metadata extraction failed for " + uri, e);
-        }
-
-        String titleText = (metadata != null && !metadata.title.isEmpty())
-                ? metadata.title
-                : stripExtension(displayName);
-        String author = metadata != null ? metadata.author : "";
-        String narrator = metadata != null ? metadata.narrator : "";
-        long totalDurationMs = metadata != null ? metadata.totalDurationMs : 0L;
-
-        Uri coverUri = null;
-        if (metadata != null && metadata.coverArtData != null) {
-            coverUri = saveCoverBytes(context, "m4b_" + Math.abs(uri.toString().hashCode()),
-                    metadata.coverArtData);
-        }
-
-        List<Chapter> rootChapters;
-        int totalChapterNodes;
-        if (metadata != null && !metadata.chapters.isEmpty()) {
-            rootChapters = buildAudiobookChapterTree(0, metadata.chapters, 0L);
-            totalChapterNodes = metadata.chapters.size();
-        } else {
-            rootChapters = new ArrayList<>();
-            rootChapters.add(new Chapter(
-                    0, 0, 0, 1, 0, 0,
-                    titleText, "", "", "", formatDurationLabel(totalDurationMs),
-                    "", "", 0L, totalDurationMs, 0, false
-            ));
-            totalChapterNodes = 1;
-        }
-
-        AudioBook audioBook = new AudioBook(0, titleText, totalChapterNodes, uri);
-        audioBook.setAuthor(author);
-        audioBook.setNarrator(narrator);
-        audioBook.setTotalDurationMs(totalDurationMs);
-        audioBook.setCoverUri(coverUri);
-
-        long id = titleDao.insert(audioBook);
-        if (id == -1) {
-            return null;
-        }
-        new ChapterDao(context).replaceChapterTree((int) id, rootChapters);
-
-        // If user selected automatic Audnexus API metadata in Settings, fetch the 1st match automatically
-        SettingsDao settingsDao = new SettingsDao(context);
-        if (SettingsDao.METADATA_SOURCE_AUDNEXUS.equals(settingsDao.getAudioMetadataSource())) {
-            String query = audioBook.getAuthor().isEmpty()
-                    ? audioBook.getTitle()
-                    : audioBook.getTitle() + " " + audioBook.getAuthor();
-            String region = "en".equalsIgnoreCase(settingsDao.getLanguageTag()) ? "us" : "it";
-            List<AudnexusClient.SearchCandidate> candidates = AudnexusClient.search(query, region);
-            if (!candidates.isEmpty()) {
-                AudnexusClient.fetchAndApply(context, audioBook, candidates.get(0).asin, region);
-            }
-        }
-        return audioBook;
-    }
-
-    /**
-     * Forces a fresh reload of embedded metadata (title, author, narrator, cover, chapters)
-     * directly from the audiobook file, preserving {@code currentPositionMs} and {@code status}.
-     */
-    @OptIn(markerClass = UnstableApi.class)
     @NonNull
     public static MetadataJsonParser.ApplyResult reloadAudiobookEmbeddedMetadata(
             @NonNull Context context,
             @NonNull AudioBook audioBook
     ) {
-        if (audioBook.getContentUri() == null || Uri.EMPTY.equals(audioBook.getContentUri())) {
-            return new MetadataJsonParser.ApplyResult(false, 0);
-        }
-        M4BParser.M4bMetadata metadata;
-        try {
-            metadata = new M4BParser().parseM4bMetadata(context.getApplicationContext(), audioBook.getContentUri())
-                    .get(15, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            Log.w(TAG, "Embedded metadata reload failed for " + audioBook.getContentUri(), e);
-            return new MetadataJsonParser.ApplyResult(false, 0);
-        }
-        if (metadata == null) {
-            return new MetadataJsonParser.ApplyResult(false, 0);
-        }
-
-        if (!metadata.title.isEmpty()) {
-            audioBook.setTitle(metadata.title);
-        }
-        if (!metadata.author.isEmpty()) {
-            audioBook.setAuthor(metadata.author);
-        }
-        if (!metadata.narrator.isEmpty()) {
-            audioBook.setNarrator(metadata.narrator);
-        }
-        if (metadata.totalDurationMs > 0L) {
-            audioBook.setTotalDurationMs(metadata.totalDurationMs);
-        }
-        if (metadata.coverArtData != null && metadata.coverArtData.length > 0) {
-            Uri coverUri = saveCoverBytes(
-                    context,
-                    "m4b_" + Math.abs(audioBook.getContentUri().toString().hashCode()),
-                    metadata.coverArtData
-            );
-            if (coverUri != null) {
-                audioBook.setCoverUri(coverUri);
-            }
-        }
-
-        int chapterCount = 0;
-        if (!metadata.chapters.isEmpty()) {
-            long savedPosMs = audioBook.getCurrentPositionMs();
-            List<Chapter> rootChapters = buildAudiobookChapterTree(audioBook.getId(), metadata.chapters, savedPosMs);
-            List<Chapter> leaves = ChapterTreeHelper.collectLeafChapters(rootChapters);
-            int matchedChapterIndex = leaves.isEmpty() ? 1 : leaves.get(0).getChapterIndex();
-            for (Chapter leaf : leaves) {
-                long start = leaf.getAudioStartMs();
-                long end = start + leaf.getAudioDurationMs();
-                if (savedPosMs >= start && (leaf.getAudioDurationMs() <= 0L || savedPosMs < end)) {
-                    matchedChapterIndex = leaf.getChapterIndex();
-                    break;
-                }
-            }
-            chapterCount = metadata.chapters.size();
-            audioBook.setLenChapters(chapterCount);
-            audioBook.setCurrentChapter(matchedChapterIndex);
-            new ChapterDao(context).replaceChapterTree(audioBook.getId(), rootChapters);
-        }
-
-        new TitleDao(context).update(audioBook);
-        PlaybackSessionManager.getInstance().invalidateChapterCache(audioBook.getId());
-        return new MetadataJsonParser.ApplyResult(true, chapterCount);
+        return AudioImporter.reloadAudiobookEmbeddedMetadata(context, audioBook);
     }
 
-    /**
-     * Builds a hierarchical {@link Chapter} tree from a flat ordered list of {@link M4BParser.M4bChapter}
-     * entries using their {@code level} (0 = root, 1 = child, 2 = grandchild, ...).
-     * Container sections automatically inherit their subtree's total duration span.
-     */
     @NonNull
     public static List<Chapter> buildAudiobookChapterTree(
             int titleId,
             @NonNull List<M4BParser.M4bChapter> flatChapters,
             long savedPositionMs
     ) {
-        List<Chapter> roots = new ArrayList<>();
-        List<Chapter> stack = new ArrayList<>();
-
-        for (int i = 0; i < flatChapters.size(); i++) {
-            M4BParser.M4bChapter ch = flatChapters.get(i);
-            long chEnd = ch.startMs + ch.durationMs;
-            boolean completed = savedPositionMs > 0L && ch.durationMs > 0L && savedPositionMs >= chEnd;
-            int pct = 0;
-            if (completed) {
-                pct = 100;
-            } else if (savedPositionMs > 0L && savedPositionMs >= ch.startMs && ch.durationMs > 0L && savedPositionMs < chEnd) {
-                long relMs = savedPositionMs - ch.startMs;
-                pct = (int) Math.min(99L, Math.max(1L, Math.round((relMs * 100.0) / ch.durationMs)));
-            }
-
-            int level = Math.max(0, ch.level);
-            while (stack.size() > level) {
-                stack.remove(stack.size() - 1);
-            }
-            int effectiveLevel = stack.size();
-            int sortOrder = stack.isEmpty()
-                    ? roots.size()
-                    : stack.get(stack.size() - 1).getChildren().size();
-
-            Chapter node = new Chapter(
-                    0, titleId, 0, ch.index, effectiveLevel, sortOrder,
-                    ch.title, "", "", "", formatDurationLabel(ch.durationMs),
-                    "", "", ch.startMs, ch.durationMs, pct, completed
-            );
-
-            if (stack.isEmpty()) {
-                roots.add(node);
-            } else {
-                stack.get(stack.size() - 1).addChild(node);
-            }
-            stack.add(node);
-        }
-
-        for (Chapter root : roots) {
-            rollupContainerAudioDuration(root);
-        }
-        return roots;
+        return AudioImporter.buildAudiobookChapterTree(titleId, flatChapters, savedPositionMs);
     }
 
-    private static long rollupContainerAudioDuration(@NonNull Chapter node) {
-        if (node.getChildren().isEmpty()) {
-            return node.getAudioStartMs() + node.getAudioDurationMs();
-        }
-        long maxEnd = node.getAudioStartMs() + node.getAudioDurationMs();
-        for (Chapter child : node.getChildren()) {
-            maxEnd = Math.max(maxEnd, rollupContainerAudioDuration(child));
-        }
-        long totalDur = Math.max(node.getAudioDurationMs(), maxEnd - node.getAudioStartMs());
-        node.setAudioDurationMs(totalDur);
-        node.setPageOrDurationLabel(formatDurationLabel(totalDur));
-        return maxEnd;
-    }
-
-    /**
-     * Re-parses embedded chapters for an already-imported audiobook that currently has {@code <= 1}
-     * fallback chapter, preserving its saved playback position and status.
-     *
-     * @return {@code true} if multiple chapters were discovered and persisted.
-     */
-    @OptIn(markerClass = UnstableApi.class)
     public static boolean refreshAudiobookChaptersIfNeeded(@NonNull Context context, @NonNull AudioBook audioBook) {
-        if (audioBook.getLenChapters() > 1 || audioBook.getContentUri() == null || Uri.EMPTY.equals(audioBook.getContentUri())) {
-            return false;
-        }
-        M4BParser.M4bMetadata metadata;
-        try {
-            metadata = new M4BParser().parseM4bMetadata(context.getApplicationContext(), audioBook.getContentUri())
-                    .get(15, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            Log.w(TAG, "Chapter refresh failed for " + audioBook.getContentUri(), e);
-            return false;
-        }
-        if (metadata == null || metadata.chapters.size() <= 1) {
-            return false;
-        }
-
-        long savedPosMs = audioBook.getCurrentPositionMs();
-        List<Chapter> rootChapters = buildAudiobookChapterTree(audioBook.getId(), metadata.chapters, savedPosMs);
-        List<Chapter> leaves = ChapterTreeHelper.collectLeafChapters(rootChapters);
-        int matchedChapterIndex = leaves.isEmpty() ? 1 : leaves.get(0).getChapterIndex();
-        for (Chapter leaf : leaves) {
-            long start = leaf.getAudioStartMs();
-            long end = start + leaf.getAudioDurationMs();
-            if (savedPosMs >= start && (leaf.getAudioDurationMs() <= 0L || savedPosMs < end)) {
-                matchedChapterIndex = leaf.getChapterIndex();
-                break;
-            }
-        }
-
-        audioBook.setLenChapters(metadata.chapters.size());
-        audioBook.setCurrentChapter(matchedChapterIndex);
-        if (metadata.totalDurationMs > 0L && audioBook.getTotalDurationMs() <= 0L) {
-            audioBook.setTotalDurationMs(metadata.totalDurationMs);
-        }
-        new ChapterDao(context).replaceChapterTree(audioBook.getId(), rootChapters);
-        new TitleDao(context).update(audioBook);
-        return true;
+        return AudioImporter.refreshAudiobookChaptersIfNeeded(context, audioBook);
     }
 
     @Nullable
@@ -916,7 +185,7 @@ public final class FileScanner {
     }
 
     @NonNull
-    private static String stripExtension(@NonNull String name) {
+    static String stripExtension(@NonNull String name) {
         int dot = name.lastIndexOf('.');
         return dot > 0 ? name.substring(0, dot) : name;
     }
@@ -949,13 +218,7 @@ public final class FileScanner {
     }
 
     @NonNull
-    private static String formatDurationLabel(long durationMs) {
-        if (durationMs <= 0L) {
-            return "";
-        }
-        long totalSec = durationMs / 1000L;
-        long mins = totalSec / 60L;
-        long secs = totalSec % 60L;
-        return String.format(Locale.ROOT, "%d:%02d", mins, secs);
+    static String formatDurationLabel(long durationMs) {
+        return durationMs > 0L ? formatDuration(durationMs) : "";
     }
 }

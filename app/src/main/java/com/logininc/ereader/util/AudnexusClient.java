@@ -7,34 +7,47 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import com.logininc.ereader.model.AudioBook;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+
 /**
- * Client for the Audnexus API ({@code https://api.audnex.us}) with Audible public catalog
- * search support for resolving title/author queries to ASINs.
+ * Client for the Audnexus API ({@code https://api.audnex.us}) backed by OkHttp and Gson,
+ * with Audible public catalog search support for resolving queries to ASINs.
  */
 public final class AudnexusClient {
 
     private static final String TAG = "AudnexusClient";
     private static final String AUDNEXUS_BASE = "https://api.audnex.us";
-    private static final int CONNECT_TIMEOUT_MS = 10_000;
-    private static final int READ_TIMEOUT_MS = 12_000;
+    private static final int MAX_JSON_BYTES = 2 * 1024 * 1024;
     private static final int MAX_IMAGE_BYTES = 8 * 1024 * 1024;
     private static final Pattern ASIN_PATTERN = Pattern.compile("^[A-Z0-9]{10}$");
+
+    private static final OkHttpClient HTTP_CLIENT = new OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(12, TimeUnit.SECONDS)
+            .build();
 
     public static final String[] SUPPORTED_REGIONS = {"it", "us", "uk", "de", "fr", "es"};
 
@@ -125,8 +138,7 @@ public final class AudnexusClient {
         if (raw == null) {
             return false;
         }
-        String clean = raw.trim().toUpperCase(Locale.ROOT);
-        return ASIN_PATTERN.matcher(clean).matches();
+        return ASIN_PATTERN.matcher(raw.trim().toUpperCase(Locale.ROOT)).matches();
     }
 
     @NonNull
@@ -162,10 +174,6 @@ public final class AudnexusClient {
         }
     }
 
-    /**
-     * Searches for audiobooks matching {@code query} (either a direct 10-char ASIN or a title/author
-     * text query) in the specified Audible/Audnexus {@code region}.
-     */
     @NonNull
     public static List<SearchCandidate> search(@NonNull String query, @NonNull String region) {
         String trimmed = query.trim();
@@ -190,8 +198,7 @@ public final class AudnexusClient {
 
         try {
             String encoded = URLEncoder.encode(trimmed, StandardCharsets.UTF_8.name());
-            String tld = audibleTldForRegion(normRegion);
-            String urlStr = "https://api.audible." + tld
+            String urlStr = "https://api.audible." + audibleTldForRegion(normRegion)
                     + "/1.0/catalog/products?num_results=10&products_sort_by=Relevance"
                     + "&keywords=" + encoded
                     + "&response_groups=contributors,media,product_desc";
@@ -206,10 +213,6 @@ public final class AudnexusClient {
         }
     }
 
-    /**
-     * Fetches book metadata, chapters, and cover image from Audnexus for {@code asin} and applies
-     * them to {@code audioBook}, preserving its saved playback position.
-     */
     @NonNull
     public static MetadataJsonParser.ApplyResult fetchAndApply(
             @NonNull Context context,
@@ -222,7 +225,6 @@ public final class AudnexusClient {
 
         AudnexusBookDetail bookDetail = fetchBookDetail(cleanAsin, normRegion);
         AudnexusChaptersDetail chaptersDetail = fetchChaptersDetail(cleanAsin, normRegion);
-
         if (bookDetail == null && (chaptersDetail == null || chaptersDetail.chapters.isEmpty())) {
             return new MetadataJsonParser.ApplyResult(false, 0);
         }
@@ -237,12 +239,9 @@ public final class AudnexusClient {
             }
         }
 
-        long totalDurationMs = -1L;
-        if (chaptersDetail != null && chaptersDetail.runtimeLengthMs > 0L) {
-            totalDurationMs = chaptersDetail.runtimeLengthMs;
-        } else if (bookDetail != null && bookDetail.runtimeLengthMs > 0L) {
-            totalDurationMs = bookDetail.runtimeLengthMs;
-        }
+        long totalDurationMs = (chaptersDetail != null && chaptersDetail.runtimeLengthMs > 0L)
+                ? chaptersDetail.runtimeLengthMs
+                : (bookDetail != null && bookDetail.runtimeLengthMs > 0L ? bookDetail.runtimeLengthMs : -1L);
 
         MetadataJsonParser.ParsedMetadata parsedMetadata = new MetadataJsonParser.ParsedMetadata(
                 bookDetail != null ? bookDetail.title : null,
@@ -252,7 +251,6 @@ public final class AudnexusClient {
                 -1,
                 chaptersDetail != null ? chaptersDetail.chapters : Collections.emptyList()
         );
-
         return MetadataJsonParser.applyParsedMetadata(context, audioBook, parsedMetadata);
     }
 
@@ -288,43 +286,45 @@ public final class AudnexusClient {
 
     @NonNull
     public static List<SearchCandidate> parseAudibleSearchResponse(@NonNull String rawJson) {
-        Map<String, Object> root = MetadataJsonParser.parseJsonObject(rawJson);
-        Object productsObj = root.get("products");
-        if (!(productsObj instanceof List)) {
+        JsonObject root = parseRootObject(rawJson);
+        JsonElement productsEl = root.get("products");
+        if (productsEl == null || !productsEl.isJsonArray()) {
             return Collections.emptyList();
         }
-        List<?> products = (List<?>) productsObj;
+        JsonArray products = productsEl.getAsJsonArray();
         List<SearchCandidate> out = new ArrayList<>(products.size());
-        for (Object item : products) {
-            if (!(item instanceof Map)) {
+        for (JsonElement item : products) {
+            if (!item.isJsonObject()) {
                 continue;
             }
-            @SuppressWarnings("unchecked")
-            Map<String, Object> prod = (Map<String, Object>) item;
-            String asin = stringField(prod, "asin");
-            String title = stringField(prod, "title");
+            JsonObject prod = item.getAsJsonObject();
+            String asin = optString(prod, "asin");
+            String title = optString(prod, "title");
             if (asin == null || asin.trim().isEmpty() || title == null || title.trim().isEmpty()) {
                 continue;
             }
-            String authors = extractNamedList(prod.get("authors"));
-            String narrators = extractNamedList(prod.get("narrators"));
-            out.add(new SearchCandidate(asin.trim(), title.trim(), authors, narrators));
+            out.add(new SearchCandidate(
+                    asin.trim(),
+                    title.trim(),
+                    extractNamedList(prod.get("authors")),
+                    extractNamedList(prod.get("narrators"))
+            ));
         }
         return out;
     }
 
     @NonNull
     public static AudnexusBookDetail parseAudnexusBookResponse(@NonNull String fallbackAsin, @NonNull String rawJson) {
-        Map<String, Object> root = MetadataJsonParser.parseJsonObject(rawJson);
-        String asin = stringField(root, "asin");
+        JsonObject root = parseRootObject(rawJson);
+        String asin = optString(root, "asin");
         if (asin == null || asin.trim().isEmpty()) {
             asin = fallbackAsin;
         }
-        String title = stringField(root, "title");
+        String title = optString(root, "title");
         String authors = extractNamedList(root.get("authors"));
         String narrators = extractNamedList(root.get("narrators"));
-        String image = stringField(root, "image");
-        long runtimeMin = numberField(root, "runtimeLengthMin");
+        String image = optString(root, "image");
+        long runtimeMin = optLong(root, "runtimeLengthMin");
         long runtimeMs = runtimeMin > 0L ? runtimeMin * 60_000L : -1L;
 
         return new AudnexusBookDetail(
@@ -339,55 +339,71 @@ public final class AudnexusClient {
 
     @NonNull
     public static AudnexusChaptersDetail parseAudnexusChaptersResponse(@NonNull String rawJson) {
-        Map<String, Object> root = MetadataJsonParser.parseJsonObject(rawJson);
-        long runtimeMs = numberField(root, "runtimeLengthMs");
-        Object rawChapters = root.get("chapters");
-        if (!(rawChapters instanceof List)) {
+        JsonObject root = parseRootObject(rawJson);
+        long runtimeMs = optLong(root, "runtimeLengthMs");
+        JsonElement rawChapters = root.get("chapters");
+        if (rawChapters == null || !rawChapters.isJsonArray()) {
             return new AudnexusChaptersDetail(runtimeMs, Collections.emptyList());
         }
-        List<?> list = (List<?>) rawChapters;
-        List<MetadataJsonParser.ParsedChapterNode> chapters = new ArrayList<>(list.size());
-        for (int i = 0; i < list.size(); i++) {
-            Object item = list.get(i);
-            if (!(item instanceof Map)) {
+        JsonArray arr = rawChapters.getAsJsonArray();
+        List<MetadataJsonParser.ParsedChapterNode> chapters = new ArrayList<>(arr.size());
+        for (int i = 0; i < arr.size(); i++) {
+            JsonElement item = arr.get(i);
+            if (!item.isJsonObject()) {
                 continue;
             }
-            @SuppressWarnings("unchecked")
-            Map<String, Object> ch = (Map<String, Object>) item;
-            String rawTitle = stringField(ch, "title");
+            JsonObject ch = item.getAsJsonObject();
+            String rawTitle = optString(ch, "title");
             int level = Mp4ChapterParser.detectHierarchyLevel(rawTitle);
             String cleanTitle = rawTitle != null && !rawTitle.trim().isEmpty()
                     ? rawTitle.trim()
                     : ("Chapter " + (i + 1));
 
-            long startMs = numberField(ch, "startOffsetMs");
+            long startMs = optLong(ch, "startOffsetMs");
             if (startMs < 0L) {
-                long startSec = numberField(ch, "startOffsetSec");
+                long startSec = optLong(ch, "startOffsetSec");
                 startMs = startSec >= 0L ? startSec * 1000L : 0L;
             }
-            long lengthMs = Math.max(0L, numberField(ch, "lengthMs"));
-
+            long lengthMs = Math.max(0L, optLong(ch, "lengthMs"));
             chapters.add(new MetadataJsonParser.ParsedChapterNode(
-                    cleanTitle, startMs, lengthMs, -1L, 0, 0, level, Collections.emptyList()
-            ));
+                    cleanTitle, startMs, lengthMs, -1L, 0, 0, level, Collections.emptyList()));
         }
         return new AudnexusChaptersDetail(runtimeMs, chapters);
     }
 
-    @Nullable
-    private static String stringField(@NonNull Map<String, Object> map, @NonNull String key) {
-        Object val = map.get(key);
-        return val instanceof String ? (String) val : null;
+    @NonNull
+    private static JsonObject parseRootObject(@NonNull String rawJson) {
+        try {
+            JsonElement el = JsonParser.parseString(rawJson);
+            if (!el.isJsonObject()) {
+                throw new IllegalArgumentException("Root JSON element must be an object");
+            }
+            return el.getAsJsonObject();
+        } catch (JsonParseException e) {
+            throw new IllegalArgumentException("Malformed JSON", e);
+        }
     }
 
-    private static long numberField(@NonNull Map<String, Object> map, @NonNull String key) {
-        Object val = map.get(key);
-        if (val instanceof Number) {
-            return ((Number) val).longValue();
+    @Nullable
+    private static String optString(@NonNull JsonObject obj, @NonNull String key) {
+        JsonElement el = obj.get(key);
+        return (el != null && el.isJsonPrimitive() && el.getAsJsonPrimitive().isString())
+                ? el.getAsString()
+                : null;
+    }
+
+    private static long optLong(@NonNull JsonObject obj, @NonNull String key) {
+        JsonElement el = obj.get(key);
+        if (el == null || !el.isJsonPrimitive()) {
+            return -1L;
         }
-        if (val instanceof String) {
+        JsonPrimitive p = el.getAsJsonPrimitive();
+        if (p.isNumber()) {
+            return p.getAsLong();
+        }
+        if (p.isString()) {
             try {
-                return Long.parseLong(((String) val).trim());
+                return Long.parseLong(p.getAsString().trim());
             } catch (NumberFormatException ignored) {
             }
         }
@@ -395,21 +411,19 @@ public final class AudnexusClient {
     }
 
     @NonNull
-    private static String extractNamedList(@Nullable Object raw) {
-        if (!(raw instanceof List)) {
+    private static String extractNamedList(@Nullable JsonElement raw) {
+        if (raw == null || !raw.isJsonArray()) {
             return "";
         }
-        List<?> list = (List<?>) raw;
-        List<String> names = new ArrayList<>(list.size());
-        for (Object item : list) {
-            if (item instanceof String) {
-                String s = ((String) item).trim();
+        List<String> names = new ArrayList<>();
+        for (JsonElement item : raw.getAsJsonArray()) {
+            if (item.isJsonPrimitive() && item.getAsJsonPrimitive().isString()) {
+                String s = item.getAsString().trim();
                 if (!s.isEmpty()) {
                     names.add(s);
                 }
-            } else if (item instanceof Map) {
-                @SuppressWarnings("unchecked")
-                String name = stringField((Map<String, Object>) item, "name");
+            } else if (item.isJsonObject()) {
+                String name = optString(item.getAsJsonObject(), "name");
                 if (name != null && !name.trim().isEmpty()) {
                     names.add(name.trim());
                 }
@@ -420,27 +434,23 @@ public final class AudnexusClient {
 
     @Nullable
     private static String httpGetString(@NonNull String urlStr) {
-        byte[] bytes = httpGetBytes(urlStr, 2 * 1024 * 1024);
+        byte[] bytes = httpGetBytes(urlStr, MAX_JSON_BYTES);
         return bytes != null ? new String(bytes, StandardCharsets.UTF_8) : null;
     }
 
     @Nullable
     private static byte[] httpGetBytes(@NonNull String urlStr, int maxBytes) {
-        HttpURLConnection conn = null;
-        try {
-            URL url = new URL(urlStr);
-            conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
-            conn.setReadTimeout(READ_TIMEOUT_MS);
-            conn.setRequestProperty("Accept", "application/json");
-            conn.setRequestProperty("User-Agent", "EReader-Android/1.0");
-
-            int code = conn.getResponseCode();
-            if (code < 200 || code >= 300) {
+        Request request = new Request.Builder()
+                .url(urlStr)
+                .header("Accept", "application/json")
+                .header("User-Agent", "EReader-Android/1.0")
+                .build();
+        try (Response response = HTTP_CLIENT.newCall(request).execute()) {
+            ResponseBody body = response.body();
+            if (!response.isSuccessful() || body == null || body.contentLength() > maxBytes) {
                 return null;
             }
-            try (InputStream is = conn.getInputStream()) {
+            try (InputStream is = body.byteStream()) {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 byte[] buf = new byte[8192];
                 int total = 0;
@@ -454,13 +464,9 @@ public final class AudnexusClient {
                 }
                 return out.toByteArray();
             }
-        } catch (IOException e) {
+        } catch (IOException | IllegalArgumentException e) {
             Log.w(TAG, "HTTP GET failed: " + urlStr, e);
             return null;
-        } finally {
-            if (conn != null) {
-                conn.disconnect();
-            }
         }
     }
 }

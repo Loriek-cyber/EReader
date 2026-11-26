@@ -77,6 +77,8 @@ public class ProfileSettingsActivity extends AppCompatActivity {
     private TextView btnAudioResumeRewind;
     private MaterialSwitch switchAudioAutoAdvance;
     private TextView btnAudioMetadataSource;
+    private TextView btnBluetoothSkipMode;
+    private MaterialSwitch switchBluetoothAutoResume;
     private MaterialSwitch switchAutoBookmark;
 
     private PlaybackSessionManager.SessionListener miniPlayerListener;
@@ -112,6 +114,9 @@ public class ProfileSettingsActivity extends AppCompatActivity {
 
     private final CompoundButton.OnCheckedChangeListener audioAutoAdvanceListener =
             (buttonView, isChecked) -> settingsDao.setAudioAutoAdvanceChapter(isChecked);
+
+    private final CompoundButton.OnCheckedChangeListener bluetoothAutoResumeListener =
+            (buttonView, isChecked) -> settingsDao.setBluetoothAutoResume(isChecked);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -185,6 +190,8 @@ public class ProfileSettingsActivity extends AppCompatActivity {
         btnAudioResumeRewind = findViewById(R.id.btnAudioResumeRewind);
         switchAudioAutoAdvance = findViewById(R.id.switchAudioAutoAdvance);
         btnAudioMetadataSource = findViewById(R.id.btnAudioMetadataSource);
+        btnBluetoothSkipMode = findViewById(R.id.btnBluetoothSkipMode);
+        switchBluetoothAutoResume = findViewById(R.id.switchBluetoothAutoResume);
         switchAutoBookmark = findViewById(R.id.switchAutoBookmark);
 
         findViewById(R.id.btnEditProfile).setOnClickListener(v -> showEditProfileDialog());
@@ -209,6 +216,7 @@ public class ProfileSettingsActivity extends AppCompatActivity {
         btnDefaultSpeed.setOnClickListener(v -> showDefaultSpeedDialog());
         btnAudioResumeRewind.setOnClickListener(v -> showResumeRewindDialog());
         btnAudioMetadataSource.setOnClickListener(v -> showAudioMetadataSourceDialog());
+        btnBluetoothSkipMode.setOnClickListener(v -> showBluetoothSkipModeDialog());
 
         BottomNavigationView bottomNav = findViewById(R.id.bottomNavigation);
         UiSessionHelper.bindBottomNavigation(this, bottomNav, R.id.nav_profilo);
@@ -267,6 +275,11 @@ public class ProfileSettingsActivity extends AppCompatActivity {
         switchAudioAutoAdvance.setChecked(settingsDao.isAudioAutoAdvanceChapter());
         switchAudioAutoAdvance.setOnCheckedChangeListener(audioAutoAdvanceListener);
         btnAudioMetadataSource.setText(getMetadataSourceDisplayName(settingsDao.getAudioMetadataSource()));
+        btnBluetoothSkipMode.setText(getBluetoothSkipModeDisplayName(settingsDao.getBluetoothSkipMode()));
+
+        switchBluetoothAutoResume.setOnCheckedChangeListener(null);
+        switchBluetoothAutoResume.setChecked(settingsDao.isBluetoothAutoResume());
+        switchBluetoothAutoResume.setOnCheckedChangeListener(bluetoothAutoResumeListener);
 
         switchAutoBookmark.setOnCheckedChangeListener(null);
         switchAutoBookmark.setChecked(settingsDao.isAutoBookmark());
@@ -332,6 +345,35 @@ public class ProfileSettingsActivity extends AppCompatActivity {
             return getString(R.string.settings_metadata_source_audnexus);
         }
         return getString(R.string.settings_metadata_source_file);
+    }
+
+    private void showBluetoothSkipModeDialog() {
+        String[] codes = {
+                SettingsDao.BLUETOOTH_SKIP_TIME,
+                SettingsDao.BLUETOOTH_SKIP_CHAPTER
+        };
+        String[] labels = {
+                getString(R.string.settings_bt_skip_time),
+                getString(R.string.settings_bt_skip_chapter)
+        };
+        int checked = SettingsDao.BLUETOOTH_SKIP_CHAPTER.equals(settingsDao.getBluetoothSkipMode()) ? 1 : 0;
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.settings_bt_skip_mode)
+                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                    settingsDao.setBluetoothSkipMode(codes[which]);
+                    btnBluetoothSkipMode.setText(labels[which]);
+                    dialog.dismiss();
+                })
+                .setNegativeButton(R.string.action_cancel, null)
+                .show();
+    }
+
+    @NonNull
+    private String getBluetoothSkipModeDisplayName(@NonNull String code) {
+        if (SettingsDao.BLUETOOTH_SKIP_CHAPTER.equals(code)) {
+            return getString(R.string.settings_bt_skip_chapter);
+        }
+        return getString(R.string.settings_bt_skip_time);
     }
 
     private void onFolderPicked(@NonNull Uri treeUri, boolean isAudio) {

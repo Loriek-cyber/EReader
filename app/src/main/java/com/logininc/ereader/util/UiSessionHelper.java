@@ -3,12 +3,7 @@ package com.logininc.ereader.util;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
-import android.os.Handler;
-import android.os.Looper;
-import android.util.LruCache;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -24,6 +19,7 @@ import androidx.annotation.Nullable;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.logininc.ereader.R;
@@ -41,29 +37,11 @@ import com.logininc.ereader.service.PlaybackSessionManager;
 import java.io.File;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * Shared UI binding helpers for the floating Mini-Player bar, bottom navigation, and cover images.
  */
 public final class UiSessionHelper {
-
-    private static final int COVER_MAX_DECODE_PX = 512;
-    private static final ExecutorService COVER_EXECUTOR = Executors.newFixedThreadPool(2);
-    private static final Handler MAIN_HANDLER = new Handler(Looper.getMainLooper());
-    private static final LruCache<String, Bitmap> COVER_CACHE;
-
-    static {
-        int maxKb = (int) (Runtime.getRuntime().maxMemory() / 1024L);
-        int cacheSizeKb = Math.max(4096, Math.min(24 * 1024, maxKb / 8));
-        COVER_CACHE = new LruCache<String, Bitmap>(cacheSizeKb) {
-            @Override
-            protected int sizeOf(@NonNull String key, @NonNull Bitmap value) {
-                return Math.max(1, value.getByteCount() / 1024);
-            }
-        };
-    }
 
     private UiSessionHelper() {
     }
@@ -230,60 +208,21 @@ public final class UiSessionHelper {
     }
 
     public static void loadCover(@NonNull ImageView imageView, @Nullable Uri coverUri) {
-        if (coverUri != null && "file".equals(coverUri.getScheme())) {
-            String path = coverUri.getPath();
-            if (path != null && !path.isEmpty()) {
-                String uriKey = coverUri.toString();
-                imageView.setTag(R.id.ivMiniCover, uriKey);
-                Bitmap cached = COVER_CACHE.get(uriKey);
-                if (cached != null && !cached.isRecycled()) {
-                    imageView.setImageBitmap(cached);
-                    return;
-                }
-                imageView.setImageDrawable(null);
-                COVER_EXECUTOR.execute(() -> {
-                    File file = new File(path);
-                    if (!file.exists()) {
-                        return;
-                    }
-                    Bitmap decoded = decodeSampledBitmap(path, COVER_MAX_DECODE_PX);
-                    if (decoded != null) {
-                        COVER_CACHE.put(uriKey, decoded);
-                        MAIN_HANDLER.post(() -> {
-                            if (uriKey.equals(imageView.getTag(R.id.ivMiniCover))) {
-                                imageView.setImageBitmap(decoded);
-                            }
-                        });
-                    }
-                });
-                return;
-            }
+        Context ctx = imageView.getContext();
+        if (ctx instanceof Activity && (((Activity) ctx).isFinishing() || ((Activity) ctx).isDestroyed())) {
+            return;
         }
-        imageView.setTag(R.id.ivMiniCover, null);
-        imageView.setImageDrawable(null);
-    }
-
-    @Nullable
-    private static Bitmap decodeSampledBitmap(@NonNull String path, int maxSidePx) {
-        try {
-            BitmapFactory.Options bounds = new BitmapFactory.Options();
-            bounds.inJustDecodeBounds = true;
-            BitmapFactory.decodeFile(path, bounds);
-            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
-                return null;
-            }
-            int inSampleSize = 1;
-            int maxDim = Math.max(bounds.outWidth, bounds.outHeight);
-            while ((maxDim / inSampleSize) > maxSidePx) {
-                inSampleSize *= 2;
-            }
-            BitmapFactory.Options decodeOpts = new BitmapFactory.Options();
-            decodeOpts.inSampleSize = inSampleSize;
-            decodeOpts.inPreferredConfig = Bitmap.Config.RGB_565;
-            return BitmapFactory.decodeFile(path, decodeOpts);
-        } catch (OutOfMemoryError | RuntimeException e) {
-            return null;
+        boolean isFileUri = coverUri != null && "file".equals(coverUri.getScheme());
+        String path = isFileUri ? coverUri.getPath() : null;
+        if (coverUri == null || (isFileUri && (path == null || path.isEmpty() || !new File(path).exists()))) {
+            Glide.with(imageView).clear(imageView);
+            imageView.setImageDrawable(null);
+            return;
         }
+        Glide.with(imageView)
+                .load(coverUri)
+                .override(512)
+                .into(imageView);
     }
 
     public interface SubtreeInflater {

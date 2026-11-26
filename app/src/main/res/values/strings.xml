@@ -225,6 +225,16 @@
 
     <!-- Notification & Common Dialog Buttons -->
     <string name="notification_audio_channel">Riproduzione Audiolibri</string>
+    <string name="notification_rewind_15">Indietro 15s</string>
+    <string name="notification_forward_30">Avanti 30s</string>
+    <string name="notification_prev_chapter">Capitolo precedente</string>
+    <string name="notification_next_chapter">Capitolo successivo</string>
+    <string name="settings_bt_skip_mode">Comandi avanti/indietro Bluetooth</string>
+    <string name="settings_bt_skip_mode_desc">Azione dei pulsanti Successivo/Precedente su cuffie e auto</string>
+    <string name="settings_bt_skip_time">Salta -15s / +30s</string>
+    <string name="settings_bt_skip_chapter">Cambia capitolo</string>
+    <string name="settings_bt_auto_resume">Riprendi su riconnessione Bluetooth</string>
+    <string name="settings_bt_auto_resume_desc">Riprende se messo in pausa dallo scollegamento cuffie</string>
     <string name="action_save">Salva</string>
     <string name="search_no_results">Nessun risultato trovato</string>
     <string name="action_import_metadata_json">JSON</string>

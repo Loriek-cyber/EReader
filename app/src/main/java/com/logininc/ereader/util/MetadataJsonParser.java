@@ -7,6 +7,13 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import com.logininc.ereader.model.AudioBook;
 import com.logininc.ereader.model.Book;
 import com.logininc.ereader.model.Chapter;
@@ -22,20 +29,18 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /**
  * Loads and applies structured {@code .json} metadata files to {@link AudioBook} and {@link Book}
- * titles, supporting both nested chapter hierarchies ({@code children}/{@code subchapters}/{@code sections})
- * and flat chapter lists (including Audiobookshelf/FFmpeg {@code metadata.json} format).
+ * titles via Gson, supporting nested chapter hierarchies and flat Audiobookshelf/FFmpeg chapter lists.
  */
 public final class MetadataJsonParser {
 
     private static final String TAG = "MetadataJsonParser";
     private static final int MAX_JSON_BYTES = 4 * 1024 * 1024;
+    private static final Gson GSON = new Gson();
 
     private MetadataJsonParser() {
     }
@@ -122,14 +127,12 @@ public final class MetadataJsonParser {
         if (rawJson == null || rawJson.trim().isEmpty()) {
             return new ApplyResult(false, 0);
         }
-        ParsedMetadata parsed;
         try {
-            parsed = parseJson(rawJson);
+            return applyParsedMetadata(context, title, parseJson(rawJson));
         } catch (IllegalArgumentException e) {
             Log.w(TAG, "Invalid metadata JSON: " + jsonUri, e);
             return new ApplyResult(false, 0);
         }
-        return applyParsedMetadata(context, title, parsed);
     }
 
     @NonNull
@@ -144,142 +147,142 @@ public final class MetadataJsonParser {
         if (metadata.author != null && !metadata.author.trim().isEmpty()) {
             title.setAuthor(metadata.author.trim());
         }
-
-        ChapterDao chapterDao = new ChapterDao(context);
-        TitleDao titleDao = new TitleDao(context);
-
         if (title instanceof AudioBook) {
-            AudioBook audioBook = (AudioBook) title;
-            if (metadata.narrator != null && !metadata.narrator.trim().isEmpty()) {
-                audioBook.setNarrator(metadata.narrator.trim());
-            }
-            if (metadata.totalDurationMs > 0L) {
-                audioBook.setTotalDurationMs(metadata.totalDurationMs);
-            }
-
-            int totalNodes = 0;
-            if (!metadata.chapters.isEmpty()) {
-                List<Chapter> roots = buildAudioChapterTree(
-                        audioBook.getId(),
-                        metadata.chapters,
-                        audioBook.getTotalDurationMs(),
-                        audioBook.getCurrentPositionMs()
-                );
-                List<Chapter> flat = Chapter.flattenTree(roots);
-                totalNodes = flat.size();
-                if (totalNodes > 0) {
-                    chapterDao.replaceChapterTree(audioBook.getId(), roots);
-                    audioBook.setLenChapters(totalNodes);
-
-                    // Keep saved playback position and sync currentChapter to matching leaf
-                    List<Chapter> leaves = ChapterTreeHelper.collectLeafChapters(roots);
-                    long savedPos = audioBook.getCurrentPositionMs();
-                    int matchedChapter = leaves.isEmpty() ? 1 : leaves.get(0).getChapterIndex();
-                    for (Chapter leaf : leaves) {
-                        long start = leaf.getAudioStartMs();
-                        long end = start + leaf.getAudioDurationMs();
-                        if (savedPos >= start && (leaf.getAudioDurationMs() <= 0L || savedPos < end)) {
-                            matchedChapter = leaf.getChapterIndex();
-                            break;
-                        }
-                    }
-                    audioBook.setCurrentChapter(matchedChapter);
-                    if (audioBook.getTotalDurationMs() <= 0L) {
-                        long inferredDur = 0L;
-                        for (Chapter root : roots) {
-                            inferredDur = Math.max(inferredDur, root.getAudioStartMs() + root.getAudioDurationMs());
-                        }
-                        if (inferredDur > 0L) {
-                            audioBook.setTotalDurationMs(inferredDur);
-                        }
-                    }
-                }
-            }
-            titleDao.update(audioBook);
-            PlaybackSessionManager.getInstance().invalidateChapterCache(audioBook.getId());
-            return new ApplyResult(true, totalNodes);
+            return applyToAudioBook(context, (AudioBook) title, metadata);
         }
-
         if (title instanceof Book) {
-            Book book = (Book) title;
-            if (metadata.totalPages > 0) {
-                book.setTotalPages(metadata.totalPages);
-            }
-            int updatedCount = 0;
-            if (!metadata.chapters.isEmpty()) {
-                List<Chapter> existingFlat = chapterDao.getChaptersForTitle(book.getId());
-                Map<Integer, Chapter> existingByIndex = new HashMap<>(existingFlat.size());
-                for (Chapter ch : existingFlat) {
-                    existingByIndex.put(ch.getChapterIndex(), ch);
-                }
-                List<Chapter> roots = buildEbookChapterTree(book.getId(), metadata.chapters, existingByIndex);
-                List<Chapter> flat = Chapter.flattenTree(roots);
-                updatedCount = flat.size();
-                if (updatedCount > 0) {
-                    chapterDao.replaceChapterTree(book.getId(), roots);
-                    book.setLenChapters(updatedCount);
-                    int resolved = ChapterTreeHelper.resolveNearestLeafIndex(roots, book.getCurrentChapter());
-                    book.setCurrentChapter(resolved);
-                }
-            }
-            titleDao.update(book);
-            PlaybackSessionManager.getInstance().syncActiveTitle(book);
-            return new ApplyResult(true, updatedCount);
+            return applyToBook(context, (Book) title, metadata);
         }
-
-        titleDao.update(title);
+        new TitleDao(context).update(title);
         return new ApplyResult(true, 0);
     }
 
-    /**
-     * Parses a raw JSON string into a Map (for JSON objects).
-     */
+    @NonNull
+    private static ApplyResult applyToAudioBook(
+            @NonNull Context context,
+            @NonNull AudioBook audioBook,
+            @NonNull ParsedMetadata metadata
+    ) {
+        if (metadata.narrator != null && !metadata.narrator.trim().isEmpty()) {
+            audioBook.setNarrator(metadata.narrator.trim());
+        }
+        if (metadata.totalDurationMs > 0L) {
+            audioBook.setTotalDurationMs(metadata.totalDurationMs);
+        }
+
+        int totalNodes = 0;
+        if (!metadata.chapters.isEmpty()) {
+            List<Chapter> roots = buildAudioChapterTree(
+                    audioBook.getId(), metadata.chapters, audioBook.getTotalDurationMs(), audioBook.getCurrentPositionMs());
+            totalNodes = Chapter.flattenTree(roots).size();
+            if (totalNodes > 0) {
+                new ChapterDao(context).replaceChapterTree(audioBook.getId(), roots);
+                audioBook.setLenChapters(totalNodes);
+                audioBook.setCurrentChapter(findMatchingLeafChapter(roots, audioBook.getCurrentPositionMs()));
+                inferDurationIfMissing(audioBook, roots);
+            }
+        }
+        new TitleDao(context).update(audioBook);
+        PlaybackSessionManager.getInstance().invalidateChapterCache(audioBook.getId());
+        return new ApplyResult(true, totalNodes);
+    }
+
+    private static int findMatchingLeafChapter(@NonNull List<Chapter> roots, long savedPosMs) {
+        List<Chapter> leaves = ChapterTreeHelper.collectLeafChapters(roots);
+        int matched = leaves.isEmpty() ? 1 : leaves.get(0).getChapterIndex();
+        for (Chapter leaf : leaves) {
+            long start = leaf.getAudioStartMs();
+            long end = start + leaf.getAudioDurationMs();
+            if (savedPosMs >= start && (leaf.getAudioDurationMs() <= 0L || savedPosMs < end)) {
+                return leaf.getChapterIndex();
+            }
+        }
+        return matched;
+    }
+
+    private static void inferDurationIfMissing(@NonNull AudioBook audioBook, @NonNull List<Chapter> roots) {
+        if (audioBook.getTotalDurationMs() > 0L) {
+            return;
+        }
+        long inferred = 0L;
+        for (Chapter root : roots) {
+            inferred = Math.max(inferred, root.getAudioStartMs() + root.getAudioDurationMs());
+        }
+        if (inferred > 0L) {
+            audioBook.setTotalDurationMs(inferred);
+        }
+    }
+
+    @NonNull
+    private static ApplyResult applyToBook(
+            @NonNull Context context,
+            @NonNull Book book,
+            @NonNull ParsedMetadata metadata
+    ) {
+        if (metadata.totalPages > 0) {
+            book.setTotalPages(metadata.totalPages);
+        }
+        ChapterDao chapterDao = new ChapterDao(context);
+        int updatedCount = 0;
+        if (!metadata.chapters.isEmpty()) {
+            List<Chapter> existing = chapterDao.getChaptersForTitle(book.getId());
+            Map<Integer, Chapter> existingByIndex = new HashMap<>(existing.size());
+            for (Chapter ch : existing) {
+                existingByIndex.put(ch.getChapterIndex(), ch);
+            }
+            List<Chapter> roots = buildEbookChapterTree(book.getId(), metadata.chapters, existingByIndex);
+            updatedCount = Chapter.flattenTree(roots).size();
+            if (updatedCount > 0) {
+                chapterDao.replaceChapterTree(book.getId(), roots);
+                book.setLenChapters(updatedCount);
+                book.setCurrentChapter(ChapterTreeHelper.resolveNearestLeafIndex(roots, book.getCurrentChapter()));
+            }
+        }
+        new TitleDao(context).update(book);
+        PlaybackSessionManager.getInstance().syncActiveTitle(book);
+        return new ApplyResult(true, updatedCount);
+    }
+
     @NonNull
     @SuppressWarnings("unchecked")
     public static Map<String, Object> parseJsonObject(@NonNull String rawJson) {
-        Object parsed = new SimpleJsonParser(rawJson).parseValue();
-        if (!(parsed instanceof Map)) {
-            throw new IllegalArgumentException("Root JSON element must be an object");
-        }
-        return (Map<String, Object>) parsed;
+        return GSON.fromJson(parseRootObject(rawJson), Map.class);
     }
 
-    /**
-     * Parses a JSON metadata string into a {@link ParsedMetadata} object.
-     *
-     * @throws IllegalArgumentException if the JSON is malformed or not a JSON object.
-     */
+    @NonNull
+    private static JsonObject parseRootObject(@NonNull String rawJson) {
+        try {
+            JsonElement element = JsonParser.parseString(rawJson);
+            if (!element.isJsonObject()) {
+                throw new IllegalArgumentException("Root JSON element must be an object");
+            }
+            return element.getAsJsonObject();
+        } catch (JsonParseException e) {
+            throw new IllegalArgumentException("Malformed JSON", e);
+        }
+    }
+
     @NonNull
     public static ParsedMetadata parseJson(@NonNull String rawJson) {
-        Map<String, Object> root = parseJsonObject(rawJson);
-
-        String title = getString(root, "title", "name");
-        String author = getString(root, "author");
+        JsonObject root = parseRootObject(rawJson);
+        String title = optString(root, "title", "name");
+        String author = optString(root, "author");
         if (author == null || author.isEmpty()) {
-            author = joinStringList(root.get("authors"));
+            author = joinNames(root.get("authors"));
         }
-        String narrator = getString(root, "narrator");
+        String narrator = optString(root, "narrator");
         if (narrator == null || narrator.isEmpty()) {
-            narrator = joinStringList(root.get("narrators"));
+            narrator = joinNames(root.get("narrators"));
         }
-
-        long totalDurationMs = parseTimeFieldMs(root, "totalDurationMs", "durationMs", "total_duration_ms", "duration_ms");
+        long totalDurationMs = optTimeFieldMs(root, "totalDurationMs", "durationMs", "total_duration_ms", "duration_ms");
         if (totalDurationMs < 0L) {
-            totalDurationMs = parseSecondsOrTimeStringMs(root.get("duration"));
+            totalDurationMs = parseSecondsOrTimestampMs(root.get("duration"));
         }
-        int totalPages = (int) getLong(root, -1L, "totalPages", "total_pages", "pages");
-
-        List<ParsedChapterNode> chapters = parseChapterList(
-                firstNonNull(root.get("chapters"), root.get("sections"), root.get("toc"))
-        );
-
+        int totalPages = (int) optLong(root, -1L, "totalPages", "total_pages", "pages");
+        List<ParsedChapterNode> chapters = parseChapterList(firstMember(root, "chapters", "sections", "toc"));
         return new ParsedMetadata(title, author, narrator, totalDurationMs, totalPages, chapters);
     }
 
-    /**
-     * Builds a hierarchical {@link Chapter} tree for an {@link AudioBook} from parsed JSON nodes,
-     * supporting both explicit nested {@code children} and flat lists with {@code level}/indentation.
-     */
     @NonNull
     public static List<Chapter> buildAudioChapterTree(
             int titleId,
@@ -287,24 +290,21 @@ public final class MetadataJsonParser {
             long totalDurationMs,
             long savedPositionMs
     ) {
-        boolean hasExplicitNesting = hasAnyChildren(parsedNodes);
-        if (!hasExplicitNesting) {
+        if (!hasAnyChildren(parsedNodes)) {
             List<M4BParser.M4bChapter> flat = new ArrayList<>(parsedNodes.size());
             for (int i = 0; i < parsedNodes.size(); i++) {
                 ParsedChapterNode n = parsedNodes.get(i);
-                long dur = resolveAudioDurationMs(n, i + 1 < parsedNodes.size() ? parsedNodes.get(i + 1).startMs : totalDurationMs);
-                flat.add(new M4BParser.M4bChapter(i + 1, n.title, n.startMs, dur, n.level));
+                long fallbackEnd = i + 1 < parsedNodes.size() ? parsedNodes.get(i + 1).startMs : totalDurationMs;
+                flat.add(new M4BParser.M4bChapter(i + 1, n.title, n.startMs, resolveAudioDurationMs(n, fallbackEnd), n.level));
             }
             return FileScanner.buildAudiobookChapterTree(titleId, flat, savedPositionMs);
         }
-
         int[] indexCounter = {1};
         List<Chapter> roots = new ArrayList<>(parsedNodes.size());
         for (int i = 0; i < parsedNodes.size(); i++) {
-            long nextSiblingStart = i + 1 < parsedNodes.size() ? parsedNodes.get(i + 1).startMs : totalDurationMs;
+            long nextStart = i + 1 < parsedNodes.size() ? parsedNodes.get(i + 1).startMs : totalDurationMs;
             roots.add(convertAudioNodeRecursive(
-                    titleId, parsedNodes.get(i), 0, i, nextSiblingStart, savedPositionMs, indexCounter
-            ));
+                    titleId, parsedNodes.get(i), 0, i, nextStart, savedPositionMs, indexCounter));
         }
         return roots;
     }
@@ -323,12 +323,10 @@ public final class MetadataJsonParser {
         long durMs = resolveAudioDurationMs(node, fallbackEndMs);
         long endMs = node.startMs + durMs;
         boolean completed = savedPositionMs > 0L && durMs > 0L && savedPositionMs >= endMs;
-        int pct = 0;
-        if (completed) {
-            pct = 100;
-        } else if (savedPositionMs > 0L && savedPositionMs >= node.startMs && durMs > 0L && savedPositionMs < endMs) {
-            pct = PlaybackSessionManager.computeProgressPercent(savedPositionMs - node.startMs, durMs);
-        }
+        int pct = completed ? 100
+                : (savedPositionMs > 0L && savedPositionMs >= node.startMs && durMs > 0L && savedPositionMs < endMs)
+                        ? PlaybackSessionManager.computeProgressPercent(savedPositionMs - node.startMs, durMs)
+                        : 0;
 
         Chapter chapter = new Chapter(
                 0, titleId, 0, chIndex, level, sortOrder,
@@ -338,12 +336,9 @@ public final class MetadataJsonParser {
 
         long maxEnd = endMs;
         for (int i = 0; i < node.children.size(); i++) {
-            long childFallbackEnd = (i + 1 < node.children.size())
-                    ? node.children.get(i + 1).startMs
-                    : fallbackEndMs;
+            long childEnd = i + 1 < node.children.size() ? node.children.get(i + 1).startMs : fallbackEndMs;
             Chapter child = convertAudioNodeRecursive(
-                    titleId, node.children.get(i), level + 1, i, childFallbackEnd, savedPositionMs, indexCounter
-            );
+                    titleId, node.children.get(i), level + 1, i, childEnd, savedPositionMs, indexCounter);
             chapter.addChild(child);
             maxEnd = Math.max(maxEnd, child.getAudioStartMs() + child.getAudioDurationMs());
         }
@@ -394,13 +389,11 @@ public final class MetadataJsonParser {
 
         Chapter chapter = new Chapter(
                 0, titleId, 0, chIndex, level, sortOrder,
-                node.title, "", href, frag, label,
-                contentText, "", startPage, endPage, pct, done
+                node.title, "", href, frag, label, contentText, "", startPage, endPage, pct, done
         );
         for (int i = 0; i < node.children.size(); i++) {
             chapter.addChild(convertEbookNodeRecursive(
-                    titleId, node.children.get(i), level + 1, i, existingByIndex, indexCounter
-            ));
+                    titleId, node.children.get(i), level + 1, i, existingByIndex, indexCounter));
         }
         return chapter;
     }
@@ -412,10 +405,7 @@ public final class MetadataJsonParser {
         if (node.endMs > node.startMs) {
             return node.endMs - node.startMs;
         }
-        if (fallbackEndMs > node.startMs) {
-            return fallbackEndMs - node.startMs;
-        }
-        return 0L;
+        return fallbackEndMs > node.startMs ? fallbackEndMs - node.startMs : 0L;
     }
 
     private static boolean hasAnyChildren(@NonNull List<ParsedChapterNode> nodes) {
@@ -428,67 +418,64 @@ public final class MetadataJsonParser {
     }
 
     @NonNull
-    private static List<ParsedChapterNode> parseChapterList(@Nullable Object raw) {
-        if (!(raw instanceof List)) {
+    private static List<ParsedChapterNode> parseChapterList(@Nullable JsonElement raw) {
+        if (raw == null || !raw.isJsonArray()) {
             return Collections.emptyList();
         }
-        List<?> list = (List<?>) raw;
-        List<ParsedChapterNode> out = new ArrayList<>(list.size());
-        for (int i = 0; i < list.size(); i++) {
-            Object item = list.get(i);
-            if (!(item instanceof Map)) {
+        JsonArray arr = raw.getAsJsonArray();
+        List<ParsedChapterNode> out = new ArrayList<>(arr.size());
+        for (int i = 0; i < arr.size(); i++) {
+            JsonElement item = arr.get(i);
+            if (!item.isJsonObject()) {
                 continue;
             }
-            @SuppressWarnings("unchecked")
-            Map<String, Object> obj = (Map<String, Object>) item;
-
-            String rawTitle = getString(obj, "title", "name", "chapterTitle", "chapter_title");
-            int explicitLevel = (int) getLong(obj, -1L, "level", "depth");
-            int level = explicitLevel >= 0 ? explicitLevel : Mp4ChapterParser.detectHierarchyLevel(rawTitle);
-            String title = rawTitle != null && !rawTitle.trim().isEmpty()
-                    ? rawTitle.trim()
-                    : ("Chapter " + (i + 1));
-
-            long startMs = parseTimeFieldMs(obj, "startMs", "start_ms", "audioStartMs", "audio_start_ms");
-            if (startMs < 0L) {
-                startMs = parseSecondsOrTimeStringMs(firstNonNull(obj.get("start"), obj.get("startTime"), obj.get("start_time")));
-            }
-            if (startMs < 0L) {
-                startMs = 0L;
-            }
-
-            long endMs = parseTimeFieldMs(obj, "endMs", "end_ms");
-            if (endMs < 0L) {
-                endMs = parseSecondsOrTimeStringMs(firstNonNull(obj.get("end"), obj.get("endTime"), obj.get("end_time")));
-            }
-
-            long durationMs = parseTimeFieldMs(obj, "durationMs", "duration_ms", "audioDurationMs", "audio_duration_ms");
-            if (durationMs < 0L) {
-                durationMs = parseSecondsOrTimeStringMs(obj.get("duration"));
-            }
-            if (durationMs < 0L) {
-                durationMs = 0L;
-            }
-
-            int startPage = (int) getLong(obj, 0L, "startPage", "start_page", "page");
-            int endPage = (int) getLong(obj, 0L, "endPage", "end_page");
-
-            List<ParsedChapterNode> children = parseChapterList(
-                    firstNonNull(obj.get("children"), obj.get("subchapters"), obj.get("sections"))
-            );
-            out.add(new ParsedChapterNode(title, startMs, durationMs, endMs, startPage, endPage, level, children));
+            out.add(parseSingleChapter(item.getAsJsonObject(), i));
         }
         return out;
     }
 
-    private static long parseTimeFieldMs(@NonNull Map<String, Object> obj, @NonNull String... keys) {
+    @NonNull
+    private static ParsedChapterNode parseSingleChapter(@NonNull JsonObject obj, int position) {
+        String rawTitle = optString(obj, "title", "name", "chapterTitle", "chapter_title");
+        int explicitLevel = (int) optLong(obj, -1L, "level", "depth");
+        int level = explicitLevel >= 0 ? explicitLevel : Mp4ChapterParser.detectHierarchyLevel(rawTitle);
+        String title = rawTitle != null && !rawTitle.trim().isEmpty()
+                ? rawTitle.trim()
+                : ("Chapter " + (position + 1));
+
+        long startMs = optTimeFieldMs(obj, "startMs", "start_ms", "audioStartMs", "audio_start_ms");
+        if (startMs < 0L) {
+            startMs = Math.max(0L, parseSecondsOrTimestampMs(firstMember(obj, "start", "startTime", "start_time")));
+        }
+
+        long endMs = optTimeFieldMs(obj, "endMs", "end_ms");
+        if (endMs < 0L) {
+            endMs = parseSecondsOrTimestampMs(firstMember(obj, "end", "endTime", "end_time"));
+        }
+
+        long durationMs = optTimeFieldMs(obj, "durationMs", "duration_ms", "audioDurationMs", "audio_duration_ms");
+        if (durationMs < 0L) {
+            durationMs = Math.max(0L, parseSecondsOrTimestampMs(obj.get("duration")));
+        }
+
+        int startPage = (int) optLong(obj, 0L, "startPage", "start_page", "page");
+        int endPage = (int) optLong(obj, 0L, "endPage", "end_page");
+        List<ParsedChapterNode> children = parseChapterList(firstMember(obj, "children", "subchapters", "sections"));
+        return new ParsedChapterNode(title, startMs, durationMs, endMs, startPage, endPage, level, children);
+    }
+
+    private static long optTimeFieldMs(@NonNull JsonObject obj, @NonNull String... keys) {
         for (String key : keys) {
-            Object val = obj.get(key);
-            if (val instanceof Number) {
-                return Math.max(0L, ((Number) val).longValue());
+            JsonElement el = obj.get(key);
+            if (el == null || !el.isJsonPrimitive()) {
+                continue;
             }
-            if (val instanceof String) {
-                String s = ((String) val).trim();
+            JsonPrimitive p = el.getAsJsonPrimitive();
+            if (p.isNumber()) {
+                return Math.max(0L, p.getAsLong());
+            }
+            if (p.isString()) {
+                String s = p.getAsString().trim();
                 if (!s.isEmpty()) {
                     try {
                         return Math.max(0L, Long.parseLong(s));
@@ -504,58 +491,68 @@ public final class MetadataJsonParser {
         return -1L;
     }
 
-    private static long parseSecondsOrTimeStringMs(@Nullable Object val) {
-        if (val instanceof Number) {
-            double seconds = ((Number) val).doubleValue();
+    private static long parseSecondsOrTimestampMs(@Nullable JsonElement el) {
+        if (el == null || !el.isJsonPrimitive()) {
+            return -1L;
+        }
+        JsonPrimitive p = el.getAsJsonPrimitive();
+        if (p.isNumber()) {
+            double seconds = p.getAsDouble();
             return seconds >= 0.0 ? Math.round(seconds * 1000.0) : -1L;
         }
-        if (val instanceof String) {
-            String s = ((String) val).trim();
-            if (s.isEmpty()) {
-                return -1L;
-            }
-            if (s.contains(":")) {
-                return M4BParser.parseTimestampMs(s);
-            }
-            try {
-                double seconds = Double.parseDouble(s);
-                return seconds >= 0.0 ? Math.round(seconds * 1000.0) : -1L;
-            } catch (NumberFormatException ignored) {
-            }
+        if (!p.isString()) {
+            return -1L;
         }
-        return -1L;
+        String s = p.getAsString().trim();
+        if (s.isEmpty()) {
+            return -1L;
+        }
+        if (s.contains(":")) {
+            return M4BParser.parseTimestampMs(s);
+        }
+        try {
+            double seconds = Double.parseDouble(s);
+            return seconds >= 0.0 ? Math.round(seconds * 1000.0) : -1L;
+        } catch (NumberFormatException ignored) {
+            return -1L;
+        }
     }
 
     @Nullable
-    private static Object firstNonNull(@Nullable Object... values) {
-        for (Object v : values) {
-            if (v != null) {
-                return v;
+    private static JsonElement firstMember(@NonNull JsonObject obj, @NonNull String... keys) {
+        for (String key : keys) {
+            JsonElement el = obj.get(key);
+            if (el != null && !el.isJsonNull()) {
+                return el;
             }
         }
         return null;
     }
 
     @Nullable
-    private static String getString(@NonNull Map<String, Object> obj, @NonNull String... keys) {
+    private static String optString(@NonNull JsonObject obj, @NonNull String... keys) {
         for (String key : keys) {
-            Object val = obj.get(key);
-            if (val instanceof String) {
-                return (String) val;
+            JsonElement el = obj.get(key);
+            if (el != null && el.isJsonPrimitive() && el.getAsJsonPrimitive().isString()) {
+                return el.getAsString();
             }
         }
         return null;
     }
 
-    private static long getLong(@NonNull Map<String, Object> obj, long defaultValue, @NonNull String... keys) {
+    private static long optLong(@NonNull JsonObject obj, long defaultValue, @NonNull String... keys) {
         for (String key : keys) {
-            Object val = obj.get(key);
-            if (val instanceof Number) {
-                return ((Number) val).longValue();
+            JsonElement el = obj.get(key);
+            if (el == null || !el.isJsonPrimitive()) {
+                continue;
             }
-            if (val instanceof String) {
+            JsonPrimitive p = el.getAsJsonPrimitive();
+            if (p.isNumber()) {
+                return p.getAsLong();
+            }
+            if (p.isString()) {
                 try {
-                    return Long.parseLong(((String) val).trim());
+                    return Long.parseLong(p.getAsString().trim());
                 } catch (NumberFormatException ignored) {
                 }
             }
@@ -564,21 +561,19 @@ public final class MetadataJsonParser {
     }
 
     @Nullable
-    private static String joinStringList(@Nullable Object raw) {
-        if (!(raw instanceof List)) {
+    private static String joinNames(@Nullable JsonElement raw) {
+        if (raw == null || !raw.isJsonArray()) {
             return null;
         }
-        List<?> list = (List<?>) raw;
-        List<String> parts = new ArrayList<>(list.size());
-        for (Object item : list) {
-            if (item instanceof String) {
-                String s = ((String) item).trim();
+        List<String> parts = new ArrayList<>();
+        for (JsonElement item : raw.getAsJsonArray()) {
+            if (item.isJsonPrimitive() && item.getAsJsonPrimitive().isString()) {
+                String s = item.getAsString().trim();
                 if (!s.isEmpty()) {
                     parts.add(s);
                 }
-            } else if (item instanceof Map) {
-                @SuppressWarnings("unchecked")
-                String name = getString((Map<String, Object>) item, "name", "title");
+            } else if (item.isJsonObject()) {
+                String name = optString(item.getAsJsonObject(), "name", "title");
                 if (name != null && !name.trim().isEmpty()) {
                     parts.add(name.trim());
                 }
@@ -608,203 +603,6 @@ public final class MetadataJsonParser {
         } catch (IOException | SecurityException e) {
             Log.w(TAG, "Failed to read metadata JSON from " + uri, e);
             return null;
-        }
-    }
-
-    /**
-     * Minimal, zero-dependency RFC-8259 JSON parser so metadata parsing works identically
-     * on Android devices and local JVM unit tests.
-     */
-    private static final class SimpleJsonParser {
-        private final String src;
-        private int pos = 0;
-
-        SimpleJsonParser(@NonNull String src) {
-            this.src = src;
-        }
-
-        @Nullable
-        Object parseValue() {
-            skipWhitespace();
-            if (pos >= src.length()) {
-                throw new IllegalArgumentException("Unexpected end of JSON");
-            }
-            char c = src.charAt(pos);
-            switch (c) {
-                case '{':
-                    return parseObject();
-                case '[':
-                    return parseArray();
-                case '"':
-                    return parseString();
-                case 't':
-                    expectLiteral("true");
-                    return Boolean.TRUE;
-                case 'f':
-                    expectLiteral("false");
-                    return Boolean.FALSE;
-                case 'n':
-                    expectLiteral("null");
-                    return null;
-                default:
-                    if (c == '-' || (c >= '0' && c <= '9')) {
-                        return parseNumber();
-                    }
-                    throw new IllegalArgumentException("Unexpected char '" + c + "' at " + pos);
-            }
-        }
-
-        private Map<String, Object> parseObject() {
-            pos++; // '{'
-            Map<String, Object> map = new LinkedHashMap<>();
-            skipWhitespace();
-            if (pos < src.length() && src.charAt(pos) == '}') {
-                pos++;
-                return map;
-            }
-            while (pos < src.length()) {
-                skipWhitespace();
-                if (pos >= src.length() || src.charAt(pos) != '"') {
-                    throw new IllegalArgumentException("Expected string key at " + pos);
-                }
-                String key = parseString();
-                skipWhitespace();
-                if (pos >= src.length() || src.charAt(pos) != ':') {
-                    throw new IllegalArgumentException("Expected ':' at " + pos);
-                }
-                pos++;
-                Object val = parseValue();
-                map.put(key, val);
-                skipWhitespace();
-                if (pos < src.length() && src.charAt(pos) == ',') {
-                    pos++;
-                } else if (pos < src.length() && src.charAt(pos) == '}') {
-                    pos++;
-                    return map;
-                } else {
-                    throw new IllegalArgumentException("Expected ',' or '}' at " + pos);
-                }
-            }
-            throw new IllegalArgumentException("Unterminated JSON object");
-        }
-
-        private List<Object> parseArray() {
-            pos++; // '['
-            List<Object> list = new ArrayList<>();
-            skipWhitespace();
-            if (pos < src.length() && src.charAt(pos) == ']') {
-                pos++;
-                return list;
-            }
-            while (pos < src.length()) {
-                list.add(parseValue());
-                skipWhitespace();
-                if (pos < src.length() && src.charAt(pos) == ',') {
-                    pos++;
-                } else if (pos < src.length() && src.charAt(pos) == ']') {
-                    pos++;
-                    return list;
-                } else {
-                    throw new IllegalArgumentException("Expected ',' or ']' at " + pos);
-                }
-            }
-            throw new IllegalArgumentException("Unterminated JSON array");
-        }
-
-        private String parseString() {
-            pos++; // '"'
-            StringBuilder sb = new StringBuilder();
-            while (pos < src.length()) {
-                char c = src.charAt(pos++);
-                if (c == '"') {
-                    return sb.toString();
-                }
-                if (c == '\\') {
-                    if (pos >= src.length()) {
-                        throw new IllegalArgumentException("Unterminated escape");
-                    }
-                    char esc = src.charAt(pos++);
-                    switch (esc) {
-                        case '"': sb.append('"'); break;
-                        case '\\': sb.append('\\'); break;
-                        case '/': sb.append('/'); break;
-                        case 'b': sb.append('\b'); break;
-                        case 'f': sb.append('\f'); break;
-                        case 'n': sb.append('\n'); break;
-                        case 'r': sb.append('\r'); break;
-                        case 't': sb.append('\t'); break;
-                        case 'u':
-                            if (pos + 4 > src.length()) {
-                                throw new IllegalArgumentException("Invalid unicode escape");
-                            }
-                            int code = Integer.parseInt(src.substring(pos, pos + 4), 16);
-                            sb.append((char) code);
-                            pos += 4;
-                            break;
-                        default:
-                            sb.append(esc);
-                            break;
-                    }
-                } else {
-                    sb.append(c);
-                }
-            }
-            throw new IllegalArgumentException("Unterminated JSON string");
-        }
-
-        private Number parseNumber() {
-            int start = pos;
-            if (src.charAt(pos) == '-') {
-                pos++;
-            }
-            while (pos < src.length() && Character.isDigit(src.charAt(pos))) {
-                pos++;
-            }
-            boolean isFloat = false;
-            if (pos < src.length() && src.charAt(pos) == '.') {
-                isFloat = true;
-                pos++;
-                while (pos < src.length() && Character.isDigit(src.charAt(pos))) {
-                    pos++;
-                }
-            }
-            if (pos < src.length() && (src.charAt(pos) == 'e' || src.charAt(pos) == 'E')) {
-                isFloat = true;
-                pos++;
-                if (pos < src.length() && (src.charAt(pos) == '+' || src.charAt(pos) == '-')) {
-                    pos++;
-                }
-                while (pos < src.length() && Character.isDigit(src.charAt(pos))) {
-                    pos++;
-                }
-            }
-            String token = src.substring(start, pos);
-            if (isFloat) {
-                return Double.parseDouble(token);
-            }
-            try {
-                return Long.parseLong(token);
-            } catch (NumberFormatException e) {
-                return Double.parseDouble(token);
-            }
-        }
-
-        private void expectLiteral(@NonNull String literal) {
-            if (!src.startsWith(literal, pos)) {
-                throw new IllegalArgumentException("Expected '" + literal + "' at " + pos);
-            }
-            pos += literal.length();
-        }
-
-        private void skipWhitespace() {
-            while (pos < src.length()) {
-                char c = src.charAt(pos);
-                if (c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\uFEFF') {
-                    pos++;
-                } else {
-                    break;
-                }
-            }
         }
     }
 }

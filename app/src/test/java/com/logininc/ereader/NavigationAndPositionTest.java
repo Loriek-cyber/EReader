@@ -1,11 +1,14 @@
 package com.logininc.ereader;
 
+import android.annotation.SuppressLint;
+import android.media.AudioDeviceInfo;
 import android.net.Uri;
 
 import com.logininc.ereader.model.AudioBook;
 import com.logininc.ereader.model.Book;
 import com.logininc.ereader.model.Chapter;
 import com.logininc.ereader.model.Title;
+import com.logininc.ereader.service.BluetoothReconnectWatcher;
 import com.logininc.ereader.service.PlaybackSessionManager;
 import com.logininc.ereader.service.SleepTimerController;
 import com.logininc.ereader.util.ChapterTreeHelper;
@@ -263,5 +266,19 @@ public class NavigationAndPositionTest {
         assertEquals(120_000L, PlaybackSessionManager.applyResumeRewindMs(120_000L, 5, 120_000L));
         assertEquals(120_000L, PlaybackSessionManager.applyResumeRewindMs(122_000L, 5, 120_000L));
         assertEquals(125_000L, PlaybackSessionManager.applyResumeRewindMs(130_000L, 5, 120_000L));
+    }
+
+    @Test
+    @SuppressLint("InlinedApi")
+    public void bluetoothOutputTypeDetectionDistinguishesHeadsetsFromBuiltInSpeakers() {
+        assertTrue(BluetoothReconnectWatcher.isBluetoothOutputType(AudioDeviceInfo.TYPE_BLUETOOTH_A2DP));
+        assertTrue(BluetoothReconnectWatcher.isBluetoothOutputType(AudioDeviceInfo.TYPE_BLUETOOTH_SCO));
+        assertTrue(BluetoothReconnectWatcher.isBluetoothOutputType(AudioDeviceInfo.TYPE_HEARING_AID));
+        assertTrue(BluetoothReconnectWatcher.isBluetoothOutputType(AudioDeviceInfo.TYPE_BLE_HEADSET));
+        assertTrue(BluetoothReconnectWatcher.isBluetoothOutputType(AudioDeviceInfo.TYPE_BLE_SPEAKER));
+
+        assertFalse(BluetoothReconnectWatcher.isBluetoothOutputType(AudioDeviceInfo.TYPE_BUILTIN_SPEAKER));
+        assertFalse(BluetoothReconnectWatcher.isBluetoothOutputType(AudioDeviceInfo.TYPE_BUILTIN_EARPIECE));
+        assertFalse(BluetoothReconnectWatcher.isBluetoothOutputType(AudioDeviceInfo.TYPE_WIRED_HEADPHONES));
     }
 }

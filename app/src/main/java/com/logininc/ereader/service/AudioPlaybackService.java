@@ -1,139 +1,195 @@
 package com.logininc.ereader.service;
 
-import android.app.Notification;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ServiceInfo;
-import android.os.Build;
-import android.os.IBinder;
+import android.os.Bundle;
 
+import androidx.annotation.DrawableRes;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.app.NotificationCompat;
+import androidx.annotation.OptIn;
+import androidx.annotation.StringRes;
+import androidx.media3.common.Player;
+import androidx.media3.common.util.UnstableApi;
+import androidx.media3.session.CommandButton;
+import androidx.media3.session.DefaultMediaNotificationProvider;
+import androidx.media3.session.MediaSession;
+import androidx.media3.session.MediaSessionService;
+import androidx.media3.session.SessionCommand;
+import androidx.media3.session.SessionCommands;
+import androidx.media3.session.SessionResult;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.logininc.ereader.R;
 import com.logininc.ereader.screen.AudioPlayerActivity;
 import com.logininc.ereader.util.NavigationFlowHelper;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
- * Foreground service keeping audiobook playback alive when the user leaves the player screen.
+ * Media3 {@link MediaSessionService} providing lockscreen/notification media controls,
+ * seekbar, custom skip/chapter actions, and AVRCP Bluetooth headset command handling.
  */
-public class AudioPlaybackService extends Service {
+@OptIn(markerClass = UnstableApi.class)
+public class AudioPlaybackService extends MediaSessionService {
 
     public static final String CHANNEL_ID = "ereader_audio_playback";
     public static final int NOTIFICATION_ID = 4101;
-    public static final String ACTION_START = "com.logininc.ereader.action.START";
-    public static final String ACTION_STOP = "com.logininc.ereader.action.STOP";
-    public static final String EXTRA_TITLE = "extra_title";
-    public static final String EXTRA_SUBTITLE = "extra_subtitle";
-    public static final String EXTRA_TITLE_ID = "extra_title_id";
 
-    public static void start(@ContextRequired Context context, int titleId, String title, String subtitle) {
-        Intent intent = new Intent(context, AudioPlaybackService.class);
-        intent.setAction(ACTION_START);
-        intent.putExtra(EXTRA_TITLE_ID, titleId);
-        intent.putExtra(EXTRA_TITLE, title);
-        intent.putExtra(EXTRA_SUBTITLE, subtitle);
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent);
-            } else {
-                context.startService(intent);
-            }
-        } catch (RuntimeException ignored) {
-            // Foreground service restriction fallback if app is not eligible.
-        }
-    }
+    private static final String ACTION_REWIND_15 = "com.logininc.ereader.action.REWIND_15";
+    private static final String ACTION_FORWARD_30 = "com.logininc.ereader.action.FORWARD_30";
+    private static final String ACTION_PREV_CHAPTER = "com.logininc.ereader.action.PREV_CHAPTER";
+    private static final String ACTION_NEXT_CHAPTER = "com.logininc.ereader.action.NEXT_CHAPTER";
 
-    public static void stop(Context context) {
-        try {
-            context.stopService(new Intent(context, AudioPlaybackService.class));
-        } catch (RuntimeException ignored) {
-        }
-    }
+    @Nullable
+    private MediaSession mediaSession;
+    private List<CommandButton> customButtons;
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent != null && ACTION_STOP.equals(intent.getAction())) {
-            PlaybackSessionManager.getInstance().stopAndClearSession(this);
-            stopForeground(STOP_FOREGROUND_REMOVE);
-            stopSelf();
-            return START_NOT_STICKY;
-        }
+    public void onCreate() {
+        super.onCreate();
+        DefaultMediaNotificationProvider notificationProvider =
+                new DefaultMediaNotificationProvider.Builder(this)
+                        .setChannelId(CHANNEL_ID)
+                        .setChannelName(R.string.notification_audio_channel)
+                        .setNotificationId(NOTIFICATION_ID)
+                        .build();
+        notificationProvider.setSmallIcon(R.drawable.ic_headphones);
+        setMediaNotificationProvider(notificationProvider);
 
-        ensureChannel();
-        int titleId = intent != null ? intent.getIntExtra(EXTRA_TITLE_ID, -1) : -1;
-        String title = intent != null ? intent.getStringExtra(EXTRA_TITLE) : getString(R.string.app_name);
-        String subtitle = intent != null ? intent.getStringExtra(EXTRA_SUBTITLE) : "";
-
-        Intent openIntent = new Intent(this, AudioPlayerActivity.class);
-        openIntent.putExtra(NavigationFlowHelper.EXTRA_TITLE_ID, titleId);
-        openIntent.putExtra(NavigationFlowHelper.EXTRA_AUTO_PLAY, false);
-        PendingIntent contentPi = PendingIntent.getActivity(
-                this, 0, openIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        customButtons = Arrays.asList(
+                buildButton(ACTION_REWIND_15, R.drawable.ic_replay_15, R.string.notification_rewind_15, CommandButton.SLOT_BACK),
+                buildButton(ACTION_FORWARD_30, R.drawable.ic_forward_30, R.string.notification_forward_30, CommandButton.SLOT_FORWARD),
+                buildButton(ACTION_PREV_CHAPTER, R.drawable.ic_skip_previous, R.string.notification_prev_chapter, CommandButton.SLOT_BACK_SECONDARY),
+                buildButton(ACTION_NEXT_CHAPTER, R.drawable.ic_skip_next, R.string.notification_next_chapter, CommandButton.SLOT_FORWARD_SECONDARY)
         );
 
-        Intent stopIntent = new Intent(this, AudioPlaybackService.class);
-        stopIntent.setAction(ACTION_STOP);
-        PendingIntent stopPi = PendingIntent.getService(
-                this, 1, stopIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
+        PlaybackSessionManager manager = PlaybackSessionManager.getInstance();
+        Player sessionPlayer = manager.getOrCreateSessionPlayer(this);
+        com.logininc.ereader.model.Title active = manager.getActiveTitle();
+        int initialTitleId = active != null ? active.getId() : -1;
 
-        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_headphones)
-                .setContentTitle(title != null ? title : getString(R.string.app_name))
-                .setContentText(subtitle != null ? subtitle : "")
-                .setContentIntent(contentPi)
-                .addAction(R.drawable.ic_pause, getString(R.string.action_stop_session), stopPi)
-                .setOngoing(true)
-                .setOnlyAlertOnce(true)
+        mediaSession = new MediaSession.Builder(this, sessionPlayer)
+                .setSessionActivity(buildContentIntent(initialTitleId))
+                .setMediaButtonPreferences(customButtons)
+                .setCallback(new SessionCallback())
                 .build();
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
-        } else {
-            startForeground(NOTIFICATION_ID, notification);
-        }
-        return START_NOT_STICKY;
+        manager.attachService(this);
     }
 
-    private void ensureChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    getString(R.string.notification_audio_channel),
-                    NotificationManager.IMPORTANCE_LOW
-            );
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null) {
-                manager.createNotificationChannel(channel);
-            }
+    public void updateSessionActivity(int titleId) {
+        if (mediaSession != null) {
+            mediaSession.setSessionActivity(buildContentIntent(titleId));
         }
     }
 
     @Nullable
     @Override
-    public IBinder onBind(Intent intent) {
-        return null;
+    public MediaSession onGetSession(@NonNull MediaSession.ControllerInfo controllerInfo) {
+        return mediaSession;
     }
 
     @Override
-    public void onTaskRemoved(Intent rootIntent) {
+    public void onTaskRemoved(@Nullable Intent rootIntent) {
         PlaybackSessionManager.getInstance().persistCurrentState();
+        Player player = mediaSession != null ? mediaSession.getPlayer() : null;
+        if (player == null || !player.getPlayWhenReady()) {
+            stopSelf();
+        }
         super.onTaskRemoved(rootIntent);
     }
 
     @Override
     public void onDestroy() {
-        PlaybackSessionManager.getInstance().persistCurrentState();
+        PlaybackSessionManager manager = PlaybackSessionManager.getInstance();
+        manager.persistCurrentState();
+        manager.detachService(this);
+        if (mediaSession != null) {
+            mediaSession.release();
+            mediaSession = null;
+        }
         super.onDestroy();
     }
 
-    private @interface ContextRequired {
+    @NonNull
+    private CommandButton buildButton(
+            @NonNull String action,
+            @DrawableRes int iconResId,
+            @StringRes int labelResId,
+            int slot
+    ) {
+        return new CommandButton.Builder(CommandButton.ICON_UNDEFINED)
+                .setCustomIconResId(iconResId)
+                .setDisplayName(getString(labelResId))
+                .setSessionCommand(new SessionCommand(action, Bundle.EMPTY))
+                .setSlots(slot)
+                .build();
+    }
+
+    @NonNull
+    private PendingIntent buildContentIntent(int titleId) {
+        Intent openIntent = new Intent(this, AudioPlayerActivity.class);
+        if (titleId > 0) {
+            openIntent.putExtra(NavigationFlowHelper.EXTRA_TITLE_ID, titleId);
+        }
+        openIntent.putExtra(NavigationFlowHelper.EXTRA_AUTO_PLAY, false);
+        openIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        return PendingIntent.getActivity(
+                this,
+                0,
+                openIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+    }
+
+    private class SessionCallback implements MediaSession.Callback {
+
+        @NonNull
+        @Override
+        public MediaSession.ConnectionResult onConnect(
+                @NonNull MediaSession session,
+                @NonNull MediaSession.ControllerInfo controller
+        ) {
+            SessionCommands.Builder commandsBuilder =
+                    MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon();
+            for (CommandButton button : customButtons) {
+                if (button.sessionCommand != null) {
+                    commandsBuilder.add(button.sessionCommand);
+                }
+            }
+            return new MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+                    .setAvailableSessionCommands(commandsBuilder.build())
+                    .setMediaButtonPreferences(customButtons)
+                    .build();
+        }
+
+        @NonNull
+        @Override
+        public ListenableFuture<SessionResult> onCustomCommand(
+                @NonNull MediaSession session,
+                @NonNull MediaSession.ControllerInfo controller,
+                @NonNull SessionCommand customCommand,
+                @NonNull Bundle args
+        ) {
+            PlaybackSessionManager manager = PlaybackSessionManager.getInstance();
+            switch (customCommand.customAction) {
+                case ACTION_REWIND_15:
+                    manager.seekByMs(-15_000L);
+                    return Futures.immediateFuture(new SessionResult(SessionResult.RESULT_SUCCESS));
+                case ACTION_FORWARD_30:
+                    manager.seekByMs(30_000L);
+                    return Futures.immediateFuture(new SessionResult(SessionResult.RESULT_SUCCESS));
+                case ACTION_PREV_CHAPTER:
+                    manager.shiftChapter(AudioPlaybackService.this, -1);
+                    return Futures.immediateFuture(new SessionResult(SessionResult.RESULT_SUCCESS));
+                case ACTION_NEXT_CHAPTER:
+                    manager.shiftChapter(AudioPlaybackService.this, 1);
+                    return Futures.immediateFuture(new SessionResult(SessionResult.RESULT_SUCCESS));
+                default:
+                    return MediaSession.Callback.super.onCustomCommand(session, controller, customCommand, args);
+            }
+        }
     }
 }

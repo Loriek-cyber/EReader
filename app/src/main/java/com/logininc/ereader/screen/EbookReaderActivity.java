@@ -638,7 +638,7 @@ public class EbookReaderActivity extends AppCompatActivity {
         });
     }
 
-    private void restoreProsePositionAfterLayout(boolean useSavedBookPosition) {
+    private void restoreProsePositionAfterLayout(boolean useSavedBookPosition ) {
         if (scrollContent == null || book == null || !useSavedBookPosition) {
             return;
         }

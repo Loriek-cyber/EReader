@@ -21,6 +21,8 @@ public class SettingsDao {
 
     public static final String METADATA_SOURCE_FILE = "FILE";
     public static final String METADATA_SOURCE_AUDNEXUS = "AUDNEXUS";
+    public static final String BLUETOOTH_SKIP_TIME = "TIME";
+    public static final String BLUETOOTH_SKIP_CHAPTER = "CHAPTER";
 
     public static final String KEY_PROFILE_NAME = "profile_name";
     public static final String KEY_EBOOK_FOLDER_URI = "ebook_folder_uri";
@@ -39,6 +41,8 @@ public class SettingsDao {
     public static final String KEY_AUDIO_RESUME_REWIND_SEC = "audio_resume_rewind_sec";
     public static final String KEY_AUDIO_AUTO_ADVANCE_CHAPTER = "audio_auto_advance_chapter";
     public static final String KEY_AUDIO_METADATA_SOURCE = "audio_metadata_source";
+    public static final String KEY_BLUETOOTH_SKIP_MODE = "bluetooth_skip_mode";
+    public static final String KEY_BLUETOOTH_AUTO_RESUME = "bluetooth_auto_resume";
     public static final String KEY_AUTO_BOOKMARK = "auto_bookmark";
     public static final String KEY_ACTIVE_SESSION_TITLE_ID = "active_session_title_id";
     public static final String KEY_ACTIVE_SESSION_PLAYING = "active_session_playing";
@@ -250,6 +254,27 @@ public class SettingsDao {
                 KEY_AUDIO_METADATA_SOURCE,
                 METADATA_SOURCE_AUDNEXUS.equals(source) ? METADATA_SOURCE_AUDNEXUS : METADATA_SOURCE_FILE
         );
+    }
+
+    @NonNull
+    public String getBluetoothSkipMode() {
+        String raw = getString(KEY_BLUETOOTH_SKIP_MODE, BLUETOOTH_SKIP_TIME);
+        return BLUETOOTH_SKIP_CHAPTER.equals(raw) ? BLUETOOTH_SKIP_CHAPTER : BLUETOOTH_SKIP_TIME;
+    }
+
+    public void setBluetoothSkipMode(@NonNull String mode) {
+        putString(
+                KEY_BLUETOOTH_SKIP_MODE,
+                BLUETOOTH_SKIP_CHAPTER.equals(mode) ? BLUETOOTH_SKIP_CHAPTER : BLUETOOTH_SKIP_TIME
+        );
+    }
+
+    public boolean isBluetoothAutoResume() {
+        return getBoolean(KEY_BLUETOOTH_AUTO_RESUME, false);
+    }
+
+    public void setBluetoothAutoResume(boolean enabled) {
+        putBoolean(KEY_BLUETOOTH_AUTO_RESUME, enabled);
     }
 
     public boolean isAutoBookmark() {

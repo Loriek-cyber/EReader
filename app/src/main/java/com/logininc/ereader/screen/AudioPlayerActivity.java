@@ -353,14 +353,7 @@ public class AudioPlayerActivity extends AppCompatActivity {
     }
 
     private void shiftChapter(int delta) {
-        int current = audioBook.getCurrentChapter();
-        java.util.List<Chapter> roots = chapterDao.getChapterSummaryTreeForTitle(audioBook.getId());
-        int target = delta > 0
-                ? ChapterTreeHelper.findNextLeafIndex(roots, current)
-                : ChapterTreeHelper.findPreviousLeafIndex(roots, current);
-        if (target > 0 && target != current) {
-            PlaybackSessionManager.getInstance().jumpToChapter(this, target);
-        }
+        PlaybackSessionManager.getInstance().shiftChapter(this, delta);
     }
 
     private void showAddBookmarkOrNoteDialog() {

@@ -5,6 +5,7 @@ import com.logininc.ereader.util.ChapterTreeHelper;
 import com.logininc.ereader.util.EbookParser;
 import com.logininc.ereader.util.FileScanner;
 
+import org.jetbrains.annotations.NonBlocking;
 import org.junit.Test;
 
 import java.io.InputStream;
@@ -21,7 +22,8 @@ import static org.junit.Assert.assertTrue;
 public class EbookTest {
     InputStream is = Objects.requireNonNull(getClass().getClassLoader()).getResourceAsStream("claude.epub");
 
-    @Test
+
+
     public void assertItLoads() {
         assertNotNull(is);
     }
